@@ -1,4 +1,5 @@
 import Foundation
+import Puzzle
 import Toy
 import simd
 
@@ -7,7 +8,8 @@ import simd
 ///
 /// The hand does not place the ring. It steers the ring toward where it wants it, with limited strength, so the
 /// rest of the toy steers the ring too: a wire in the way turns the ring aside instead of being pushed through.
-/// It does not run ahead of the ring either: while the ring is held back, the hand waits for it.
+/// It does not run ahead of the ring either: while the ring is held back, the hand waits for it. A ring that
+/// does not come is stuck: the hand then takes it back the way it came, and lets go where it took it up.
 struct Hand: Sendable {
     /// A place on the way: where the ring's centre is to be, and the way the ring's axis points. A ring is
     /// the same from both sides, so either way along the axis is the same place.
@@ -45,6 +47,10 @@ struct Hand: Sendable {
     private var waited = 0.0
     /// Where the hand is holding its ring up out of the way, while it does.
     private var holdingAt: Station?
+    /// The stations the ring has been brought to so far, from where the hand took it up, and whether the hand
+    /// has given up and is taking the ring back through them.
+    private var trail: [Station] = []
+    private var isGoingBack = false
 
     /// Whether the hand has its ring up out of the way and is holding it there.
     var isHoldingUp: Bool { holdingAt != nil }
@@ -80,11 +86,16 @@ struct Hand: Sendable {
     /// Moves the hand on by `time`, given where the toy's parts are now, and gives where it wants its ring,
     /// or `nil` once it has let go.
     mutating func advance(by time: Double, in pose: ToyPose) -> Station? {
-        if let holdingAt { return holdingAt }
+        if holdingAt != nil {
+            // The hold follows the ring that is travelling round this ring's rod: see `stations`.
+            holdingAt = Self.stations(of: .heldUp, for: ring, in: pose)[0]
+            return holdingAt
+        }
         let ringNow = Self.station(of: pose.ring(ring))
 
         // How far the ring is behind sets the hand's pace: full while the ring keeps up, none while it is
-        // well behind. A ring that stays behind is stuck, and in the end the hand lets it go.
+        // well behind. A ring that stays behind is stuck: the hand takes it back the way it came, and if it
+        // sticks on the way back too, lets it go where it is.
         var pace = 1.0
         if let wanted {
             let turn = acos(min(1, abs(simd_dot(ringNow.axis, wanted.axis))))
@@ -92,8 +103,15 @@ struct Hand: Sendable {
             pace = max(0, min(1, 2 - behind / Self.slack))
             waited = pace < 0.5 ? waited + time : 0
             if waited > Self.patience {
+                let wayBack = trail + (stretch?.reached ?? [])
                 legs = []
                 stretch = nil
+                waited = 0
+                if !isGoingBack, !wayBack.isEmpty {
+                    isGoingBack = true
+                    pace = 1
+                    stretch = Stretch(from: ringNow, through: wayBack.reversed(), holdsAtItsEnd: true)
+                }
             }
         }
 
@@ -110,20 +128,27 @@ struct Hand: Sendable {
                     wanted = nil
                     return holdingAt
                 }
+                if trail.isEmpty {
+                    trail = [ringNow]
+                }
                 stretch = Stretch(from: ringNow, through: stations, holdsAtItsEnd: legs.isEmpty)
             }
             if let station = stretch?.advance(by: time * pace) {
                 wanted = station
                 return station
             }
+            trail += stretch?.reached ?? []
             stretch = nil
         }
     }
 
+    /// Whether the hand has given up on its ring and is taking it back, or has let it go after that.
+    var hasGivenUp: Bool { isGoingBack }
+
     /// The ring may be this far behind, in millimetres, before the hand slows for it; at twice this the hand
     /// stands still. A turn counts as the distance it moves the ring's rim.
     private static let slack = 3.0
-    /// How long the hand waits for a ring that does not come, in seconds, before it lets go.
+    /// How long the hand waits for a ring that does not come, in seconds, before it gives up.
     private static let patience = 2.0
 
     private static func station(of ring: PartPose) -> Station {
@@ -164,8 +189,15 @@ extension Hand {
         // ring's lowest point comes down in front of the next ring's lower arc and pushes that arc back, not
         // forward. For ring 1 that is a little toward the tip from the foot; each later ring's place is one
         // hole further along. At the lower height the ring's widest part is just under the rails.
+        //
+        // Ring 1 stands upright there, and leans to one side when it goes under. A later ring has the rod of
+        // the ring before it through it all the way, top side up, and must never turn edge-on to that rod:
+        // so it does not stand quite upright, and it leans to the side that keeps the rod's top on the same
+        // face of it from lying flat over the tip to lying level under the rails.
+        let side: Double = number == 1 ? 1 : -1
+        let standingLean = number == 1 ? 0 : 15 * Double.pi / 180
         func standing(overX x: Double, atHeight height: Double) -> Station {
-            Station(centre: SIMD3(x, height, 0), axis: along)
+            Station(centre: SIMD3(x, height, 0), axis: SIMD3(0, -side * sin(standingLean), cos(standingLean)))
         }
         let slotX = foot.x - 3.5 + Dimensions.Bar.holePitch * Double(number - 1)
         let aboveHeight = Sword.railHeight + radius + 3.5
@@ -191,11 +223,11 @@ extension Hand {
         let railUnderside = Sword.railHeight - Sword.wireRadius - Dimensions.Ring.wireRadius
         let slotHalfWidth = Sword.railOffset - Sword.wireRadius - Dimensions.Ring.wireRadius
         let rise = min(max((railUnderside - eye.y) / radius, 0), 1)
-        let aside = SIMD3(0, 0, -(max(0, radius * (1 - rise * rise).squareRoot() - slotHalfWidth) + 3))
+        let aside = SIMD3(0, 0, -side * (max(0, radius * (1 - rise * rise).squareRoot() - slotHalfWidth) + 3))
         let levelAside = Station(centre: level.centre + aside, axis: up)
         let leaning = Station(
             centre: level.centre + aside,
-            axis: SIMD3(0, -sin(Double.pi / 3), cos(Double.pi / 3))
+            axis: SIMD3(0, -sin(Double.pi / 3), side * cos(Double.pi / 3))
         )
         let hangAngle = Double.pi / 6
         let hanging = Station(
@@ -203,9 +235,14 @@ extension Hand {
             axis: SIMD3(cos(hangAngle), -sin(hangAngle), 0)
         )
 
-        // Held up out of the way: standing across the sword over the tip side of the slot, a ring's height
-        // and a little more above the rails, so that the next ring can stand and turn under it.
-        let parked = Station(centre: SIMD3(foot.x - 3, flatHeight + 3 * radius + 6, 0), axis: SIMD3(1, 0, 0))
+        // Held up out of the way: standing across the sword, a ring's height and a little more above the
+        // rails, so that the next ring can stand and turn under it. That ring travels round this ring's rod,
+        // so the hold keeps the rod near the middle of it: toward the tip while that ring lies round the tip,
+        // and back over this ring's own hole once that ring is above its place in the slot.
+        let own = Dimensions.Bar.holePitch * Double(number - 1)
+        let travelling = number < PuzzleState.ringCount ? pose.ring(number + 1).position.x : foot.x
+        let parkedX = min(max(travelling + 8, foot.x - 5 + own), foot.x + 2 + own)
+        let parked = Station(centre: SIMD3(parkedX, flatHeight + 3 * radius + 6, 0), axis: SIMD3(1, 0, 0))
 
         switch leg {
         case .upOutOfTheWay:
@@ -225,7 +262,10 @@ extension Hand {
             guard centre.y - eye.y < radius else {
                 return [standing(overX: centre.x, atHeight: Sword.railHeight - radius - 4)]
             }
-            return [leaning, levelAside, level, hanging]
+            // Ring 1 is lowered until it hangs. A later ring is let go level under the rails and swings down
+            // by itself: the end of the bar is still held up under it, by the rod of the ring before, and a
+            // hand that lowered the ring all the way would press it onto the bar.
+            return number == 1 ? [leaning, levelAside, level, hanging] : [leaning, levelAside, level]
         case .outFromUnder:
             let x = level.centre.x + 5
             return [level, levelAside, leaning, standing(overX: x, atHeight: throughHeight), standing(overX: x, atHeight: aboveHeight)]
@@ -265,6 +305,27 @@ private struct Stretch: Sendable {
         hold = holdsAtItsEnd ? Self.lastHold : 0
     }
 
+    /// The stations the hand has reached so far on this stretch, not counting where it began.
+    var reached: [Hand.Station] {
+        let travelled = travelled(after: elapsed)
+        return Array(zip(stations, arrivals).dropFirst().prefix { $0.1 <= travelled }.map(\.0))
+    }
+
+    /// How far along the stretch the hand is after `time`, in seconds of travel at full pace: it gathers pace
+    /// over the run-up, keeps it, and loses it the same way before the last station.
+    private func travelled(after time: Double) -> Double {
+        let length = arrivals[arrivals.count - 1]
+        let run = min(Self.runUp, length)
+        if time < run {
+            return time * time / (2 * run)
+        } else if time < length {
+            return time - run / 2
+        } else {
+            let left = max(0, length + run - time)
+            return length - left * left / (2 * run)
+        }
+    }
+
     /// Moves on by `time` and gives the place reached, or `nil` once the stretch is over.
     mutating func advance(by time: Double) -> Hand.Station? {
         elapsed += time
@@ -272,16 +333,7 @@ private struct Stretch: Sendable {
         let run = min(Self.runUp, length)
         guard elapsed < length + run + hold else { return nil }
 
-        let travelled: Double
-        if elapsed < run {
-            travelled = elapsed * elapsed / (2 * run)
-        } else if elapsed < length {
-            travelled = elapsed - run / 2
-        } else {
-            let left = max(0, length + run - elapsed)
-            travelled = length - left * left / (2 * run)
-        }
-
+        let travelled = travelled(after: elapsed)
         let next = arrivals.firstIndex { $0 > travelled } ?? arrivals.count - 1
         let share = min(1, (travelled - arrivals[next - 1]) / (arrivals[next] - arrivals[next - 1]))
         let from = stations[next - 1], to = stations[next]

@@ -114,14 +114,17 @@ private func moveThereAndBack(ring: Int, from start: PuzzleState) {
     }
 
     /// Ring 3 cannot come off while rings 1 and 2 are on: they are in its way to the tip. A hand set to it
-    /// all the same does not get it there. It waits, lets go, and has forced nothing through anything.
-    @Test func aHandThatCannotGetItsRingThroughLetsGo() {
+    /// all the same does not get it there. It waits, takes the ring back to where it lay, and has forced
+    /// nothing through anything.
+    @Test func aHandThatCannotGetItsRingThroughTakesItBack() {
         var toy = settledToy(.allOn)
+        let before = toy.pose.ring(3)
         toy.setAHand(to: 3)
         runToRest(&toy)
         #expect(!toy.handIsBusy)
-        #expect(toy.pose.ringsOnTheSword.isOn(3))
-        expectWhole(toy, "after the hand let go")
+        #expect(toy.pose.ringsOnTheSword == .allOn)
+        #expect(simd_distance(toy.pose.ring(3).position, before.position) < 4)
+        expectWhole(toy, "after the hand took the ring back")
     }
 
     /// Ring 1 there and back from every state where a hand says it can move it. It takes many minutes, so
