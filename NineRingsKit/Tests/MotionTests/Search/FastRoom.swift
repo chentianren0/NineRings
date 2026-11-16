@@ -103,7 +103,8 @@ struct FastRoom: Sendable {
     }
 
     static func swordPieces(_ pose: ToyPose) -> [Piece] {
-        let slide = SIMD3(pose.swordSlide, 0, 0)
+        // The sword's whole offset: its slide and, where a move lowers it, its height.
+        let slide = pose.swordOffset
         return swordPieces.map { piece in
             let segment = Segment(start: piece.start + slide, end: piece.end + slide)
             return Piece(name: .sword, kind: .segment(segment), radius: Dimensions.Sword.wireRadius,

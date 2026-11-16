@@ -45,9 +45,10 @@ struct Sweep {
         return (steps[index].distance, steps[index].part, progress[index])
     }
 
-    /// The rings that may be off the rails during the move: every ring up to the one that moves. That covers ring 1,
-    /// which steps aside for ring 2, and ring k−1, which the sword leaves when it moves away from it.
-    var mayBeOff: Set<Int> { Set(1...move.ring) }
+    /// The rings that may be off the rails during the move: every ring up to the one that moves, and every ring that
+    /// is off before it. That covers ring 1, which steps aside for ring 2, ring k−1, which the sword leaves when it
+    /// moves away from it, and the rings that are off behind the one that moves.
+    var mayBeOff: Set<Int> { Set(1...move.ring).union(PuzzleState.rings.filter { !move.from.isOn($0) }) }
 
     /// The first progress, if any, at which a relation fails, with what failed: a relation of the pose there, or
     /// a ring that leaves or joins the rails away from the tip end between the sample before and that one.
