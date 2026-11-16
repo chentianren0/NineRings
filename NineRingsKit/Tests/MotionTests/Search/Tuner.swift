@@ -25,10 +25,9 @@ enum Tuner {
     /// `tool-output/search-keys-<copy>.txt`: a run stopped part way leaves its last complete keys.
     static func saveToFile(_ keys: KeyedMove.Keys, _ score: KeyedMove.Score) {
         let environment = ProcessInfo.processInfo.environment
-        var isFolder: ObjCBool = false
-        let onGitHub = FileManager.default.fileExists(atPath: "tool-output", isDirectory: &isFolder) && isFolder.boolValue
-        guard let path = environment["NINE_RINGS_KEYS_OUT"]
-            ?? (onGitHub ? "tool-output/search-keys-\(environment["NINE_RINGS_COPY"] ?? "1").txt" : nil) else { return }
+        // On GitHub, the folder the tools workflow keeps is `tool-output` at the repository's root.
+        let onGitHub = environment["GITHUB_WORKSPACE"].map { "\($0)/tool-output/search-keys-\(environment["NINE_RINGS_COPY"] ?? "1").txt" }
+        guard let path = environment["NINE_RINGS_KEYS_OUT"] ?? onGitHub else { return }
         let text = keys.keys.sorted().map { name in
             name + ":" + keys[name]!.map { String(format: "%.4f=%.3f", $0.0, $0.1) }.joined(separator: ",")
         }.joined(separator: ";")

@@ -29,6 +29,8 @@ struct KeyedMove: Sendable {
     var progressStep = 0.01
     /// The room of a pose.
     var room: FastRoom
+    /// The values each curve may take, where limited: a value the search moves outside is put back at the limit.
+    var bounds: [String: ClosedRange<Double>] = [:]
     /// The path for a set of keys, as a pose for each path parameter.
     var path: @Sendable (Keys) -> @Sendable (Double) -> ToyPose
 
@@ -55,7 +57,11 @@ struct KeyedMove: Sendable {
             var list = base[channel.name]!
             for index in list.indices {
                 if channel.freeProgress[index] { list[index].0 = vector[cursor] * progressStep; cursor += 1 }
-                if channel.freeValue[index] { list[index].1 = vector[cursor] * channel.valueStep; cursor += 1 }
+                if channel.freeValue[index] {
+                    list[index].1 = vector[cursor] * channel.valueStep
+                    if let range = bounds[channel.name] { list[index].1 = min(max(list[index].1, range.lowerBound), range.upperBound) }
+                    cursor += 1
+                }
             }
             keys[channel.name] = ordered(list, channel)
         }

@@ -17,6 +17,25 @@ struct ConfigSpace: Sendable {
     var pose: @Sendable ([Double]) -> ToyPose
     /// The largest step, in units, between two points checked along an edge.
     var resolution = 0.05
+    /// Which part each number belongs to, such as ring 1, ring 2 or the sword. A part whose numbers are the same
+    /// at both ends of a leg is first held still there (see ``Planner/plan``). Empty: every number its own part.
+    var parts: [Int] = []
+
+    /// This space with the parts that are the same at `start` and `goal` held where they are.
+    func holdingStill(between start: [Double], and goal: [Double]) -> (ConfigSpace, held: [String]) {
+        let parts = parts.isEmpty ? Array(names.indices) : parts
+        var space = self
+        var held: [String] = []
+        for part in Set(parts) {
+            let numbers = names.indices.filter { parts[$0] == part }
+            guard numbers.allSatisfy({ abs(start[$0] - goal[$0]) < 1e-9 }) else { continue }
+            for index in numbers {
+                (space.lower[index], space.upper[index]) = (start[index], start[index])
+                held.append(names[index])
+            }
+        }
+        return (space, held)
+    }
 
     var dimension: Int { names.count }
 
@@ -35,17 +54,22 @@ struct ConfigSpace: Sendable {
     }
 
     /// Whether the straight edge from `a` to `b` keeps at least `need` everywhere it is checked, and no ring
-    /// leaves or joins the rails away from the tip end along it.
+    /// leaves or joins the rails away from the tip end along it. The points of a longer edge are checked side by
+    /// side, one per core.
     func edgeIsClear(_ a: [Double], _ b: [Double], need: Double) -> Bool {
         let steps = max(1, Int((distance(a, b) / resolution).rounded(.up)))
-        var previous = pose(a)
-        for step in 1...steps {
-            let t = Double(step) / Double(steps)
-            let q = a.indices.map { a[$0] + t * (b[$0] - a[$0]) }
-            let here = pose(q)
-            if room.room(here).value < need { return false }
-            if !room.railChanges(from: previous, to: here).isEmpty { return false }
-            previous = here
+        let rings = room.swordMoves ? Array(1...9) : room.moving
+        let space = self
+        // For each point: whether it keeps the room, and which rings go round the rails there.
+        let points = (0...steps).map { step in a.indices.map { a[$0] + Double(step) / Double(steps) * (b[$0] - a[$0]) } }
+        let checks = Sweep.inParallel(points.count) { index -> (Bool, [Bool]) in
+            let pose = space.pose(points[index])
+            let clear = index == 0 || space.room.room(pose).value >= need
+            return (clear, rings.map { Relations.isRoundTheRails($0, in: pose) })
+        }
+        guard checks.allSatisfy(\.0) else { return false }
+        for index in 1..<checks.count where checks[index].1 != checks[index - 1].1 {
+            if !room.railChanges(from: pose(points[index - 1]), to: pose(points[index])).isEmpty { return false }
         }
         return true
     }
@@ -72,15 +96,32 @@ enum Planner {
         _ space: ConfigSpace, from start: [Double], to goal: [Double], needs: [Double],
         step: Double = 0.5, nodes: Int = 20000, seconds: Double = .infinity, seed: UInt64 = 1, log: (String) -> Void = { print($0); fflush(stdout) }
     ) -> Result? {
+        log(String(format: "room at the start %.3f, at the goal %.3f", space.clearance(start), space.clearance(goal)))
+        // The simplest way first: parts that need not move in this leg stay still, unless no way is found so.
+        let (still, held) = space.holdingStill(between: start, and: goal)
+        if !held.isEmpty {
+            log("holding still: \(held.joined(separator: ", "))")
+            if let result = plan(still, from: start, to: goal, needs: needs.filter { $0 >= 0.2 }, step: step, nodes: nodes,
+                                 seconds: seconds, seed: seed, simplestFirst: false, log: log) {
+                return result
+            }
+            log("nothing found holding them still; freeing every part")
+        }
+        return plan(space, from: start, to: goal, needs: needs, step: step, nodes: nodes, seconds: seconds, seed: seed, simplestFirst: false, log: log)
+    }
+
+    private static func plan(
+        _ space: ConfigSpace, from start: [Double], to goal: [Double], needs: [Double],
+        step: Double, nodes: Int, seconds: Double, seed: UInt64, simplestFirst: Bool, log: (String) -> Void
+    ) -> Result? {
         let clock = DispatchTime.now().uptimeNanoseconds
         func elapsed() -> Double { Double(DispatchTime.now().uptimeNanoseconds - clock) / 1e9 }
-        log(String(format: "room at the start %.3f, at the goal %.3f", space.clearance(start), space.clearance(goal)))
         for need in needs {
             var random = SeededRandom(seed: seed)
             let deadline = DispatchTime.now().uptimeNanoseconds + UInt64(min(seconds, 1e6) * 1e9)
             if let (path, count) = connect(space, start, goal, need: need, step: step, nodes: nodes, deadline: deadline, random: &random) {
                 log(String(format: "%6.1f s  path with room %.2f found: %d points, %d nodes", elapsed(), need, path.count, count))
-                let short = shortcut(space, path, need: need, tries: 300, random: &random)
+                let short = shortcut(space, path, need: need, tries: 600, random: &random)
                 log(String(format: "%6.1f s  shortened to %d points", elapsed(), short.count))
                 return Result(path: short, need: need, nodes: count, seconds: elapsed())
             }
@@ -178,7 +219,28 @@ enum Planner {
 /// `tolerance` of the path (the Douglas–Peucker simplification); the curves then pass through those keys.
 enum CurveFit {
     static func keys(_ path: [[Double]], space: ConfigSpace, span: ClosedRange<Double>, tolerance: Double = 0.15, samples: Int = 400) -> KeyedMove.Keys {
-        // The path at even steps of distance.
+        keys(legs: [(path, span)], space: space, tolerance: tolerance, samples: samples)
+    }
+
+    /// Keys for several paths one after another, each over its own span of the move.
+    static func keys(legs: [([[Double]], ClosedRange<Double>)], space: ConfigSpace, tolerance: Double = 0.15, samples: Int = 400) -> KeyedMove.Keys {
+        var dense: [(Double, [Double])] = []
+        for (index, (path, span)) in legs.enumerated() {
+            let points = evenly(path, space: space, span: span, samples: samples)
+            dense += index == 0 ? points : Array(points.dropFirst())
+        }
+        var keys: KeyedMove.Keys = [:]
+        for (channel, name) in space.names.enumerated() {
+            let points = dense.map { ($0.0, $0.1[channel]) }
+            let kept = simplify(points, tolerance: tolerance * space.scales[channel])
+            keys[name] = kept.map { (($0.0 * 10000).rounded() / 10000, ($0.1 * 1000).rounded() / 1000) }
+        }
+        return keys
+    }
+
+    /// The path at even steps of distance along it, each point with its place in `span`.
+    static func evenly(_ path: [[Double]], space: ConfigSpace, span: ClosedRange<Double>, samples: Int) -> [(Double, [Double])] {
+        guard path.count > 1 else { return [(span.lowerBound, path[0]), (span.upperBound, path[0])] }
         var lengths = [0.0]
         for (a, b) in zip(path, path.dropFirst()) { lengths.append(lengths.last! + space.distance(a, b)) }
         let total = max(lengths.last!, 1e-12)
@@ -190,15 +252,9 @@ enum CurveFit {
             let width = max(lengths[segment + 1] - lengths[segment], 1e-12)
             let t = min(max((along - lengths[segment]) / width, 0), 1)
             let q = path[segment].indices.map { path[segment][$0] + t * (path[segment + 1][$0] - path[segment][$0]) }
-            dense.append((span.lowerBound + (span.upperBound - span.lowerBound) * along / total, q))
+            dense.append((span.lowerBound + (span.upperBound - span.lowerBound) * Double(index) / Double(samples), q))
         }
-        var keys: KeyedMove.Keys = [:]
-        for (channel, name) in space.names.enumerated() {
-            let points = dense.map { ($0.0, $0.1[channel]) }
-            let kept = simplify(points, tolerance: tolerance * space.scales[channel])
-            keys[name] = kept.map { (($0.0 * 10000).rounded() / 10000, ($0.1 * 1000).rounded() / 1000) }
-        }
-        return keys
+        return dense
     }
 
     /// The Douglas–Peucker simplification of a curve given as (place, value) points, by the value's error.
