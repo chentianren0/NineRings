@@ -17,8 +17,21 @@
     },
   ],
   "files": [
-    { "kind": "folder", "path": "NineRings", "target-membership": [ "NineRings" ] },
     {
+      "kind": "folder",
+      "path": "NineRings",
+      "target-membership": [
+        "NineRings",
+      ],
+      "membership-exceptions": [
+        {
+          "target": "NineRings",
+          "exclusions": [
+            "Info.plist",
+          ],
+        },
+      ],
+    }, {
       "kind": "group",
       "name": "Products",
       "children": [
@@ -39,16 +52,16 @@
       ],
       "package-product-members": [
         {
-          "product-name": "Puzzle",
-          "build-phase": { "build-phase": "frameworks" },
-        }, {
           "product-name": "Motion",
           "build-phase": { "build-phase": "frameworks" },
         }, {
-          "product-name": "Toy",
+          "product-name": "Puzzle",
           "build-phase": { "build-phase": "frameworks" },
         }, {
           "product-name": "Session",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "product-name": "Toy",
           "build-phase": { "build-phase": "frameworks" },
         },
       ],
@@ -65,12 +78,15 @@
         "ENABLE_PREVIEWS": "YES",
         "ENABLE_USER_SELECTED_FILES": "readonly",
         "GENERATE_INFOPLIST_FILE": "YES",
+        "INFOPLIST_FILE": "NineRings/Info.plist",
+        "INFOPLIST_KEY_GCSupportsGameMode": "YES",
         "INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]": "YES",
         "INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]": "YES",
         "INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]": "YES",
         "INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]": "YES",
         "INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]": "YES",
         "INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]": "YES",
+        "INFOPLIST_KEY_UIRequiredDeviceCapabilities": "arm64",
         "INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]": "UIStatusBarStyleDefault",
         "INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]": "UIStatusBarStyleDefault",
         "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad": "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight",
