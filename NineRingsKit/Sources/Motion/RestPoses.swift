@@ -49,12 +49,12 @@ public enum RestPoses {
     }
 
     /// The toy with every ring held as given, each rod placed by the rod rule.
-    static func pose(holding rings: [HeldRing], swordSlide: Double) -> ToyPose {
+    static func pose(holding rings: [HeldRing], swordSlide: Double, barRaise: Double = Layout.barRaise) -> ToyPose {
         precondition(rings.count == PuzzleState.ringCount, "the toy has nine rings")
         return ToyPose(
             rings: rings.map(\.ringPose),
-            rods: zip(PuzzleState.rings, rings).map { ring, held in held.rodPose(hole: Layout.hole(ring)) },
-            bar: Layout.bar,
+            rods: zip(PuzzleState.rings, rings).map { ring, held in held.rodPose(hole: Layout.hole(ring, raisedBy: barRaise)) },
+            bar: Layout.bar(raisedBy: barRaise),
             swordSlide: swordSlide
         )
     }

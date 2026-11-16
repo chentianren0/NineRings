@@ -39,17 +39,25 @@ public enum Layout {
 
     // MARK: The bar and the holes
 
-    /// The bar, level and still, with every bead of a ring that is on resting a hair under it.
-    public static let bar: PartPose = {
+    /// How far the bar is held above the height at which every bead of a ring that is on would rest against
+    /// its underside. Held higher, the beads hang free below it, and every rod has that much room to rise.
+    public static let barRaise = 0.0
+
+    /// The bar, level and still, held `raise` above the height at which every bead of a ring that is on would
+    /// rest a hair under it.
+    public static func bar(raisedBy raise: Double) -> PartPose {
         // A rod of a ring that is on stands straight down from its eye to its hole.
         let beadTop = eyeHeightOn + Dimensions.Rod.beadCenterY + Dimensions.Rod.beadRadius
-        let center = SIMD3(firstEyeX - Dimensions.Bar.holeX(1), beadTop + restingGap + Dimensions.Bar.thickness / 2, 0)
+        let center = SIMD3(firstEyeX - Dimensions.Bar.holeX(1), beadTop + restingGap + raise + Dimensions.Bar.thickness / 2, 0)
         return PartPose(position: center, orientation: simd_quatd(ix: 0, iy: 0, iz: 0, r: 1))
-    }()
+    }
+
+    /// The bar as the toy holds it.
+    public static let bar = bar(raisedBy: barRaise)
 
     /// The middle of the hole that the rod of `ring` runs through, at mid-thickness of the bar.
-    public static func hole(_ ring: Int) -> SIMD3<Double> {
-        bar.worldPoint(SIMD3(Dimensions.Bar.holeX(ring), 0, 0))
+    public static func hole(_ ring: Int, raisedBy raise: Double = barRaise) -> SIMD3<Double> {
+        bar(raisedBy: raise).worldPoint(SIMD3(Dimensions.Bar.holeX(ring), 0, 0))
     }
 
     /// The sword's slide when nothing is being moved.

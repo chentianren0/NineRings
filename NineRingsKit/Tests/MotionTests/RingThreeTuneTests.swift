@@ -147,6 +147,7 @@ import simd
             }
             print("round \(round): \(bestScore) at scale \(scale)")
             print("NINE_RINGS_PATH3='\(Self.text(best))'")
+            Self.save(best, score: bestScore)
             if !improved { scale /= 2 }
             if scale < 0.05 { break }
         }
@@ -154,6 +155,15 @@ import simd
         print("NINE_RINGS_PATH3='\(Self.text(best))'")
         print("check with 1200 samples: \(Self.score(best, samples: 1200))")
         Self.report(best)
+    }
+
+    /// Writes the best keys so far where `NINE_RINGS_KEYS_OUT` says, whole, and flushes what has been printed:
+    /// a tuner stopped part way leaves its last complete keys, not a line cut short in a buffer.
+    static func save(_ keys: Keys, score: Double) {
+        if let path = ProcessInfo.processInfo.environment["NINE_RINGS_KEYS_OUT"] {
+            try? "\(score)\n\(text(keys))\n".write(toFile: path, atomically: true, encoding: .utf8)
+        }
+        fflush(stdout)
     }
 
     @Test(.enabled(if: ProcessInfo.processInfo.environment["NINE_RINGS_REPORT3"] != nil))
