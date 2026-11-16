@@ -33,7 +33,10 @@ private struct RingMarker: View {
     let marker: PuzzleSession.Marker
     let action: () -> Void
 
-    @ScaledMetric(relativeTo: .body) private var discSize: CGFloat = 22
+    @ScaledMetric(relativeTo: .body) private var scaledDiscSize: CGFloat = 22
+
+    /// The disc grows with the text size, but only so far: nine markers must still fit across a narrow window.
+    private var discSize: CGFloat { min(scaledDiscSize, 28) }
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {

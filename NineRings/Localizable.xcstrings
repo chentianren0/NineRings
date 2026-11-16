@@ -103,6 +103,9 @@
     "Ring %lld comes off — %@": {
       "comment": "Status while a ring comes off. The first variable is the ring's number, the second the name of the stage the move is in."
     },
+    "Ring %lld goes on": {
+      "comment": "Menu item that sets the toy where this ring's written move begins and plays it. The variable is the ring's number."
+    },
     "Ring %lld goes on — %@": {
       "comment": "Status while a ring goes on. The first variable is the ring's number, the second the name of the stage the move is in."
     },

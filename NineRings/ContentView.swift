@@ -100,7 +100,9 @@ struct ContentView: View {
                     Button {
                         jump { player.begin(at: move) }
                     } label: {
-                        Text("Ring \(move.ring) comes off", comment: "Menu item that sets the toy where this ring's written move begins and plays it. The variable is the ring's number.")
+                        move.takesOff
+                            ? Text("Ring \(move.ring) comes off", comment: "Menu item that sets the toy where this ring's written move begins and plays it. The variable is the ring's number.")
+                            : Text("Ring \(move.ring) goes on", comment: "Menu item that sets the toy where this ring's written move begins and plays it. The variable is the ring's number.")
                     }
                 }
             } label: {
