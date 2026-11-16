@@ -45,9 +45,8 @@ struct PairMoveOff: Sendable {
     static let tipHanging = 180 - RingTurns.leanHangingDegrees
 
     /// The keys as written, for ring 2, each curve's keys as (path parameter, value) pairs, angles in degrees and
-    /// lengths in millimetres. The ring's swing up over the tip and its eye's height come from an earlier way of writing
-    /// ring 2's move, no longer in the code, mapped onto this path; the drop's keys and the eye's move back were found
-    /// by a search for the path with the most room (see `PairMoveTuneTests`), and the sword's were written by hand.
+    /// lengths in millimetres. The drop's keys and the eye's move back were found by a search for the path with the
+    /// most room (see `PairMoveTuneTests`), and the sword's were written by hand.
     static let keys: [String: [(Double, Double)]] = [
         "ring.tip": [(0.28, tipOn), (0.4263, 93.718), (0.6407, 81.455), (0.7991, tipHanging)],
         "ring.tilt": [(0.5221, 90), (0.6071, 64.182), (0.82, 90)],
