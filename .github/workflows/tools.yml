@@ -1,0 +1,106 @@
+name: Tools
+
+# Runs one of the package's tools on GitHub's machines instead of at home: a search or a scan that takes long,
+# or several copies of one side by side. A tool is a test that runs only when its environment variable is set
+# (see the README). It is started by hand, from the Actions tab or with `gh workflow run`, never by a push.
+# What the tool prints, and any file it writes into tool-output/, is kept with the run.
+# One of these machines has 3 cores, so a single run is slower here than at home. The gain is running up to
+# five at once without keeping a Mac busy.
+
+on:
+  workflow_dispatch:
+    inputs:
+      filter:
+        description: "The test to run, as for swift test --filter, for example TuneTests"
+        required: true
+        type: string
+      environment:
+        description: "The tool's variables: NINE_RINGS_NAME=value pairs separated by spaces"
+        required: true
+        type: string
+      copies:
+        description: "Copies to run side by side, 1 to 5. Each gets NINE_RINGS_COPY set to its number"
+        required: false
+        default: "1"
+        type: string
+      minutes:
+        description: "Stop the tool after this many minutes, at most 340"
+        required: false
+        default: "120"
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
+
+jobs:
+  plan:
+    name: Check the request
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      copies: ${{ steps.check.outputs.copies }}
+    steps:
+      - id: check
+        env:
+          FILTER: ${{ inputs.filter }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          COPIES: ${{ inputs.copies }}
+          MINUTES: ${{ inputs.minutes }}
+        run: |
+          set -f
+          fail() { echo "::error::$1"; exit 1; }
+          [[ "$FILTER" =~ ^[A-Za-z0-9_./]+$ ]] || fail "filter may hold only letters, digits, _ . and /"
+          [[ "$COPIES" =~ ^[1-5]$ ]] || fail "copies is a number from 1 to 5"
+          [[ "$MINUTES" =~ ^[0-9]{1,3}$ ]] || fail "minutes is a number from 1 to 340"
+          (( MINUTES >= 1 && MINUTES <= 340 )) || fail "minutes is a number from 1 to 340"
+          for pair in $ENVIRONMENT; do
+            [[ "$pair" =~ ^NINE_RINGS_[A-Z0-9_]+=[A-Za-z0-9_.,:+/=-]*$ ]] || fail "not a NINE_RINGS_NAME=value pair: $pair"
+          done
+          echo "copies=[$(seq 1 "$COPIES" | paste -sd, -)]" >> "$GITHUB_OUTPUT"
+
+  run:
+    name: Run the tool (copy ${{ matrix.copy }})
+    needs: plan
+    runs-on: xcode-27
+    timeout-minutes: 355
+    strategy:
+      fail-fast: false
+      matrix:
+        copy: ${{ fromJSON(needs.plan.outputs.copies) }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # The request was checked above, so every pair is a plain NINE_RINGS_NAME=value.
+      - name: Set the tool's variables
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          set -f
+          for pair in $ENVIRONMENT; do echo "$pair" >> "$GITHUB_ENV"; done
+          echo "NINE_RINGS_COPY=${{ matrix.copy }}" >> "$GITHUB_ENV"
+          echo "NINE_RINGS_COPIES=${{ inputs.copies }}" >> "$GITHUB_ENV"
+          mkdir -p tool-output
+
+      - name: Run the tool
+        timeout-minutes: ${{ fromJSON(inputs.minutes) }}
+        env:
+          FILTER: ${{ inputs.filter }}
+        run: |
+          set -o pipefail
+          swift test --package-path NineRingsKit -c release -Xswiftc -enable-testing --filter "$FILTER" 2>&1 | tee "tool-output/printed-${{ matrix.copy }}.txt"
+
+      - name: Show the end of what it printed
+        if: always()
+        run: |
+          { echo '```'; tail -n 60 "tool-output/printed-${{ matrix.copy }}.txt" 2>/dev/null || true; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep what it printed and wrote
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: tool-output-${{ matrix.copy }}
+          path: tool-output/
+          if-no-files-found: warn
