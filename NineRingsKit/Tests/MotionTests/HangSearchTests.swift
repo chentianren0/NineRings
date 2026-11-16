@@ -5,7 +5,7 @@ import Testing
 import Toy
 import simd
 
-/// Searches for how ring 1 can hang off with ring 2 standing up, for writing the rest pose by hand.
+/// Searches for how ring 1 can hang off while ring 2 is on, which is how the leans of the rest poses were found.
 /// Run with `NINE_RINGS_HANG=1`, optimized; `NINE_RINGS_FREE_ROD2=1` lets rod 2 lean.
 @Suite struct HangSearchTests {
     static let freeRodTwo = ProcessInfo.processInfo.environment["NINE_RINGS_FREE_ROD2"] != nil
@@ -101,125 +101,5 @@ import simd
             results.append((bestScore, best))
             print(String(format: "%.3f  ", bestScore) + Self.describe(best))
         }
-    }
-
-    /// Starts from the rest written now (ring 2 leaning 43 degrees) and stands ring 2 up a step at a time,
-    /// re-optimising everything else at each step, to find how upright it can stand with ring 1 hanging off.
-    @Test(.enabled(if: ProcessInfo.processInfo.environment["NINE_RINGS_STANDUP"] != nil))
-    func standRingTwoUp() {
-        var current: [Double] = [43, 0, 0, 32, Layout.eyeHeightHanging, 0, 60, 0, 0, 0, 0, 0]
-        print("start: \(Self.score(current))")
-        let free = Self.freeRodTwo ? Array(1..<12) : Array(1..<9)
-        for lean in stride(from: 41.0, through: 5.0, by: -2.0) {
-            current[0] = lean
-            var bestScore = Self.score(current)
-            var scale = 1.0
-            while scale > 0.02 {
-                var improved = false
-                for index in free {
-                    for sign in [-1.0, 1.0] {
-                        var trial = current
-                        let span = Self.ranges[index].upperBound - Self.ranges[index].lowerBound
-                        trial[index] = min(max(trial[index] + sign * span * 0.03 * scale, Self.ranges[index].lowerBound), Self.ranges[index].upperBound)
-                        let s = Self.score(trial)
-                        if s > bestScore { (current, bestScore, improved) = (trial, s, true) }
-                    }
-                }
-                if !improved { scale /= 2 }
-            }
-            print(String(format: "lean2 %4.1f: %.3f  ", lean, bestScore) + Self.describe(current))
-            print("    tightest: \(Self.tightest(current))")
-            if bestScore < -2 { break }
-        }
-    }
-
-    /// The tightest pair of parts in a configuration, and anything that fails.
-    static func tightest(_ v: [Double]) -> String {
-        let (one, two) = held(v)
-        var rings = PuzzleState.rings.map(RestPoses.on)
-        rings[0] = one
-        rings[1] = two
-        let pose = RestPoses.pose(holding: rings, swordSlide: 0)
-        let gap = Gaps.smallest(in: pose.shapes.filter { $0.name != .bar }, involving: moving)
-        return "\(gap.map(String.init(describing:)) ?? "none")  \(Relations.failures(in: pose))"
-    }
-}
-
-import CoreGraphics
-import ImageIO
-import UniformTypeIdentifiers
-
-extension HangSearchTests {
-    /// Draws the configurations found while standing ring 2 up, side and tip views, into `scratch/hang`.
-    /// Run with `NINE_RINGS_DRAW=1`.
-    @Test(.enabled(if: ProcessInfo.processInfo.environment["NINE_RINGS_DRAW"] != nil))
-    func drawStandUp() throws {
-        let cases: [(String, [Double])] = [
-            ("now-43deg", [43, 0, 0, 32, Layout.eyeHeightHanging, 0, 60, 0, 0, 0, 0, 0]),
-            ("nearest-working-37deg", [37, 1.27, -3.81, 34.64, -9.55, 0, 60, 0, 0, 0, 0, 0]),
-            ("blocked-25deg", [25, 2.17, -9.71, 39.59, -9.55, 0, 60, 0, 0, 0, 0, 0]),
-        ]
-        let directory = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "../../../scratch/hang").standardized
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        for (name, values) in cases {
-            let (one, two) = Self.held(values)
-            var rings = PuzzleState.rings.map(RestPoses.on)
-            rings[0] = one
-            rings[1] = two
-            let pose = RestPoses.pose(holding: rings, swordSlide: 0)
-            let gap = Gaps.smallest(in: pose.shapes.filter { $0.name != .bar }, involving: Self.moving)
-            for view in ["side", "tip"] {
-                let url = directory.appending(path: "\(name)-\(view).png")
-                try Self.draw(pose, view: view, mark: gap, title: "\(name): ring 2 lean \(Int(values[0])) deg, tightest \(gap.map(String.init(describing:)) ?? "")", to: url)
-                print("drew \(url.path)")
-            }
-        }
-    }
-
-    static func draw(_ pose: ToyPose, view: String, mark: Gap?, title: String, to url: URL) throws {
-        let width = 1400, height = 1000
-        let scale = 16.0
-        // Side: x to the right, y up. Tip: z to the right, y up, looking along +x.
-        let center = SIMD3<Double>(40, -14, 0)
-        func project(_ p: SIMD3<Double>) -> CGPoint {
-            let h = view == "side" ? p.x - center.x : p.z - center.z
-            return CGPoint(x: Double(width) / 2 + h * scale, y: Double(height) / 2 + (p.y - center.y) * scale)
-        }
-        guard let context = unsafe CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
-                                             space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
-        else { return }
-        context.setFillColor(CGColor(gray: 1, alpha: 1))
-        context.fill(CGRect(x: 0, y: 0, width: width, height: height))
-        context.setLineCap(.round)
-        func stroke(_ points: [SIMD3<Double>], radius: Double, color: CGColor) {
-            guard let first = points.first else { return }
-            context.setStrokeColor(color)
-            context.setLineWidth(2 * radius * scale)
-            context.move(to: project(first))
-            for point in points.dropFirst() { context.addLine(to: project(point)) }
-            context.strokePath()
-        }
-        let grey = CGColor(gray: 0.55, alpha: 0.9)
-        for side in [1.0, -1.0] { stroke(pose.swordCenterline(side: side), radius: Dimensions.Sword.wireRadius, color: CGColor(gray: 0.3, alpha: 0.9)) }
-        let colors = [CGColor(red: 0.85, green: 0.2, blue: 0.15, alpha: 0.9), CGColor(red: 0.15, green: 0.35, blue: 0.85, alpha: 0.9)]
-        for number in stride(from: 9, through: 1, by: -1) {
-            let color = number <= 2 ? colors[number - 1] : grey
-            stroke(Relations.loop(pose.ring(number).circle, pieces: 120), radius: Dimensions.Ring.wireRadius, color: color)
-            let rod = pose.rod(number)
-            stroke(Relations.loop(rod.eye, pieces: 60), radius: Dimensions.Rod.wireRadius, color: color)
-            stroke([rod.shaft.start, rod.shaft.end], radius: Dimensions.Rod.wireRadius, color: color)
-        }
-        if let mark {
-            context.setStrokeColor(CGColor(red: 0, green: 0.7, blue: 0.2, alpha: 1))
-            context.setLineWidth(3)
-            let p = project(mark.pointA)
-            context.strokeEllipse(in: CGRect(x: p.x - 18, y: p.y - 18, width: 36, height: 36))
-        }
-        // Flip so that y is up in the file, and write.
-        guard let image = context.makeImage() else { return }
-        _ = title
-        let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil)!
-        CGImageDestinationAddImage(destination, image, nil)
-        CGImageDestinationFinalize(destination)
     }
 }

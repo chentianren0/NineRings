@@ -27,13 +27,13 @@ public enum Layout {
     /// middle, with the same room above and below them, and the eye is just above the rails.
     public static let eyeHeightOn = 3.5
 
-    // MARK: A ring that is off, hanging on the next ring
+    // MARK: A ring that is off
 
-    /// Height of the eye's centre of a ring that is off and hangs from the next ring: just below the rails, so
-    /// that its rod is out of the slot, and just above the next ring's lower arc, which holds it up.
+    /// Height of the eye's centre of a ring that is off, whatever its neighbours are: just below the rails, so that
+    /// its rod is out of the slot, and, when the next ring is on, just above that ring's lower arc.
     public static let eyeHeightHanging = -9.55
 
-    /// How far a hanging ring leans from upright, its lower arc toward the tip, clear of the next ring's lower
+    /// How far a ring that is off leans from upright, its lower arc toward the tip, clear of the next ring's lower
     /// arc and of its own rod.
     public static let leanHanging = 60.0 * Double.pi / 180
 

@@ -319,7 +319,7 @@ private func checkerDistance(_ a: ShapeCore, _ b: ShapeCore) -> Double {
         var exceeded = 0
         for (a, b) in zip(poses, poses.dropFirst()) {
             let moved = max(
-                abs(a.swordSlide - b.swordSlide),
+                simd_distance(a.swordOffset, b.swordOffset),
                 Self.movement(a.ring(1), b.ring(1), Self.ringPoints),
                 Self.movement(a.rod(1), b.rod(1), Self.rodPoints)
             )

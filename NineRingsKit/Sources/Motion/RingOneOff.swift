@@ -3,7 +3,9 @@ import Puzzle
 import Toy
 import simd
 
-/// The written path of ring 1 coming off while every other ring is on.
+/// The written path of ring 1 coming off. It is written with every other ring on, and played whatever the rings behind
+/// are: they keep still, and ring 1 comes off in front of them all. Where the description below speaks of ring 2, it
+/// is ring 2 on; with ring 2 off, ring 1 comes to hang the same way, in front of ring 2 hanging.
 ///
 /// The path is a handful of numbers, each a ``Curve`` of the progress, and one rule that turns them into where the
 /// ring is (see ``RingTurns``). Every turn of the ring is about an axis through its eye, so the eye is where the

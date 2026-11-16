@@ -38,6 +38,6 @@ let package = Package(
         .testTarget(name: "PuzzleTests", dependencies: ["Puzzle"]),
         .testTarget(name: "GeometryTests", dependencies: ["Geometry"]),
         .testTarget(name: "MotionTests", dependencies: ["Motion", "Toy", "Puzzle", "Geometry"]),
-        .testTarget(name: "SessionTests", dependencies: ["Session", "Motion", "Puzzle"]),
+        .testTarget(name: "SessionTests", dependencies: ["Session", "Motion", "Puzzle", "Toy"]),
     ]
 )

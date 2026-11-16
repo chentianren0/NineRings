@@ -3,6 +3,7 @@ import Motion
 import Puzzle
 import Testing
 import Toy
+import simd
 
 /// Every one of the 511 moves through the checker, as each written move is checked: 4000 samples each way, the
 /// smallest gap, the largest step and every relation, and the two ends the rest poses. It takes about an hour
@@ -25,6 +26,42 @@ import Toy
     @Test func thereAre511Moves() {
         #expect(Self.moves.count == 511)
         #expect(Set(Self.moves.map { [$0.from, $0.to].sorted { $0.bits < $1.bits } }).count == 511)
+    }
+
+    /// Every move, both ways, at 801 progress values, for what the full check of every move takes an hour to see:
+    /// the rings in front of the moving ring keep exactly still, with their rods; the rings behind keep exactly still
+    /// in ring 1's move and go exactly down and up with the sword in the second ring's, on or off; the bar never moves;
+    /// and no ring goes round the rails or stops going round them but the moving ring and, in the second ring's move,
+    /// the ring in front of it, which the sword leaves.
+    @Test func everyMoveLeavesTheOtherRingsAsTheirMoveSays() {
+        let directions = Self.moves.flatMap { [$0, $0.reversed] }
+        let problems = Sweep.inParallel(directions.count) { index -> String? in
+            let move = directions[index]
+            guard let motion = MoveMotion(move), let rest = RestPoses.pose(for: move.from) else { return "\(move): not written" }
+            let free: Set<Int> = move.ring == 1 ? [1] : [move.ring - 1, move.ring]
+            for sample in 0...800 {
+                let pose = motion.pose(at: Double(sample) / 800)
+                guard pose.bar == rest.bar else { return "\(move): the bar moves at sample \(sample)" }
+                let down = SIMD3(0, pose.swordHeight, 0)
+                for ring in PuzzleState.rings where ring != move.ring {
+                    let still = ring < move.ring || move.ring == 1
+                    let expected = still ? rest.ring(ring) : PartPose(position: rest.ring(ring).position + down, orientation: rest.ring(ring).orientation)
+                    let expectedRod = still ? rest.rod(ring) : PartPose(position: rest.rod(ring).position + down, orientation: rest.rod(ring).orientation)
+                    let moved = still
+                        ? pose.ring(ring) != expected || pose.rod(ring) != expectedRod
+                        : !Relations.isClose(pose.ring(ring), expected) || !Relations.isClose(pose.rod(ring), expectedRod)
+                    if moved { return "\(move): ring \(ring) moves other than its move says at sample \(sample)" }
+                    if !free.contains(ring) && Relations.isRoundTheRails(ring, in: pose) != move.from.isOn(ring) {
+                        return "\(move): ring \(ring) \(move.from.isOn(ring) ? "leaves" : "gets onto") the rails at sample \(sample)"
+                    }
+                }
+            }
+            return nil
+        }
+        let found = problems.compactMap { $0 }
+        print("every move, \(directions.count) directions: \(found.count) leave another ring other than as their move says")
+        #expect(directions.count == 1022)
+        #expect(found.isEmpty, "\(found.prefix(10))")
     }
 
     @Test(.enabled(if: environment["NINE_RINGS_EVERY_MOVE"] != nil))
