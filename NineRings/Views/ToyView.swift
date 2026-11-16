@@ -48,8 +48,7 @@ private final class FrameDriver {
     private let rig: CameraRig
     private let scene: ToyScene
     private let camera: Entity
-    private var drawnProgress = -1.0
-    private var drawnMove: Move?
+    private var drawn: Player.PoseKey?
     private var drawnCamera = -1
 
     init(player: Player, rig: CameraRig, scene: ToyScene, camera: Entity) {
@@ -62,11 +61,12 @@ private final class FrameDriver {
     func step(by seconds: TimeInterval) {
         player.update()
         rig.advance(by: seconds)
-        // The pose depends on the move and the progress alone, so it is drawn again only when one of them changes.
-        if player.progress != drawnProgress || player.move != drawnMove {
-            scene.apply(player.pose)
-            drawnProgress = player.progress
-            drawnMove = player.move
+        // The pose depends on the move, the progress and the state alone, so it is drawn again only when one of
+        // them changes.
+        let key = player.poseKey
+        if key != drawn, let pose = player.pose {
+            scene.apply(pose)
+            drawn = key
         }
         if rig.revision != drawnCamera {
             camera.transform = rig.camera.transform

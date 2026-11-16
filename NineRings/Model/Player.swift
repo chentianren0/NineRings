@@ -1,19 +1,21 @@
+import Foundation
 import Motion
 import Observation
 import Puzzle
+import Session
 import Toy
 
-/// How fast the move plays.
+/// How fast moves play.
 enum PlaybackSpeed: String, CaseIterable, Identifiable {
     case full, half, quarter
 
     var id: Self { self }
 
-    var title: String {
+    var title: LocalizedStringResource {
         switch self {
-        case .full: "Full"
-        case .half: "Half"
-        case .quarter: "Quarter"
+        case .full: LocalizedStringResource("Full", comment: "Playing speed: moves play at their normal pace.")
+        case .half: LocalizedStringResource("Half", comment: "Playing speed: moves play at half their normal pace.")
+        case .quarter: LocalizedStringResource("Quarter", comment: "Playing speed: moves play at a quarter of their normal pace.")
         }
     }
 
@@ -26,126 +28,137 @@ enum PlaybackSpeed: String, CaseIterable, Identifiable {
     }
 }
 
-/// The move being shown and how far along it is: the picker chooses the move, the slider and the play button
-/// drive it, and the 3D view draws the pose it gives.
+/// The puzzle being played, as the screen sees it: a `PuzzleSession` with a clock to play it and a speed.
 ///
-/// The pose is a pure function of the move and the progress, so nothing here depends on time except playing,
-/// which only moves the progress on.
+/// The session holds every rule; this only moves it on in time and keeps what the views read as separate
+/// properties, each changed only when its value does, so that a view redraws only when what it shows changes.
+/// The pose is a pure function of the session, so nothing here depends on time except playing.
 @MainActor
 @Observable
 final class Player {
-    /// The moves that can be shown: each written move, coming off every ring on.
+    /// The moves that are written, each coming off every ring on. Each goes back on along the same path.
     static let moves = MoveMotion.written
 
-    /// The move shown, coming off every ring on. Progress 0 is every ring on, progress 1 is its ring off.
-    private(set) var motion: MoveMotion
-    /// The same move going the other way, for naming its stages when it plays backwards.
-    private(set) var reverse: MoveMotion
+    @ObservationIgnored private var session: PuzzleSession
 
-    /// How far through the move, from 0 to 1. Whoever sets it keeps it in that range.
-    var progress: Double
-    var speed: PlaybackSpeed = .full {
-        // Playing goes on from where it is, at the new speed.
-        didSet { if isPlaying { anchorPlay() } }
-    }
-    private(set) var isPlaying = false
-    /// Whether playing runs toward progress 1, taking the ring off; otherwise toward 0, putting it on.
-    private(set) var playsForward = true
-    /// Where and when playing last began or changed speed: the progress while playing is measured from here by
-    /// the clock, so it keeps pace however often the window is drawn.
-    @ObservationIgnored private var playAnchor: (progress: Double, time: ContinuousClock.Instant)?
-    #if DEBUG
-    /// When playing last began, to report how long a play-through took.
-    @ObservationIgnored private var playStarted: ContinuousClock.Instant?
-    #endif
-
-    init(move: Move? = nil, progress: Double = 0) {
-        (motion, reverse) = Self.motions(of: move ?? Self.moves[0])
-        self.progress = min(max(progress, 0), 1)
-    }
-
-    private static func motions(of move: Move) -> (MoveMotion, MoveMotion) {
-        guard let motion = MoveMotion(move), let reverse = MoveMotion(move.reversed) else {
-            preconditionFailure("only written moves are shown")
-        }
-        return (motion, reverse)
-    }
-
-    /// The move shown. Choosing another one stops playing and starts it from the beginning.
-    var move: Move {
-        get { motion.move }
+    /// How far through the move on the slider the toy is. Setting it is what dragging the slider does.
+    var progress: Double {
+        get { shownProgress }
         set {
-            guard newValue != motion.move else { return }
-            isPlaying = false
-            (motion, reverse) = Self.motions(of: newValue)
-            progress = 0
-            playsForward = true
+            session.scrub(to: newValue)
+            publish()
         }
     }
+    private var shownProgress: Double = 0
+    private(set) var isPlaying = false
+    private(set) var markers: [PuzzleSession.Marker] = []
+    private(set) var status: PuzzleSession.Status = .resting(.allOn)
+    /// The stages of the move on the slider; empty before the first move.
+    private(set) var stages: [Stage] = []
+    private(set) var moveCount = 0
+    private(set) var canPlay = false
+    private(set) var canUndo = false
+    private(set) var canSolve = false
+    var speed: PlaybackSpeed = .full
 
-    /// The toy as it is now.
-    var pose: ToyPose { motion.pose(at: progress) }
+    /// When playing was last moved on, so that the next step covers exactly the time since.
+    @ObservationIgnored private var lastStep: ContinuousClock.Instant?
 
-    /// The stage the move is in, named for the way it is going.
+    /// A session with every ring on.
+    init() {
+        session = PuzzleSession()
+        publish()
+    }
+
+    /// A session at the start of `move`, with that move on the slider at `progress`.
+    init(move: Move, progress: Double = 0) {
+        session = PuzzleSession(at: move, progress: progress)
+        publish()
+    }
+
+    /// What decides the pose: when none of it changes, the toy need not be drawn again.
+    struct PoseKey: Equatable {
+        var move: Move?
+        var progress: Double
+        var state: PuzzleState
+    }
+
+    var poseKey: PoseKey {
+        PoseKey(move: session.current, progress: session.progress, state: session.state)
+    }
+
+    /// The toy as it is now, or nil when it is in a state whose rest is not written.
+    var pose: ToyPose? { session.pose }
+
+    /// The name of the stage the slider is in, as written for making the move; empty before the first move.
     var stageName: String {
-        playsForward ? motion.stage(at: progress).name : reverse.stage(at: 1 - progress).name
+        session.motion?.stage(at: session.progress).name ?? ""
     }
 
-    /// What pressing play will do from here.
-    var nextAction: String {
-        if isPlaying { return "Pause" }
-        return willPlayForward ? "Take ring \(move.ring) off" : "Put ring \(move.ring) on"
+    var hasMove: Bool { !stages.isEmpty }
+
+    // MARK: Requests
+
+    func tap(_ ring: Int) {
+        session.tap(ring)
+        publish()
     }
 
-    private var willPlayForward: Bool {
-        if progress >= 1 { return false }
-        if progress <= 0 { return true }
-        return playsForward
-    }
-
-    /// Plays from here toward the end it is not at, or pauses.
     func togglePlay() {
-        if isPlaying {
-            isPlaying = false
-            return
-        }
-        playsForward = willPlayForward
-        isPlaying = true
-        anchorPlay()
-        #if DEBUG
-        playStarted = .now
-        #endif
-    }
-
-    /// Plays toward one end.
-    func play(forward: Bool) {
-        playsForward = forward
-        isPlaying = forward ? progress < 1 : progress > 0
-        anchorPlay()
-    }
-
-    private func anchorPlay() {
-        playAnchor = (progress, .now)
+        session.togglePlay()
+        publish()
     }
 
     func pause() {
-        isPlaying = false
+        session.pause()
+        publish()
     }
 
-    /// Moves the progress on to where playing has reached by now. Called once a frame.
+    func undo() {
+        session.undo()
+        publish()
+    }
+
+    func solve() {
+        session.solve()
+        publish()
+    }
+
+    /// Back to every ring on, at once. The screen covers the toy while this happens.
+    func reset() {
+        session.reset()
+        publish()
+    }
+
+    /// Sets the toy where `move` begins and plays it. The screen covers the toy while it jumps there.
+    func begin(at move: Move) {
+        session = PuzzleSession(at: move)
+        session.togglePlay()
+        publish()
+    }
+
+    /// Moves playing on to where the clock has reached. Called once a frame.
     func update() {
-        guard isPlaying, let playAnchor else { return }
-        let elapsed = ContinuousClock.now - playAnchor.time
+        let now = ContinuousClock.now
+        defer { lastStep = session.isPlaying ? now : nil }
+        guard session.isPlaying, let lastStep else { return }
+        let elapsed = now - lastStep
         let seconds = Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18
-        let distance = seconds * speed.factor / MoveMotion.duration
-        progress = min(max(playAnchor.progress + (playsForward ? distance : -distance), 0), 1)
-        if progress <= 0 || progress >= 1 {
-            isPlaying = false
-            #if DEBUG
-            if let playStarted {
-                print("player: played to progress \(progress) at \(speed.title.lowercased()) speed in \(ContinuousClock.now - playStarted)")
-            }
-            #endif
-        }
+        session.advance(by: seconds * speed.factor / MoveMotion.duration)
+        publish()
+    }
+
+    /// Copies what the views read out of the session. Each property is Equatable, so setting it to the value it
+    /// already has notifies nobody.
+    private func publish() {
+        shownProgress = session.progress
+        isPlaying = session.isPlaying
+        markers = session.markers
+        status = session.status
+        stages = session.stages
+        moveCount = session.moveCount
+        canPlay = session.canPlay
+        canUndo = session.canUndo
+        canSolve = session.canSolve
     }
 }

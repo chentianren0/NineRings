@@ -47,12 +47,36 @@ With the nominal sizes, a few things are not free choices, and the checker found
   - `Puzzle`: which rings are on, the rule that says which ring can move, and the one path through all 512 states.
   - `Toy`: the toy's nominal dimensions, the sword's shape, and `ToyPose`, the place of every part. `SwordShape` is the one centreline of the sword, bends and grip loops included: the app draws its tube along those points and the checker checks capsules round the same pieces, and a test holds the drawn sword inside the checked one. The toy's frame is fixed to the bar; the sword's pose is its slide along its length.
   - `Motion`: the written motion. `Layout` holds the fixed places and the few numbers the motion rests on; `HeldRing` is a ring as its rod holds it, with the rod rule; `RestPoses` places each ring by rule relative to its own hole; `Curve` is a smooth, never-overshooting curve through key values; `RingTurns` is the rule that turns a few angles and the eye's height into where a ring is; `Pacing` maps a move's progress onto its path so the move flows at an even pace; `RingOneOff` and `RingTwoOff` are the two written paths; `MoveMotion` is the public entry: the pose for a move at a progress, and the move's stages.
+  - `Session`: a puzzle being played, with no interface and no clock in it: the state, the moves made, the move on the slider and its progress, the rings waiting their turn, undo, reset and solve, and why a request did not play. The app turns what it reports into words.
   - `Geometry`: the centrelines of the shapes (circles, straight pieces, the bar's sheet) and the search for where two of them come near. Only the checker uses it.
 - `NineRings/` and `NineRings.xcodeproj`: the app, in SwiftUI and RealityKit. The project file is in Xcode's JSON format and `NineRings/` is a synchronized folder, so adding a file there does not change the project file.
-  - `Model/Player.swift`: the move, its progress, playing and the speed.
+  - `Model/Player.swift`: the session as the screen sees it, with a clock to play it and the speed.
   - `Scene`: the toy drawn in 3D, with meshes generated from `Dimensions`; `ToyScene.apply(_:)` places every part for a `ToyPose`.
-  - `Views`: the 3D view with its orbit camera, and the controls: play or pause, full, half or quarter speed, and a scrubber with the stages marked and named. The layout follows the size of the window, never the device: the top row stacks when narrow, and stage names give way to stage numbers.
+  - `Views`: the 3D view with its orbit camera; the strip of ring markers; the status line, with every sentence the screen says; and the controls: play or pause, full, half or quarter speed, undo, reset, solve, the count of moves, and a scrubber with the stages marked and named.
+  - `Localizable.xcstrings` holds every sentence, for translation. `Stages.xcstrings` holds the stages' names, which the motion code writes in English and the app looks up by name; a stage not listed there shows in English. Xcode adds new sentences to `Localizable.xcstrings` when it builds; a command-line build does not.
   - `Capture`: renders the move to image files, in debug builds only (see below).
+
+## Playing the puzzle
+
+The screen is the puzzle itself: the toy in 3D with most of the space, and under it, or beside it when the window is wide and short, the controls.
+
+- **A line** says what is happening or why nothing is: the move and its stage while one plays, the reason when a ring is blocked, and a quiet note when a move is not written yet.
+- **Nine ring markers**, ring 1 on the left, the tip's side as the toy is first seen. A filled disc is a ring that is on, an outline one that is off. A bar under the number marks a ring that can move now: solid when its move is written, an outline while it is not. Tapping a marker, or pressing its number key, asks to move that ring. The strip runs left to right in every language, since it mirrors the toy.
+- **The slider** runs through the move that is playing or was played last, with its stages, and can be dragged either way. At its right end the move is made, at its left end it is not.
+- **Buttons** for play and pause (Space), speed, undo (⌘Z), reset and solve, and the count of moves made.
+
+How it behaves:
+
+- A legal move that is written plays, and the state, the markers and the count change when it ends.
+- A legal move that is not written yet does not play; the line says so, quietly. This lasts until every move is written.
+- A move the rule forbids does not play. The marker of the ring in the way gets an orange ring, and the line says why, in one of two ways. If an earlier ring is on that should be off, it names the one nearest: "Ring 5 can’t move while ring 3 is on: ring 3’s rod stands in the slot between ring 5 and the tip." Otherwise the ring just before is off: "Ring 2 can’t move while ring 1 is off: ring 1’s rod runs through ring 2, and it is out of the slot, so ring 2 can’t pass through the slot."
+- A tap while a move plays, or is stopped part way, waits its turn: the move in hand finishes, then the ring tapped is judged against the state at that point, and plays, or stops with its reason. Several taps queue up in order; the first that cannot play drops the rest.
+- Solve plays the shortest way from where the toy is to all rings off, move after move, and stops with a line at the first move that is not written. A tap while solving takes over: the rest of the way is dropped and the ring tapped comes next.
+- Play runs the move on the slider forward; undo runs it backward, then the move before, one at a time. Undo drops anything waiting.
+- Reset covers the toy for a moment, puts every ring back on and uncovers it.
+- The layout follows the window's size as it changes, never the device. The controls go beside the toy only when the window is too short to have them underneath and wide enough to spare a column. Underneath, they take what they need up to a little over half the height, and scroll past that. The buttons lose their titles, then wrap, as the width shrinks, and the stage names give way to numbers.
+
+The **Written Moves** menu in the toolbar sets the toy where a written move begins and plays it, so that every written move can be reached even before the moves that lead to it are written.
 
 ## The checker
 
@@ -95,7 +119,7 @@ xcodebuild -project NineRings.xcodeproj -scheme NineRings -destination 'generic/
 
 The app is built with pointer authentication. `NineRings.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings` makes Xcode build the package the same way.
 
-A picker in the toolbar chooses which ring's move is shown. To open the app on ring 2's move, launch it with `-move 2`; to open it part way through the move, with `-start-progress 0.5`. Space plays or pauses; ⌘1, ⌘2 and ⌘3 show the toy from the side, from above and from the tip.
+To open the app where ring 2's move begins, with that move on the slider, launch it with `-move 2`; to open it part way through the move, with `-start-progress 0.5`. Space plays or pauses, ⌘Z undoes, the keys 1 to 9 tap the rings, and ⌘1, ⌘2 and ⌘3 show the toy from the side, from above and from the tip.
 
 ## Checks on GitHub
 
