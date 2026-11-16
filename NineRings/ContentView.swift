@@ -56,7 +56,15 @@ struct ContentView: View {
                 .toolbarTitleDisplayMode(.inline)
                 #endif
         }
+        #if os(macOS)
+        // The Mac window stops where the nine markers still fit across and the controls underneath still leave
+        // room for the toy. Other devices' windows are never this small.
+        .frame(minWidth: Self.minimumWindow.width, minHeight: Self.minimumWindow.height)
+        #endif
     }
+
+    /// The smallest Mac window.
+    static let minimumWindow = CGSize(width: 320, height: 400)
 
     /// The controls go beside the toy only when the window is too short for them underneath and wide enough
     /// to spare a column; the toy is long and low, so it is better given the full width.
