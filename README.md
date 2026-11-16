@@ -41,6 +41,16 @@ With the nominal sizes, a few things are not free choices, and the checker found
 - So ring 1 cannot drop straight through the slot. Its eye goes down into the slot first; the ring tips over toward the tip, rolls nearly flat and swings from side to side, so that it slips through the slot at a slant, partly over one rail and partly under the other; and only when it hangs across the sword does the eye sink below the rails and the rod leave the slot.
 - Ring 1's eye sits 32 mm from the tip's end with the sword at home: any further and rod 9 would meet the rails where they close; any nearer and the slot in front of ring 1 would be too short for the drop.
 
+### A second way being tried: the sword moves away
+
+Beside ring 2's written move there is a trial of another way, `SwordAwayTrial` in `Motion/SwordAwayOff.swift`, which the app does not play. Ring 1 never moves. The sword slides back toward the grip, dipping as it goes, until its tip is out of ring 1, with the tip's end still in front of rod 1. Then it goes down 20 mm, taking rings 2 to 9 with it; their rods slide down through the bar. Ring 2 comes off along the very keys of `RingTwoOff`, relative to the sword. Then the sword slides back from under ring 1, comes up and slides home, its tip entering ring 1 again. The pose holds the sword's height for this (`ToyPose.swordHeight`, zero in every other move). The checker passes it both ways (`SwordAwayTests`).
+
+- The drop may be anything from about 17.4 mm to 26.9 mm. Below that, the tip, slid forward under ring 1 for ring 2's drop, meets ring 1's lowest point. Above it, ring 2, hanging, comes within 0.3 mm of the bar.
+- Ring 3 cannot come off the same way, one hole along (`RingThreeCannotGoTheSameWayTests`). With ring 1 off, rod 1 hangs under the sword 30 mm in front of ring 3's eye and reaches down through the bar, so the tip can never pass it. With the sword down, that leaves at most 27.85 mm of slot in front of ring 3, and ring 2's drop needs 30.5 mm. The same holds for every ring from 3 on.
+- With every ring behind on, the sword and what rides on it can go down 34.0 mm before anything comes within 0.3 mm of the bar. With a ring hanging behind, the limit is 26.9 mm, set by the hanging ring's lowest point.
+
+`NINE_RINGS_SWORD_AWAY=1` runs the tools that measured these. A debug build draws the trial with `-capture-trial sword-away` in place of `-capture-move`.
+
 ## Layout
 
 - `NineRingsKit/`: a Swift package with everything that does not depend on the interface.

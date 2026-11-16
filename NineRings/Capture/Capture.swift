@@ -14,6 +14,9 @@ import Toy
 /// - `-capture-frames 16`: that many frames evenly across the move, from every ring on (progress 0) to its ring
 ///   off (progress 1). Or `-capture-progress 0,0.25,0.5` for frames at given progress values.
 /// - `-capture-move 2`: ring 2's move rather than ring 1's.
+/// - `-capture-trial sword-away`: ring 2 coming off the second way being tried, the sword moving away while ring 1
+///   keeps still (`SwordAwayTrial`). The app does not play it, so these frames are posed by the trial itself rather
+///   than by the player, and captioned with its stages' names as written.
 /// - `-capture-views side,top,tip`: the app's camera presets, or a yaw and a pitch in degrees, as `30:20`.
 /// - `-capture-sheet`: also lays the frames of each view out on one contact sheet, labelled with their progress
 ///   and stage.
@@ -27,6 +30,8 @@ import Toy
 enum Capture {
     struct Request {
         var move: Move
+        /// Whether to draw the trial of the sword moving away rather than the move on the player.
+        var trial: Bool
         var progress: [Double]
         var views: [View]
         var focus: (center: SIMD3<Float>, size: Float)?
@@ -42,25 +47,36 @@ enum Capture {
         do {
             try FileManager.default.createDirectory(at: request.directory, withIntermediateDirectories: true)
             let player = Player(move: request.move)
-            let framing = ContentView.framing
+            // The trial takes the sword and the rings behind further down than any written move, so its frames
+            // take that in too.
+            let framing: ToyBounds
+            if request.trial {
+                let written = Player.moves.compactMap(MoveMotion.init).flatMap { motion in (0...40).map { motion.pose(at: Double($0) / 40) } }
+                framing = ToyBounds(written + (0...40).map { SwordAwayTrial.pose(at: Double($0) / 40) })
+            } else {
+                framing = ContentView.framing
+            }
             let ring = request.move.ring
+            let prefix = request.trial ? "sword-away-ring\(ring)" : "ring\(ring)"
             let renderer = try await Renderer(size: request.size, appearance: request.appearance, floor: framing.lower.y - 6)
             for view in request.views {
                 var frames: [ContactSheet.Frame] = []
                 for progress in request.progress {
                     // The same path as the slider: set the player's progress, draw the pose it gives.
                     player.progress = progress
-                    let name = "ring\(ring)-p\(format(progress))-\(view.name)-\(request.appearance.rawValue).png"
+                    let name = "\(prefix)-p\(format(progress))-\(view.name)-\(request.appearance.rawValue).png"
                     let url = request.directory.appending(path: name)
                     let box = request.focus.map { ToyBounds(center: $0.center, size: $0.size) } ?? framing
-                    guard let pose = player.pose else { continue }
+                    let stageName = request.trial ? SwordAwayTrial.stage(at: progress).name : player.stageName
+                    guard let pose = request.trial ? SwordAwayTrial.pose(at: progress) : player.pose else { continue }
                     let image = try await renderer.render(pose, view: view, framing: box, to: url)
                     print("capture: wrote \(url.path)")
-                    frames.append(ContactSheet.Frame(image: image, caption: "\(format(progress))  \(player.stageName)"))
+                    frames.append(ContactSheet.Frame(image: image, caption: "\(format(progress))  \(stageName)"))
                 }
                 if request.sheet {
-                    let url = request.directory.appending(path: "ring\(ring)-sheet-\(view.name)-\(request.appearance.rawValue).png")
-                    try ContactSheet.write(frames, title: "Ring \(ring) coming off, seen from the \(view.title)", appearance: request.appearance, to: url)
+                    let url = request.directory.appending(path: "\(prefix)-sheet-\(view.name)-\(request.appearance.rawValue).png")
+                    let way = request.trial ? ", the sword moving away" : ""
+                    try ContactSheet.write(frames, title: "Ring \(ring) coming off\(way), seen from the \(view.title)", appearance: request.appearance, to: url)
                     print("capture: wrote \(url.path)")
                 }
             }
@@ -95,10 +111,11 @@ enum Capture {
         let dimensions = (value("-capture-size") ?? "1600x1000").split(separator: "x").compactMap { Double($0) }
         let size = dimensions.count == 2 ? CGSize(width: dimensions[0], height: dimensions[1]) : CGSize(width: 1600, height: 1000)
         let appearance = value("-capture-appearance").flatMap(Backdrop.Appearance.init(rawValue:)) ?? .light
-        let ring = value("-capture-move").flatMap { Int($0) } ?? 1
+        let trial = value("-capture-trial") == "sword-away"
+        let ring = trial ? SwordAwayTrial.move.ring : value("-capture-move").flatMap { Int($0) } ?? 1
         guard let move = Player.moves.first(where: { $0.ring == ring }) else { return nil }
         return Request(
-            move: move, progress: progress, views: views, focus: focus, sheet: arguments.contains("-capture-sheet"),
+            move: move, trial: trial, progress: progress, views: views, focus: focus, sheet: arguments.contains("-capture-sheet"),
             directory: directory, size: size, appearance: appearance
         )
     }
