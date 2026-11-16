@@ -17,7 +17,7 @@ struct Pacing: Sendable {
         let poses = (0...pieces).map { pose(Double($0) / Double(pieces)) }
         // How far the farthest point of anything moves along each piece of the path.
         let travel = zip(poses, poses.dropFirst()).map { a, b in
-            var largest = abs(a.swordSlide - b.swordSlide)
+            var largest = simd_distance(a.swordOffset, b.swordOffset)
             for (first, second) in zip(a.rings + a.rods, b.rings + b.rods) {
                 let turn = first.orientation.inverse * second.orientation
                 let angle = 2 * atan2(simd_length(turn.imag), abs(turn.real))

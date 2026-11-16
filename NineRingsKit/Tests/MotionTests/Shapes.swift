@@ -100,7 +100,7 @@ extension ToyPose {
     /// One side of the sword's centreline, from the tip's outermost point to the end of its grip loop, where it is
     /// now. These are the very points the app draws its sword along, bends and grip loops included.
     func swordCenterline(side: Double) -> [Vector] {
-        SwordShape.centerline(side: side).map { $0 + SIMD3(swordSlide, 0, 0) }
+        SwordShape.centerline(side: side).map { $0 + swordOffset }
     }
 }
 

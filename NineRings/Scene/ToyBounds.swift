@@ -24,8 +24,8 @@ struct ToyBounds {
 
     /// The whole toy in `pose`.
     init(_ pose: ToyPose) {
-        let slide = SIMD3<Float>(Float(pose.swordSlide), 0, 0)
-        self.init(lower: Self.sword.lower + slide, upper: Self.sword.upper + slide)
+        let offset = SIMD3<Float>(pose.swordOffset)
+        self.init(lower: Self.sword.lower + offset, upper: Self.sword.upper + offset)
         let ringReach = Float(Dimensions.Ring.radius + Dimensions.Ring.wireRadius)
         let eyeReach = Float(Dimensions.Rod.eyeRadius + Dimensions.Rod.wireRadius)
         let bead = SIMD3(0, Dimensions.Rod.beadCenterY, 0)

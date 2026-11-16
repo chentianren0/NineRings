@@ -8,7 +8,7 @@ import simd
 struct Sweep {
     static let samples = 4000
 
-    let motion: MoveMotion
+    let move: Move
     let progress: [Double]
     let poses: [ToyPose]
     /// The smallest gap at each sample.
@@ -17,9 +17,14 @@ struct Sweep {
     let steps: [(distance: Double, part: String)]
 
     init(_ motion: MoveMotion, samples: Int = Sweep.samples) {
-        self.motion = motion
+        self.init(motion.move, samples: samples, pose: motion.pose(at:))
+    }
+
+    /// A move given by its pose at each progress, such as a trial path that is not one of the written moves.
+    init(_ move: Move, samples: Int = Sweep.samples, pose: (Double) -> ToyPose) {
+        self.move = move
         progress = (0...samples).map { Double($0) / Double(samples) }
-        poses = progress.map(motion.pose(at:))
+        poses = progress.map(pose)
         let poses = poses
         gaps = Sweep.inParallel(poses.count) { index in
             guard let gap = Gaps.smallest(in: poses[index].shapes) else {
@@ -40,9 +45,9 @@ struct Sweep {
         return (steps[index].distance, steps[index].part, progress[index])
     }
 
-    /// The rings that may be off the rails during the move: ring 1, which steps aside for ring 2, and every ring up
-    /// to the one that moves.
-    var mayBeOff: Set<Int> { Set(1...motion.move.ring) }
+    /// The rings that may be off the rails during the move: every ring up to the one that moves. That covers ring 1,
+    /// which steps aside for ring 2, and ring k−1, which the sword leaves when it moves away from it.
+    var mayBeOff: Set<Int> { Set(1...move.ring) }
 
     /// The first progress, if any, at which a relation fails, with what failed: a relation of the pose there, or
     /// a ring that leaves or joins the rails away from the tip end between the sample before and that one.

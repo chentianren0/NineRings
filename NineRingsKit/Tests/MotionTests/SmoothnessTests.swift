@@ -6,8 +6,8 @@ import Toy
 import simd
 
 /// Every number a pose is made of: positions, and each orientation as the three axes it turns the local ones to.
-private func numbers(_ pose: ToyPose) -> [Double] {
-    var numbers = [pose.swordSlide]
+func numbers(_ pose: ToyPose) -> [Double] {
+    var numbers = [pose.swordSlide, pose.swordHeight]
     for part in pose.rings + pose.rods + [pose.bar] {
         numbers += [part.position.x, part.position.y, part.position.z]
         for axis in [SIMD3<Double>(1, 0, 0), SIMD3(0, 1, 0), SIMD3(0, 0, 1)] {
@@ -23,12 +23,16 @@ private func numbers(_ pose: ToyPose) -> [Double] {
     /// It stays bounded as the step shrinks when positions and velocities are continuous; a jump in velocity
     /// would make it grow as one over the step.
     private func largestBend(_ motion: MoveMotion, step: Double) -> Double {
+        Self.largestBend(motion.pose(at:), step: step)
+    }
+
+    static func largestBend(_ pose: (Double) -> ToyPose, step: Double) -> Double {
         var largest = 0.0
         var progress = step
         while progress < 1 - step {
-            let before = numbers(motion.pose(at: progress - step))
-            let here = numbers(motion.pose(at: progress))
-            let after = numbers(motion.pose(at: progress + step))
+            let before = numbers(pose(progress - step))
+            let here = numbers(pose(progress))
+            let after = numbers(pose(progress + step))
             for index in here.indices {
                 largest = max(largest, abs(after[index] - 2 * here[index] + before[index]) / (step * step))
             }

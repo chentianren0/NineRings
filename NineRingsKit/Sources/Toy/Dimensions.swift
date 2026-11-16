@@ -43,8 +43,8 @@ public enum Dimensions {
     }
 
     /// The sword's own frame: x runs along it from the tip toward the grip, y is up and z is across it. The origin
-    /// is the outermost point of the tip's centreline. The sword stays level and only slides along its length, so
-    /// its frame is the toy's frame moved along x by ``ToyPose/swordSlide``.
+    /// is the outermost point of the tip's centreline. The sword stays level; it slides along its length and may be
+    /// lowered and raised, so its frame is the toy's frame moved by ``ToyPose/swordOffset``.
     ///
     /// Two rails run side by side and join at the tip in a half circle. The tip end rises out of the plane of the
     /// rails. Toward the grip the rails converge at the shoulder until their wires touch, then run on as the neck,

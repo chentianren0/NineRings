@@ -38,9 +38,9 @@ enum Relations {
     /// Where each side of the sword goes through ring `number`'s disc, in the sword's own frame.
     static func swordCrossings(of number: Int, in pose: ToyPose) -> (near: [Vector], far: [Vector]) {
         let circle = pose.ring(number).circle
-        let slide = SIMD3(pose.swordSlide, 0, 0)
-        let near = crossings(of: pose.swordCenterline(side: 1), through: circle).map { $0 - slide }
-        let far = crossings(of: pose.swordCenterline(side: -1), through: circle).map { $0 - slide }
+        let offset = pose.swordOffset
+        let near = crossings(of: pose.swordCenterline(side: 1), through: circle).map { $0 - offset }
+        let far = crossings(of: pose.swordCenterline(side: -1), through: circle).map { $0 - offset }
         return (near, far)
     }
 
@@ -213,7 +213,7 @@ enum Relations {
         zip(a.rings, b.rings).allSatisfy { isClose($0, $1, tolerance: tolerance) }
             && zip(a.rods, b.rods).allSatisfy { isClose($0, $1, tolerance: tolerance) }
             && isClose(a.bar, b.bar, tolerance: tolerance)
-            && abs(a.swordSlide - b.swordSlide) <= tolerance
+            && simd_distance(a.swordOffset, b.swordOffset) <= tolerance
     }
 
     /// The angle of the rotation that takes one orientation to the other.
@@ -241,7 +241,7 @@ enum Relations {
             let beadOffAxis = simd_length(simd_cross(beadCenter, axis))
             return max(Rod.eyeRadius + Rod.wireRadius, beadOffAxis + Rod.beadRadius)
         }
-        var largest = (distance: abs(a.swordSlide - b.swordSlide), part: "sword")
+        var largest = (distance: simd_distance(a.swordOffset, b.swordOffset), part: "sword")
         for number in 1...9 {
             let ring = step(a.ring(number), b.ring(number), reach: ringReach)
             if ring > largest.distance { largest = (ring, "ring \(number)") }
