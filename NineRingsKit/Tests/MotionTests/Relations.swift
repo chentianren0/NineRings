@@ -76,9 +76,10 @@ enum Relations {
 
     /// The facts about one pose that must hold at every instant. Each is a sentence when it fails.
     ///
-    /// Every ring must go round both rails except those in `mayBeOff`, which may go round both or neither: ring 1,
-    /// and whichever rings the move takes off or puts on.
-    static func failures(in pose: ToyPose, mayBeOff: Set<Int> = [1]) -> [String] {
+    /// Every ring must go round both rails except those in `mayBeOff`, which may go round both or neither, and those
+    /// in `mustStayOff`, which must go round neither: the rings that are off before a move and after it, which have no
+    /// part in it.
+    static func failures(in pose: ToyPose, mayBeOff: Set<Int> = [1], mustStayOff: Set<Int> = []) -> [String] {
         var failures: [String] = []
         let rings = (1...9).map { pose.ring($0).circle }
 
@@ -88,7 +89,9 @@ enum Relations {
             if near.count % 2 != far.count % 2 {
                 failures.append("ring \(ring) goes round one rail of the sword but not the other")
             }
-            if !mayBeOff.contains(ring) && !isRoundTheRails(ring, in: pose) {
+            if mustStayOff.contains(ring) {
+                if isRoundTheRails(ring, in: pose) { failures.append("ring \(ring) has got onto the rails") }
+            } else if !mayBeOff.contains(ring) && !isRoundTheRails(ring, in: pose) {
                 failures.append("ring \(ring) has left the rails")
             }
 

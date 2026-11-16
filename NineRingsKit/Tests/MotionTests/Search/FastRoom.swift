@@ -11,8 +11,10 @@ import simd
 /// It is quicker than the checker for three reasons, none of which changes what is measured:
 ///
 /// - Only pairs that can change are looked at: a pair with a part that moves, and, when the sword moves, the sword
-///   against every ring and rod. Two parts that stay still keep the gap they have at rest, which the rest poses'
-///   own checks cover.
+///   against every ring and rod. Two parts that are not in `moving` are taken to keep the gap they have to each other
+///   wherever the span searched holds them: at rest, which the rest poses' own checks cover, or, for the rings that
+///   ride down with the sword in the second ring's drop, at the one height they keep through it. Only `FullCheck`
+///   measures every pair.
 /// - Before measuring a pair it takes a lower bound of their gap that costs a few multiplications (how far one
 ///   shape's bounding sphere is from the other's centreline circle, for instance), and skips the pair when that
 ///   bound is already above the smallest gap found so far, or above `cap`. The search only needs the smallest gap,
@@ -25,7 +27,7 @@ import simd
 struct FastRoom: Sendable {
     /// The rings that move, with their rods.
     var moving: [Int]
-    /// Whether the sword slides during the move.
+    /// Whether the sword moves during the move: slides, or goes down and up.
     var swordMoves: Bool
     /// The rings that may be off the rails during the move.
     var mayBeOff: Set<Int>
