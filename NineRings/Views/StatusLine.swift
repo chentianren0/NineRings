@@ -10,8 +10,8 @@ struct StatusLine: View {
 
     var body: some View {
         Label {
-            // Two lines are always kept, so that the controls do not jump as the line changes; a long reason may
-            // take a third.
+            // Two lines are always kept, so that the controls do not jump as the line changes. A long reason takes
+            // as many more as it needs: cut short, it would no longer say why.
             ZStack(alignment: .topLeading) {
                 Text(verbatim: "\n").hidden().accessibilityHidden(true)
                 Text(Sentences.status(status))
@@ -24,7 +24,6 @@ struct StatusLine: View {
                 .foregroundStyle(isBlocked ? AnyShapeStyle(.orange) : AnyShapeStyle(.secondary))
         }
         .font(.callout)
-        .lineLimit(3)
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
         .onChange(of: status) { _, status in
