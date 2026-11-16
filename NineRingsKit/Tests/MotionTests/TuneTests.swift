@@ -85,10 +85,10 @@ import simd
             var path = RingOneOff.written
             for channel in channels {
                 switch channel.name {
-                case "tip": path.tip = RingOneOff.degrees(channel.keys)
-                case "tilt": path.tilt = RingOneOff.degrees(channel.keys)
-                case "swing": path.swing = RingOneOff.degrees(channel.keys)
-                default: path.eyeHeight = RingOneOff.millimetres(channel.keys)
+                case "tip": path.turns.tip = RingOneOff.degrees(channel.keys)
+                case "tilt": path.turns.tilt = RingOneOff.degrees(channel.keys)
+                case "swing": path.turns.swing = RingOneOff.degrees(channel.keys)
+                default: path.turns.eyeHeight = RingOneOff.millimetres(channel.keys)
                 }
             }
             return path

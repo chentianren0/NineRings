@@ -63,7 +63,7 @@ let ringOneOn = ringOneOff.reversed
 
     @Test func statesNotWrittenYetHaveNoRestPose() {
         #expect(RestPoses.pose(for: .allOff) == nil)
-        #expect(RestPoses.pose(for: PuzzleState("101111111")!) == nil)
+        #expect(RestPoses.pose(for: PuzzleState("001111111")!) == nil)
     }
 }
 
@@ -181,8 +181,8 @@ let ringOneOn = ringOneOff.reversed
         #expect(motion.stage(at: 1).name == "Lean")
     }
 
-    @Test func onlyRingOneIsWrittenSoFar() {
-        #expect(MoveMotion(Move(ring: 2, from: .allOn)!) == nil)
+    @Test func movesNotWrittenYetHaveNoMotion() {
+        #expect(MoveMotion(Move(ring: 3, from: PuzzleState("011111111")!)!) == nil)
         #expect(MoveMotion(Move(ring: 1, from: PuzzleState("101111111")!)!) == nil)
         #expect(Move(ring: 3, from: .allOn) == nil)
     }
