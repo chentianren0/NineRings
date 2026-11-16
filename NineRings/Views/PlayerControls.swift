@@ -53,12 +53,30 @@ private struct ControlButtons: View {
                 }
                 count
             }
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 10) {
+                    playButtons
+                }
+                HStack(spacing: 10) {
+                    changeButtons
+                    Spacer(minLength: 0)
+                    count
+                }
+            }
+            .labelStyle(.iconOnly)
         }
         .buttonStyle(.bordered)
     }
 
     @ViewBuilder
     private var buttons: some View {
+        playButtons
+        changeButtons
+    }
+
+    /// Play or pause, and the speed.
+    @ViewBuilder
+    private var playButtons: some View {
         Button {
             player.togglePlay()
         } label: {
@@ -82,7 +100,13 @@ private struct ControlButtons: View {
         .pickerStyle(.menu)
         .fixedSize()
         .help(Text("Playing speed", comment: "Tooltip on the speed menu."))
+        // Without this the menu itself has no spoken name: the label is a separate image beside it.
+        .accessibilityLabel(Text("Speed", comment: "Menu that chooses how fast moves play."))
+    }
 
+    /// Undo, reset and solve.
+    @ViewBuilder
+    private var changeButtons: some View {
         Button {
             player.undo()
         } label: {
