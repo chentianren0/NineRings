@@ -29,17 +29,17 @@ import simd
 /// The sword slides toward the grip to bring its tip end under the ring for the lift over it, then back home so
 /// that the slot is long enough in front of the eye for the drop.
 ///
-/// The drop's key values were found by a search for the path with the most room (see `TuneTests`), and are
-/// written here as plain numbers.
+/// The drop's key values were found by a search for the path with the most room (`RingSearchTests` runs one),
+/// and are written here as plain numbers.
 struct RingOneOff: Sendable {
     /// The stages, as spans of the path's own parameter (see ``timing``).
     static let stagesAlongThePath = [
-        Stage(name: "Flatten", start: 0, end: 0.16),
-        Stage(name: "Over the tip", start: 0.16, end: 0.30),
-        Stage(name: "Back over the slot", start: 0.30, end: 0.42),
-        Stage(name: "Turn", start: 0.42, end: 0.56),
-        Stage(name: "Down through the slot", start: 0.56, end: 0.84),
-        Stage(name: "Hang", start: 0.84, end: 1),
+        Stage(key: "Flatten", start: 0, end: 0.16),
+        Stage(key: "Over the tip", start: 0.16, end: 0.30),
+        Stage(key: "Back over the slot", start: 0.30, end: 0.42),
+        Stage(key: "Turn", start: 0.42, end: 0.56),
+        Stage(key: "Down through the slot", start: 0.56, end: 0.84),
+        Stage(key: "Hang", start: 0.84, end: 1),
     ]
 
     static func degrees(_ keys: [(Double, Double)]) -> Curve { RingTurns.degrees(keys) }

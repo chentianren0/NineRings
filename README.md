@@ -34,6 +34,10 @@ What each ring does:
 - Every ring behind ring k, on or off, moves only straight down and up with the sword, by exactly its height. The move asks nothing of them.
 - A ring that is off rests the same way wherever it is and whatever its neighbours are: below the sword, its eye just under the rails, leaning toward the tip, its rod down through the next ring whether that ring is on or off. Off rings next to one another lie like parallel plates one hole apart, and ring 9 off rests the same way with nothing to hang from. So every one of the 512 states has its rest.
 
+### How long a move takes
+
+The poses are a function of a move's progress, which the slider drags; the move's timing (`MoveTiming`) says how many seconds it takes at full speed and when it reaches each progress. Ring 1's move and ring 2's take three seconds. For every later ring, the stages in which the ring itself moves keep ring 2's seconds, moment for moment, and the sword's longer slide, one hole further out and home for each ring after ring 2, is covered at 60 mm a second, about ring 2's own pace on its first slide. So each ring after ring 2 adds half a second, and ring 9's move takes six and a half. The speed of every part stays continuous where the added slide meets the ring's own stages. Playing goes by time, at full, half or quarter speed.
+
 ### What the geometry forced
 
 With the nominal sizes, a few things are not free choices, and the checker found them:
@@ -51,14 +55,14 @@ With the nominal sizes, a few things are not free choices, and the checker found
 - `NineRingsKit/`: a Swift package with everything that does not depend on the interface.
   - `Puzzle`: which rings are on, the rule that says which ring can move, and the one path through all 512 states.
   - `Toy`: the toy's nominal dimensions, the sword's shape, and `ToyPose`, the place of every part. `SwordShape` is the one centreline of the sword, bends and grip loops included: the app draws its tube along those points and the checker checks capsules round the same pieces, and a test holds the drawn sword inside the checked one. The toy's frame is fixed to the bar; the sword stays level, and its pose is its slide along its length and its height.
-  - `Motion`: the written motion. `Layout` holds the fixed places and the few numbers the motion rests on; `HeldRing` is a ring as its rod holds it, with the rod rule; `RestPoses` places each ring by rule relative to its own hole; `Curve` is a smooth, never-overshooting curve through key values; `RingTurns` is the rule that turns a few angles and the eye's height into where a ring is; `Pacing` maps a move's progress onto its path so the move flows at an even pace; `RingOneOff` and `PairMoveOff` are the two written moves, ring 1's and the second ring's; `MoveMotion` is the public entry: the pose for a move at a progress, and the move's stages.
-  - `Session`: a puzzle being played, with no interface and no clock in it: the state, the moves made, the move on the slider and its progress, the rings waiting their turn, undo, reset and solve, and why a request did not play. The app turns what it reports into words.
+  - `Motion`: the written motion. `Layout` holds the fixed places and the few numbers the motion rests on; `HeldRing` is a ring as its rod holds it, with the rod rule; `RestPoses` places each ring by rule relative to its own hole; `Curve` is a smooth, never-overshooting curve through key values; `RingTurns` is the rule that turns a few angles and the eye's height into where a ring is; `Pacing` maps a move's progress onto its path so the move flows at an even pace; `MoveTiming` gives each move its length in seconds and maps its time to its progress; `RingOneOff` and `PairMoveOff` are the two written moves, ring 1's and the second ring's; `MoveMotion` is the public entry: the pose for a move at a progress, and the move's stages.
+  - `Session`: a puzzle being played, with no interface and no clock in it: the state, the moves made, the move on the slider and its progress, the rings waiting their turn, undo, reset and solve, and why a request did not play. The app turns what it reports into words. It also holds the lesson that explains the puzzle (`Lesson`): twelve steps, each with the key of its text and what the toy shows while it is up, a state at rest, moves played, or a move held after a named stage. The steps play the first six moves of the shortest way, each starting where the last ended.
   - `Geometry`: the centrelines of the shapes (circles, straight pieces, the bar's sheet) and the search for where two of them come near. Only the checker uses it.
 - `NineRings/` and `NineRings.xcodeproj`: the app, in SwiftUI and RealityKit. The project file is in Xcode's JSON format and `NineRings/` is a synchronized folder, so adding a file there does not change the project file.
   - `Model/Player.swift`: the session as the screen sees it, with a clock to play it and the speed.
   - `Scene`: the toy drawn in 3D, with meshes generated from `Dimensions`; `ToyScene.apply(_:)` places every part for a `ToyPose`.
   - `Views`: the 3D view with its orbit camera; the strip of ring markers; the status line, with every sentence the screen says; and the controls: play or pause, full, half or quarter speed, undo, reset, solve, the count of moves, and a scrubber with the stages marked and named.
-  - `Localizable.xcstrings` holds every sentence, for translation. `Stages.xcstrings` holds the stages' names, which the motion code writes in English and the app looks up by name; a stage not listed there shows in English. Xcode adds new sentences to `Localizable.xcstrings` when it builds; a command-line build does not.
+  - `Localizable.xcstrings` holds every sentence, for translation. `Stages.xcstrings` holds the stages' names, which the motion code keys in English, with `%lld` where a ring's number goes ("Ring %lld hangs"), and the app looks up and fills in; a stage not listed there shows in English. Xcode adds new sentences to `Localizable.xcstrings` when it builds; a command-line build does not. `Lesson.xcstrings` holds the lesson's texts under stable keys, such as `lesson.rule`, each with a comment saying what the toy shows at that step; a package test checks that every step has its text there.
   - `Capture`: renders the move to image files, in debug builds only (see below).
 
 ## Playing the puzzle
@@ -66,14 +70,13 @@ With the nominal sizes, a few things are not free choices, and the checker found
 The screen is the puzzle itself: the toy in 3D with most of the space, and under it, or beside it when the window is wide and short, the controls.
 
 - **A line** says what is happening or why nothing is: the move and its stage while one plays, and the reason when a ring is blocked.
-- **Nine ring markers**, ring 1 on the left, the tip's side as the toy is first seen. A filled disc is a ring that is on, an outline one that is off. A bar under the number marks a ring that can move now: solid when its move is written, an outline while it is not. Tapping a marker, or pressing its number key, asks to move that ring. The strip runs left to right in every language, since it mirrors the toy.
+- **Nine ring markers**, ring 1 on the left, the tip's side as the toy is first seen. A filled disc is a ring that is on, an outline one that is off. A bar under the number marks a ring that can move now. Tapping a marker, or pressing its number key, asks to move that ring. The strip runs left to right in every language, since it mirrors the toy.
 - **The slider** runs through the move that is playing or was played last, with its stages marked and numbered, and can be dragged either way; the line names the stage. At its right end the move is made, at its left end it is not.
 - **Buttons** for play and pause (Space), speed, undo (⌘Z), reset and solve, and the count of moves made.
 
 How it behaves:
 
-- A legal move that is written plays, and the state, the markers and the count change when it ends.
-- Every legal move is written. The session still knows how to say, quietly, that a move is not written, should one be left unwritten again.
+- A legal move plays, and the state, the markers and the count change when it ends.
 - A move the rule forbids does not play. The marker of the ring in the way gets an orange ring, and the line says why, in one of two ways. If an earlier ring is on that should be off, it names the one nearest: "Ring 5 can’t move while ring 3 is on: ring 3’s rod stands in the slot between ring 5 and the tip." Otherwise the ring just before is off: "Ring 2 can’t move while ring 1 is off: ring 1’s rod runs through ring 2, and it is out of the slot, so ring 2 can’t pass through the slot."
 - A tap while a move plays, or is stopped part way, waits its turn: the move in hand finishes, then the ring tapped is judged against the state at that point, and plays, or stops with its reason. Several taps queue up in order; the first that cannot play drops the rest.
 - Solve plays the shortest way from where the toy is to all rings off, move after move. A tap while solving takes over: the rest of the way is dropped and the ring tapped comes next.
@@ -100,7 +103,9 @@ The package's tests sample each written move at 4000 progress values in each dir
 
 A pose takes well under a microsecond to compute in an optimized build.
 
-Some tests are tools rather than checks, and run only when asked: `NINE_RINGS_PROFILE=1` (or `=2` for ring 2) prints the smallest gap and the fastest-moving part through the move; `NINE_RINGS_EXPLORE=1` maps where ring 1 can be with its eye at each height and searches that map for a way down; `NINE_RINGS_TUNE=1` searches the key values of ring 1's drop for the path with the most room, and `NINE_RINGS_PAIR_TUNE=1` those of the second ring's drop (`PairMoveTuneTests`, beside the search tools). The key values in `RingOneOff` and `PairMoveOff` came from these searches, and are written there as plain numbers. `NINE_RINGS_HANG=1` searches how ring 1 can hang off from ring 2 while ring 2 is on, which is how the leans of the rest poses were found, and `NINE_RINGS_FINGERPRINT_OUT=<file>` writes a hash of every pose of every move and every rest, so that a change to the code that should leave the motion alone can be shown to, to the last bit.
+Every pose of every move, both ways at 801 progress values, and the rest pose of every state are also held to a fingerprint written in the tests (`MotionFingerprintTests`): a hash of their exact bits. A change to the code that should leave the motion alone leaves it alone; a change meant to change the motion changes the value there with it. `NINE_RINGS_FINGERPRINT_OUT=<file>` writes the line for each move and rest, to find which differ.
+
+Some tests are tools rather than checks, and run only when asked: `NINE_RINGS_PROFILE=1` (or `=2` for ring 2) prints the smallest gap and the fastest-moving part through the move; `NINE_RINGS_PAIR_TUNE=1` searches the key values of the second ring's drop for the path with the most room (`PairMoveTuneTests`, beside the search tools), and `NINE_RINGS_SEARCH=1` does the same for ring 1's drop. The key values in `RingOneOff` and `PairMoveOff` came from such searches, and are written there as plain numbers.
 
 The second ring's move is checked in full for ring 3 with ring 1 off, for ring 2 and for ring 9, for ring 3 with the rings behind on, off and mixed, for ring 2 with ring 3 off behind, and ring 1's for ring 1 with ring 2 off behind; every one of the 512 states is checked at rest. `NINE_RINGS_PAIR=1` sweeps the second ring's move for the cases `NINE_RINGS_CASES` lists and prints where it is tightest, and `NINE_RINGS_EVERY_MOVE=1` runs every one of the 511 moves through the checker, both ways, which takes about an hour on the Mac the project is developed on and is best run on GitHub as five copies (`-f filter=EveryMoveTests -f environment="NINE_RINGS_EVERY_MOVE=1" -f copies=5`).
 
@@ -159,7 +164,7 @@ A pull request that touches the package, the app or the project runs the package
 The tools that run only when asked, the searches and scans, can also run on GitHub's machines (`.github/workflows/tools.yml`), so that a long one does not keep a Mac busy and several can run side by side. It is started by hand, on any branch that has been pushed:
 
 ```
-gh workflow run tools.yml --ref <branch> -f filter=TuneTests -f environment="NINE_RINGS_TUNE=1" -f copies=3 -f minutes=120
+gh workflow run tools.yml --ref <branch> -f filter=RingSearchTests -f environment="NINE_RINGS_SEARCH=2" -f copies=3 -f minutes=120
 ```
 
 - `filter` is the test to run, as for `swift test --filter`. `environment` is the tool's variables, as `NINE_RINGS_NAME=value` pairs separated by spaces.

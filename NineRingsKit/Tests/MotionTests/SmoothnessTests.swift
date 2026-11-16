@@ -43,7 +43,7 @@ func numbers(_ pose: ToyPose) -> [Double] {
 
     @Test(arguments: MoveMotion.written)
     func positionAndVelocityAreContinuous(_ move: Move) throws {
-        let motion = try #require(MoveMotion(move))
+        let motion = MoveMotion(move)
         let coarse = largestBend(motion, step: 1e-3)
         let fine = largestBend(motion, step: 1e-4)
         print("smoothness, ring \(move.ring): largest bend \(coarse) at a step of 1e-3, \(fine) at 1e-4 (mm per progress squared)")
@@ -52,7 +52,7 @@ func numbers(_ pose: ToyPose) -> [Double] {
 
     @Test(arguments: MoveMotion.written)
     func theMoveStartsAndEndsAtRest(_ move: Move) throws {
-        let motion = try #require(MoveMotion(move))
+        let motion = MoveMotion(move)
         for end in [0.0, 1.0] {
             let here = numbers(motion.pose(at: end))
             let near = numbers(motion.pose(at: end == 0 ? 1e-6 : 1 - 1e-6))
@@ -64,7 +64,7 @@ func numbers(_ pose: ToyPose) -> [Double] {
     /// Where several parts move at once, the motion should not come to a halt at a stage boundary.
     @Test(arguments: MoveMotion.written)
     func theMotionDoesNotStopBetweenStages(_ move: Move) throws {
-        let motion = try #require(MoveMotion(move))
+        let motion = MoveMotion(move)
         for stage in motion.stages.dropFirst() {
             let here = numbers(motion.pose(at: stage.start))
             let near = numbers(motion.pose(at: stage.start + 1e-4))
@@ -76,7 +76,7 @@ func numbers(_ pose: ToyPose) -> [Double] {
 
     @Test(arguments: MoveMotion.written)
     func aPoseTakesFarLessThanAMillisecond(_ move: Move) throws {
-        let motion = try #require(MoveMotion(move))
+        let motion = MoveMotion(move)
         let count = 20_000
         var checksum = 0.0
         let clock = ContinuousClock()

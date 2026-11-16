@@ -138,7 +138,7 @@ struct KeyedMove: Sendable {
         return Score(least: least, mean: total / Double(samples + 1), worstParameter: worstParameter, worst: worst)
     }
 
-    /// Keys as text, in the form today's tuners print and read: `name:p=v,p=v;name:...`.
+    /// Keys as text, in the form the tuner prints and reads: `name:p=v,p=v;name:...`.
     func text(_ keys: Keys) -> String {
         channels.map { channel in
             channel.name + ":" + keys[channel.name]!.map { String(format: "%.4f=%.3f", $0.0, $0.1) }.joined(separator: ",")

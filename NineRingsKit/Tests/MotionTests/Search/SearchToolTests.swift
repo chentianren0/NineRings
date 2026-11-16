@@ -68,11 +68,14 @@ import simd
         }
     }
 
+    /// Ring 1 and its rod: every part that moves in ring 1's drop.
+    static let ringOneMoving: Set<PartName> = [.ring(1), .eye(1), .shaft(1), .bead(1)]
+
     @Test func fastRoomAgreesOnRingOne() {
         let model = FastRoom(moving: [1], swordMoves: false, mayBeOff: [1], cap: 3)
         for index in 0...20 {
             let pose = RingOneOff.written.pose(at: 0.56 + 0.44 * Double(index) / 20)
-            let checker = min(Gaps.smallest(in: pose.shapes.filter { $0.name != .bar }, involving: TuneTests.moving)?.distance ?? 10, 3)
+            let checker = min(Gaps.smallest(in: pose.shapes.filter { $0.name != .bar }, involving: Self.ringOneMoving)?.distance ?? 10, 3)
             #expect(abs(model.smallestGap(pose).0 - checker) < 2e-4)
             #expect(model.failures(pose) == Relations.failures(in: pose, mayBeOff: [1]))
         }

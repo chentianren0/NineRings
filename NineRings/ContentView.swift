@@ -34,7 +34,7 @@ struct ContentView: View {
     static let framing: ToyBounds = {
         let lowest = Move(ring: 3, from: PuzzleState(bits: 0b110))
         let moves = Array(Player.moves.prefix(3)) + [lowest].compactMap { $0 }
-        let poses = moves.compactMap(MoveMotion.init).flatMap { motion in
+        let poses = moves.map(MoveMotion.init).flatMap { motion in
             (0...40).map { motion.pose(at: Double($0) / 40) }
         }
         return ToyBounds(poses)

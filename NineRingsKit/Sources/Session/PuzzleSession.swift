@@ -5,12 +5,13 @@ import Toy
 /// A puzzle being played: the state, the moves made, the move on the slider and how far through it the toy is,
 /// and the rings asked to move next.
 ///
-/// It holds no clock and no text. Whoever drives it calls `advance(by:)` with how much of a move's progress
-/// time has covered, and turns `status` and `markers` into words and pictures.
+/// It holds no clock and no text. Whoever drives it calls `advance(by:)` with how many seconds of the move's own time
+/// have passed, at the speed it plays, and turns `status` and `markers` into words and pictures. Dragging the slider
+/// goes by the move's progress, which the poses are a function of.
 ///
 /// The rules it keeps:
-/// - Tapping a ring asks to move it. A legal move that is written plays; the state changes when it ends.
-///   A legal move that is not written, or a move the rule forbids, does not play, and `note` says why.
+/// - Tapping a ring asks to move it. A legal move plays; the state changes when it ends. A move the rule forbids
+///   does not play, and `note` says why.
 /// - While a move is in hand (playing, or stopped part way), a tap joins the queue. Each ring in the queue is
 ///   judged when its turn comes, against the state then; the first that cannot play stops the queue, with its note.
 /// - Play runs the move on the slider forward, toward the move being made. Undo runs it backward.
@@ -28,8 +29,6 @@ public struct PuzzleSession: Sendable, Equatable {
     public enum Note: Sendable, Equatable {
         /// The rule does not let `ring` move: `block` names the ring in the way.
         case blocked(ring: Int, block: PuzzleState.Block)
-        /// The move is legal, but its motion has not been written yet. `whileSolving` when solving met it.
-        case notWritten(Move, whileSolving: Bool)
     }
 
     /// What is happening, for the one line that says so.
@@ -50,8 +49,6 @@ public struct PuzzleSession: Sendable, Equatable {
         public let isOn: Bool
         /// What stops the ring from moving now, or nil when the rule lets it move.
         public let block: PuzzleState.Block?
-        /// Whether the ring's move from here is written, so that tapping it plays. False when blocked.
-        public let isWritten: Bool
         /// Whether this ring is the one moving, or stopped part way, now.
         public let isMoving: Bool
         /// Whether this ring was just asked to move and the rule refused.
@@ -113,22 +110,21 @@ public struct PuzzleSession: Sendable, Equatable {
     }
 
     /// The motion of the move on the slider.
-    public var motion: MoveMotion? { current.flatMap(MoveMotion.init) }
+    public var motion: MoveMotion? { current.map(MoveMotion.init) }
 
     /// The stages of the move on the slider, as written for making it. Empty before the first move.
     public var stages: [Stage] { motion?.stages ?? [] }
 
-    /// The toy as it is now, or nil when neither a move nor the state's rest is written.
-    public var pose: ToyPose? {
-        if let motion { return motion.pose(at: progress) }
-        return RestPoses.pose(for: state)
+    /// The toy as it is now.
+    public var pose: ToyPose {
+        motion?.pose(at: progress) ?? RestPoses.pose(for: state)
     }
 
     public var status: Status {
         if let current, let motion, isPlaying || isPartWay {
             let undoing = direction == .backward
             let shown = undoing ? current.reversed : current
-            let stage = undoing ? (MoveMotion(shown)?.stage(at: 1 - progress) ?? motion.stage(at: progress)) : motion.stage(at: progress)
+            let stage = undoing ? MoveMotion(shown).stage(at: 1 - progress) : motion.stage(at: progress)
             return isPlaying ? .playing(shown, stage: stage, undoing: undoing) : .paused(shown, stage: stage, undoing: undoing)
         }
         if let note { return .note(note) }
@@ -149,7 +145,6 @@ public struct PuzzleSession: Sendable, Equatable {
                 ring: ring,
                 isOn: state.isOn(ring),
                 block: block,
-                isWritten: Move(ring: ring, from: state).flatMap(MoveMotion.init) != nil,
                 isMoving: ring == moving,
                 isRefused: ring == refused?.ring,
                 isBlocking: ring == refused?.blocking
@@ -249,8 +244,7 @@ public struct PuzzleSession: Sendable, Equatable {
         self = PuzzleSession()
     }
 
-    /// Plays the shortest way from here to all rings off, move after move, after the move in hand. It stops with a
-    /// note at the first move that is not written.
+    /// Plays the shortest way from here to all rings off, move after move, after the move in hand.
     public mutating func solve() {
         guard canSolve else { return }
         note = nil
@@ -279,17 +273,28 @@ public struct PuzzleSession: Sendable, Equatable {
         if queue.isEmpty { isSolving = false }
     }
 
-    /// Moves playing on by `distance`, a fraction of a whole move. When the move ends, the state changes and the
-    /// next ring in the queue begins; what is left of `distance` is not carried into it.
-    public mutating func advance(by distance: Double) {
-        guard isPlaying, current != nil, distance > 0 else { return }
+    /// Moves playing on by `seconds` of the move's own time at full speed (see ``MoveTiming``); whoever drives the
+    /// session applies the playing speed. When the move ends, the state changes and the next ring in the queue begins;
+    /// what is left of `seconds` is not carried into it.
+    public mutating func advance(by seconds: Double) {
+        guard isPlaying, let motion, seconds > 0 else { return }
+        let timing = motion.timing
+        let now = timing.time(atProgress: progress)
         switch direction {
         case .forward:
-            progress = min(progress + distance, 1)
-            if progress >= 1 { end(made: true) }
+            if now + seconds >= timing.duration {
+                progress = 1
+                end(made: true)
+            } else {
+                progress = timing.progress(atTime: now + seconds)
+            }
         case .backward:
-            progress = max(progress - distance, 0)
-            if progress <= 0 { end(made: false) }
+            if now - seconds <= 0 {
+                progress = 0
+                end(made: false)
+            } else {
+                progress = timing.progress(atTime: now - seconds)
+            }
         }
     }
 
@@ -332,9 +337,6 @@ public struct PuzzleSession: Sendable, Equatable {
         let ring = queue.removeFirst()
         if !begin(ring) {
             queue.removeAll()
-            if isSolving, case .notWritten(let move, _) = note {
-                note = .notWritten(move, whileSolving: true)
-            }
             isSolving = false
         }
     }
@@ -346,10 +348,7 @@ public struct PuzzleSession: Sendable, Equatable {
             note = .blocked(ring: ring, block: block)
             return false
         }
-        guard let move = Move(ring: ring, from: state), MoveMotion(move) != nil else {
-            note = Move(ring: ring, from: state).map { .notWritten($0, whileSolving: false) }
-            return false
-        }
+        guard let move = Move(ring: ring, from: state) else { preconditionFailure("ring \(ring) is not blocked, so it can move") }
         note = nil
         current = move
         currentIsMade = false

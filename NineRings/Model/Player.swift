@@ -89,8 +89,8 @@ final class Player {
         PoseKey(move: session.current, progress: session.progress, state: session.state)
     }
 
-    /// The toy as it is now, or nil when it is in a state whose rest is not written.
-    var pose: ToyPose? { session.pose }
+    /// The toy as it is now.
+    var pose: ToyPose { session.pose }
 
     /// The name of the stage the slider is in, as written for making the move; empty before the first move.
     var stageName: String {
@@ -148,7 +148,7 @@ final class Player {
         // One frame's step is capped, so that after a pause in the frames, such as time in the background, the move
         // carries on from where it was rather than jumping to its end.
         let seconds = min(Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18, 0.1)
-        session.advance(by: seconds * speed.factor / MoveMotion.duration)
+        session.advance(by: seconds * speed.factor)
         publish()
     }
 

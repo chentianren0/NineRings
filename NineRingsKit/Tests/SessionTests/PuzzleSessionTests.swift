@@ -5,9 +5,10 @@ import Testing
 import Toy
 import simd
 
-/// The checks are written so that they stay true as more moves are written: where a test needs a move that is
-/// not written yet, it looks for one, and is skipped, saying so, when there is none left.
 @Suite struct PuzzleSessionTests {
+    /// How long ring 1's move and ring 2's take at full speed; both go evenly, so a fraction of it is that fraction of
+    /// the move.
+    private let aMove = MoveTiming.baseDuration
     private let ringOneOff = PuzzleState.allOn.moving(1)
     private let ringTwoOff = PuzzleState.allOn.moving(2)
 
@@ -15,7 +16,8 @@ import simd
     private func playOut(_ session: inout PuzzleSession) {
         var steps = 0
         while session.isPlaying {
-            session.advance(by: 1)
+            // Longer than any move takes, so that each step ends the move in hand.
+            session.advance(by: 10)
             steps += 1
             precondition(steps < 1000, "playing never stopped")
         }
@@ -33,7 +35,6 @@ import simd
         #expect(!session.canUndo)
         #expect(session.canSolve)
         #expect(session.status == .resting(.allOn))
-        #expect(session.pose != nil)
         #expect(session.stages.isEmpty)
     }
 
@@ -43,11 +44,8 @@ import simd
         #expect(markers.map(\.ring) == Array(1...9))
         #expect(markers.allSatisfy { $0.isOn })
         #expect(markers.filter { $0.canMove }.map(\.ring) == [1, 2])
-        // Ring 1 off and ring 2 off from every ring on are written.
-        #expect(markers[0].isWritten && markers[1].isWritten)
         #expect(markers[2].block == .earlierRingOn(1))
         #expect(markers[8].block == .earlierRingOn(7))
-        #expect(markers.dropFirst(2).allSatisfy { !$0.isWritten })
     }
 
     // MARK: Tapping
@@ -58,17 +56,17 @@ import simd
         #expect(session.isPlaying)
         #expect(session.current == Move(ring: 1, from: .allOn))
         #expect(session.markers[0].isMoving)
-        session.advance(by: 0.5)
+        session.advance(by: 0.5 * aMove)
         #expect(session.progress == 0.5)
         #expect(session.state == .allOn, "the state changes only when the move ends")
         #expect(session.moveCount == 0)
         if case .playing(let move, let stage, let undoing) = session.status {
             #expect(move.ring == 1 && move.takesOff && !undoing)
-            #expect(stage == MoveMotion(move)!.stage(at: 0.5))
+            #expect(stage == MoveMotion(move).stage(at: 0.5))
         } else {
             Issue.record("expected a playing status, got \(session.status)")
         }
-        session.advance(by: 0.6)
+        session.advance(by: 0.6 * aMove)
         #expect(session.progress == 1)
         #expect(!session.isPlaying)
         #expect(session.state == ringOneOff)
@@ -131,36 +129,16 @@ import simd
         #expect(session.markers.allSatisfy { !$0.isBlocking && !$0.isRefused })
     }
 
-    @Test(.enabled(if: UnwrittenMove.nearest() != nil, "every move reachable from every ring on is written"))
-    func aLegalMoveThatIsNotWrittenDoesNotPlay() throws {
-        let found = try #require(UnwrittenMove.nearest(), "every move reachable from every ring on is written")
-        var session = PuzzleSession()
-        for ring in found.path {
-            session.tap(ring)
-            playOut(&session)
-        }
-        #expect(session.state == found.move.from)
-        let countBefore = session.moveCount
-        let currentBefore = session.current
-        session.tap(found.move.ring)
-        #expect(!session.isPlaying)
-        #expect(session.note == .notWritten(found.move, whileSolving: false))
-        #expect(session.moveCount == countBefore)
-        #expect(session.current == currentBefore)
-        #expect(session.markers[found.move.ring - 1].canMove)
-        #expect(!session.markers[found.move.ring - 1].isWritten)
-    }
-
     // MARK: Taps while a move plays
 
     @Test func aTapWhileAMovePlaysWaitsItsTurn() {
         var session = PuzzleSession()
         session.tap(1)
-        session.advance(by: 0.3)
+        session.advance(by: 0.3 * aMove)
         session.tap(1)
         #expect(session.queue == [1])
         #expect(session.current == Move(ring: 1, from: .allOn), "the move in hand goes on")
-        session.advance(by: 1)
+        session.advance(by: aMove)
         #expect(session.state == ringOneOff)
         #expect(session.current == Move(ring: 1, from: ringOneOff), "then the waiting ring begins")
         #expect(session.isPlaying)
@@ -194,7 +172,7 @@ import simd
     @Test func aTapWhilePausedPartWayCarriesOn() {
         var session = PuzzleSession()
         session.tap(2)
-        session.advance(by: 0.4)
+        session.advance(by: 0.4 * aMove)
         session.togglePlay()
         #expect(!session.isPlaying)
         if case .paused(let move, _, false) = session.status {
@@ -214,13 +192,13 @@ import simd
     @Test func pauseAndPlayCarryOn() {
         var session = PuzzleSession()
         session.tap(1)
-        session.advance(by: 0.25)
+        session.advance(by: 0.25 * aMove)
         session.togglePlay()
-        session.advance(by: 0.5)
+        session.advance(by: 0.5 * aMove)
         #expect(session.progress == 0.25, "nothing moves while paused")
         #expect(session.canPlay)
         session.togglePlay()
-        session.advance(by: 0.5)
+        session.advance(by: 0.5 * aMove)
         #expect(session.progress == 0.75)
     }
 
@@ -236,7 +214,7 @@ import simd
     @Test func scrubbingToEitherEndMakesOrUnmakesTheMove() {
         var session = PuzzleSession()
         session.tap(1)
-        session.advance(by: 0.5)
+        session.advance(by: 0.5 * aMove)
         session.scrub(to: 0.2)
         #expect(!session.isPlaying)
         #expect(session.state == .allOn)
@@ -272,13 +250,13 @@ import simd
         session.undo()
         #expect(session.isPlaying)
         #expect(session.direction == .backward)
-        session.advance(by: 0.3)
+        session.advance(by: 0.3 * aMove)
         #expect(abs(session.progress - 0.7) < 1e-12)
         #expect(session.state == ringOneOff, "the state changes back only when the move has run back")
         if case .playing(let move, let stage, let undoing) = session.status {
             #expect(undoing)
             #expect(move == Move(ring: 1, from: ringOneOff), "the ring is going back on")
-            #expect(stage == MoveMotion(move)!.stage(at: 0.3))
+            #expect(stage == MoveMotion(move).stage(at: 0.3))
         } else {
             Issue.record("expected a playing status, got \(session.status)")
         }
@@ -311,9 +289,9 @@ import simd
     @Test func undoPartWayTurnsTheMoveBack() {
         var session = PuzzleSession()
         session.tap(2)
-        session.advance(by: 0.4)
+        session.advance(by: 0.4 * aMove)
         session.undo()
-        session.advance(by: 0.1)
+        session.advance(by: 0.1 * aMove)
         #expect(abs(session.progress - 0.3) < 1e-12)
         playOut(&session)
         #expect(session.state == .allOn)
@@ -341,42 +319,23 @@ import simd
 
     // MARK: Solve
 
-    @Test func solvePlaysTheShortestWayAndStopsAtAMoveNotWritten() throws {
+    @Test func solvePlaysTheShortestWay() {
         var session = PuzzleSession()
         session.solve()
         #expect(session.isSolving)
         playOut(&session)
 
-        // What solving should have done: the shortest way, as far as it is written.
-        let path = PuzzleState.allOn.moves(to: .allOff)
-        var state = PuzzleState.allOn
-        var played = 0
-        var unwritten: Move?
-        for ring in path {
-            let move = try #require(Move(ring: ring, from: state))
-            guard MoveMotion(move) != nil else {
-                unwritten = move
-                break
-            }
-            state = move.to
-            played += 1
-        }
-        #expect(session.state == state)
-        #expect(session.moveCount == played)
+        #expect(session.state == .allOff)
+        #expect(session.moveCount == PuzzleState.allOn.moves(to: .allOff).count)
         #expect(!session.isSolving)
         #expect(session.queue.isEmpty)
-        if let unwritten {
-            #expect(session.note == .notWritten(unwritten, whileSolving: true))
-        } else {
-            #expect(session.state == .allOff)
-        }
+        #expect(session.note == nil)
     }
 
-    /// Solve played the whole way, as the app plays it, a fiftieth of a move a frame, from every ring on to every ring
-    /// off, and then every move undone back to every ring on: every one of the 341 moves of the shortest way, and the
-    /// toy never jumps. Where one move hands over to the next, the last pose of the one is the first of the other,
-    /// the rest of the state between them; and from one frame to the next no part moves further than a fiftieth of
-    /// a move can carry it.
+    /// Solve played the whole way, as the app plays it, 60 ms a frame, from every ring on to every ring off, and then
+    /// every move undone back to every ring on: every one of the 341 moves of the shortest way, and the toy never
+    /// jumps. Where one move hands over to the next, the last pose of the one is the first of the other, the rest of
+    /// the state between them; and from one frame to the next no part moves further than 60 ms can carry it.
     @Test func solvingToTheEndAndUndoingEveryMovePlaysWithoutAJump() throws {
         func isClose(_ a: ToyPose, _ b: ToyPose) -> Bool {
             zip(a.rings + a.rods + [a.bar], b.rings + b.rods + [b.bar]).allSatisfy {
@@ -390,17 +349,17 @@ import simd
         var handOvers = 0, largest = 0.0
         /// Plays until nothing plays, checking every frame and every hand-over.
         func playChecking(_ session: inout PuzzleSession) throws {
-            var previous = try #require(session.pose)
+            var previous = session.pose
             var playing = session.current
             while session.isPlaying {
                 let before = session
-                session.advance(by: 1.0 / 50)
-                let pose = try #require(session.pose)
+                session.advance(by: 0.06)
+                let pose = session.pose
                 if session.current != playing, let old = before.motion, let new = session.motion {
                     // The frame that ends one move and begins the next shows the next at its start.
                     let end = before.direction == .forward ? 1.0 : 0.0
                     #expect(isClose(old.pose(at: end), new.pose(at: session.progress)), "from \(String(describing: playing)) to \(String(describing: session.current))")
-                    #expect(isClose(new.pose(at: session.progress), try #require(RestPoses.pose(for: session.state))))
+                    #expect(isClose(new.pose(at: session.progress), RestPoses.pose(for: session.state)))
                     handOvers += 1
                     playing = session.current
                 } else {
@@ -412,21 +371,38 @@ import simd
         session.solve()
         try playChecking(&session)
         #expect(session.state == .allOff && session.moveCount == 341 && handOvers == 340)
-        #expect(session.pose.map { isClose($0, RestPoses.pose(for: .allOff)!) } == true)
+        #expect(isClose(session.pose, RestPoses.pose(for: .allOff)))
         while session.canUndo {
             session.undo()
             try playChecking(&session)
         }
         #expect(session.state == .allOn && session.moveCount == 0)
-        #expect(session.pose.map { isClose($0, RestPoses.pose(for: .allOn)!) } == true)
+        #expect(isClose(session.pose, RestPoses.pose(for: .allOn)))
         print("solve to the end and back: \(handOvers) hand-overs between moves; at most \(String(format: "%.2f", largest)) mm from one frame to the next")
         #expect(largest < 20)
+    }
+
+    /// The session plays by time: ring 9's move, played a frame at a time, takes its own length, and ring 2's three
+    /// seconds.
+    @Test(arguments: [1, 8])
+    func theSessionPlaysAMoveInItsOwnTime(_ index: Int) {
+        let move = MoveMotion.written[index]
+        var session = PuzzleSession(at: move, progress: 0)
+        session.togglePlay()
+        var elapsed = 0.0
+        let frame = 1.0 / 120
+        while session.isPlaying && session.current == move {
+            session.advance(by: frame)
+            elapsed += frame
+        }
+        #expect(session.state == move.to)
+        #expect(abs(elapsed - MoveMotion(move).duration) <= frame + 1e-9, "ring \(move.ring): played in \(elapsed) s")
     }
 
     @Test func solveStartsAfterTheMoveInHand() {
         var session = PuzzleSession()
         session.tap(2)
-        session.advance(by: 0.5)
+        session.advance(by: 0.5 * aMove)
         session.solve()
         #expect(session.current?.ring == 2, "the move in hand goes on")
         #expect(session.queue == ringTwoOff.moves(to: .allOff))
@@ -450,34 +426,10 @@ import simd
             #expect(session.progress == 0.5)
             #expect(!session.isPlaying)
             #expect(session.canPlay)
-            #expect(session.stages == MoveMotion(move)!.stages)
-            #expect(session.pose != nil)
+            #expect(session.stages == MoveMotion(move).stages)
+            #expect(session.pose == MoveMotion(move).pose(at: 0.5))
         }
         let atEnd = PuzzleSession(at: try #require(MoveMotion.written.first), progress: 1)
         #expect(atEnd.moveCount == 1)
-    }
-}
-
-/// The nearest legal move that is not written, among the states that written moves reach from every ring on,
-/// and the rings to tap to get there.
-private enum UnwrittenMove {
-    static func nearest() -> (move: Move, path: [Int])? {
-        var paths: [PuzzleState: [Int]] = [.allOn: []]
-        var frontier: [PuzzleState] = [.allOn]
-        while !frontier.isEmpty {
-            var next: [PuzzleState] = []
-            for state in frontier {
-                for ring in state.movableRings {
-                    guard let move = Move(ring: ring, from: state) else { continue }
-                    if MoveMotion(move) == nil { return (move, paths[state]!) }
-                    if paths[move.to] == nil {
-                        paths[move.to] = paths[state]! + [ring]
-                        next.append(move.to)
-                    }
-                }
-            }
-            frontier = next
-        }
-        return nil
     }
 }

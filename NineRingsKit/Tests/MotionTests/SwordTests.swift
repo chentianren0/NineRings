@@ -12,7 +12,7 @@ import simd
     /// says how near anything comes to the sword, and where.
     @Test(arguments: [ringOneOff, ringOneOn, ringTwoOff, ringTwoOn])
     func smallestGapToTheSword(_ move: Move) throws {
-        let motion = try #require(MoveMotion(move))
+        let motion = MoveMotion(move)
         let samples = Sweep.samples
         let gaps = Sweep.inParallel(samples + 1) { index in
             Gaps.smallest(in: motion.pose(at: Double(index) / Double(samples)).shapes, involving: [.sword])!
@@ -31,7 +31,7 @@ import simd
     }
 
     @Test func smallestGapToTheSwordAtRest() throws {
-        let pose = try #require(RestPoses.pose(for: .allOn))
+        let pose = RestPoses.pose(for: .allOn)
         let gap = try #require(Gaps.smallest(in: pose.shapes, involving: [.sword]))
         print("every ring on, at rest: smallest gap to the sword \(gap)")
         #expect(gap.distance >= smallestAllowedGap)
@@ -55,7 +55,7 @@ import simd
 
     /// The sword's shapes as the checker builds them, with the sword at home, in the sword's frame.
     static var checkedPieces: [Shape] {
-        var pose = RestPoses.pose(for: .allOn)!
+        var pose = RestPoses.pose(for: .allOn)
         pose.swordSlide = 0
         return pose.shapes.filter { $0.name == .sword }
     }
