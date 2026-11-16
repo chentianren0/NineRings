@@ -35,6 +35,10 @@ struct FastRoom: Sendable {
     /// leave the bar out for that reason; here only the bead and the bar are left out, and only while the bead is
     /// no nearer the bar than it rests.
     var ignoreRestingBead = true
+    /// Whether, when the sword slides, its gaps to the rings and rods that stay still count. They are part of the
+    /// checker's room, but in a search for a pose they can hide differences: the rings that stay on keep about
+    /// 0.5 mm to the rails wherever the sword is along them.
+    var stillAgainstSword = true
     /// Where the bar is held. Only an experiment changes it.
     var bar: PartPose = Layout.bar
 
@@ -133,7 +137,7 @@ struct FastRoom: Sendable {
             for b in stillPieces { consider(a, b) }
             for b in sword { consider(a, b) }
         }
-        if swordMoves {
+        if swordMoves && stillAgainstSword {
             for a in stillPieces where a.name != .bar {
                 for b in sword { consider(a, b) }
             }

@@ -21,6 +21,26 @@ struct ConfigSpace: Sendable {
     /// at both ends of a leg is first held still there (see ``Planner/plan``). Empty: every number its own part.
     var parts: [Int] = []
 
+    /// A move for the tuner made of one curve per number of this space, through keys such as `CurveFit` writes:
+    /// every key free but the first and last, and every value kept inside the space's ranges.
+    func keyedMove(span: ClosedRange<Double>, keys: KeyedMove.Keys) -> KeyedMove {
+        let names = names, pose = pose
+        return KeyedMove(
+            channels: names.indices.map { index in
+                let count = keys[names[index]]!.count
+                let interior = (0..<count).map { $0 != 0 && $0 != count - 1 }
+                return KeyedMove.Channel(name: names[index], freeProgress: interior, freeValue: interior, valueStep: 0.8 * scales[index])
+            },
+            span: span,
+            room: room,
+            bounds: Dictionary(uniqueKeysWithValues: names.indices.map { (names[$0], lower[$0]...upper[$0]) }),
+            path: { keys in
+                let curves = names.map { Curve(keys[$0]!.map { Curve.Key($0.0, $0.1) }) }
+                return { parameter in pose(curves.map { $0.value(at: parameter) }) }
+            }
+        )
+    }
+
     /// This space with the parts that are the same at `start` and `goal` held where they are.
     func holdingStill(between start: [Double], and goal: [Double]) -> (ConfigSpace, held: [String]) {
         let parts = parts.isEmpty ? Array(names.indices) : parts

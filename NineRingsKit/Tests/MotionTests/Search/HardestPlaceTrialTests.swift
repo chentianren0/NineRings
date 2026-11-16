@@ -59,6 +59,12 @@ import simd
     func stepAsideWhileRingThreeLifts() {
         let raise = Double(Self.environment["NINE_RINGS_BAR_RAISE"] ?? "0") ?? 0
         let space = Self.space(raise: raise)
+        // For the pose search, the room of the moving parts only, as the step-aside scan on the ring 3 branch counts it.
+        let movingOnly: ConfigSpace = {
+            var copy = space
+            copy.room.stillAgainstSword = false
+            return copy
+        }()
         let start = [RingTurns.leanOnDegrees, 0, 0, 180 - RingTurns.leanOnDegrees, 0]
         print(String(format: "bar raised %.1f mm; room at rest %.3f", raise, space.clearance(start)))
         print("\(space.room.room(space.pose(start)))")
@@ -70,7 +76,7 @@ import simd
             let clamped = q.indices.map { min(max(q[$0], space.lower[$0]), space.upper[$0]) }
             let pose = space.pose(clamped)
             let off = Relations.isRoundTheRails(3, in: pose) ? -1.0 : 0
-            return space.room.room(pose).value + off
+            return movingOnly.room.room(pose).value + off
         }
         var best: (q: [Double], value: Double) = (start, -.infinity)
         var random = SeededRandom(seed: Tuner.seed)
@@ -91,14 +97,21 @@ import simd
             fflush(stdout)
         }
         let goal = best.q.indices.map { min(max(best.q[$0], space.lower[$0]), space.upper[$0]) }
-        print("best pose: \(space.room.room(space.pose(goal)))")
+        print("best pose, moving parts: \(movingOnly.room.room(space.pose(goal))); everything: \(space.room.room(space.pose(goal)))")
         fflush(stdout)
         guard best.value > 0 else { return }
 
         // A way to it from the rest pose.
-        let needs = [0.3, 0.2, 0.0].filter { $0 < min(best.value, space.clearance(start)) }
-        if let plan = Planner.plan(space, from: start, to: goal, needs: needs, step: 0.5, nodes: 20000, seconds: 60, seed: Tuner.seed) {
+        let needs = [0.3, 0.2, 0.1, 0.0].filter { $0 < min(best.value, space.clearance(start)) }
+        if let plan = Planner.plan(space, from: start, to: goal, needs: needs, step: 0.5, nodes: 40000, seconds: 60, seed: Tuner.seed) {
             for q in plan.path { print(q.map { String(format: "%8.2f", $0) }.joined() + String(format: "   room %.3f", space.clearance(q))) }
+            // Written as keys and tuned for room, as a move would be.
+            let keys = CurveFit.keys(plan.path, space: space, span: 0...1, tolerance: 0.3)
+            let move = space.keyedMove(span: 0...1, keys: keys)
+            print(String(format: "%6.1f s  fitted %d keys: ", elapsed(), keys.values.reduce(0) { $0 + $1.count }) + "\(move.score(keys, samples: 480, detail: true))")
+            let seconds = Double(Self.environment["NINE_RINGS_SECONDS"] ?? "120") ?? 120
+            let result = Tuner.run(move, from: keys, seconds: seconds, seed: Tuner.seed)
+            print(move.swift(result.keys))
             print(String(format: "%6.1f s in all", elapsed()))
         }
     }
