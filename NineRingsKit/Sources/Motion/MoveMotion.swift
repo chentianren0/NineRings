@@ -24,7 +24,7 @@ public struct MoveMotion: Sendable {
 
     /// The toy a fraction `progress` of the way through the move. Progress outside 0...1 is held at the ends.
     public func pose(at progress: Double) -> ToyPose {
-        RingOneOff.written.pose(at: offProgress(progress))
+        RingOneOff.pose(atProgress: offProgress(progress))
     }
 
     /// The stages in the order the move goes through them, each with its span of progress.

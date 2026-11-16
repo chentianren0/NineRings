@@ -15,3 +15,20 @@ import Testing
         }
     }
 }
+
+extension ProfileTests {
+    /// Prints, for each fiftieth of the move, the fastest any point moves, in millimetres per second at full speed.
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["NINE_RINGS_PROFILE"] != nil))
+    func speeds() throws {
+        let motion = try #require(MoveMotion(ringOneOff))
+        let samples = 4000
+        let poses = (0...samples).map { motion.pose(at: Double($0) / Double(samples)) }
+        let steps = zip(poses, poses.dropFirst()).map { Relations.largestStep(from: $0, to: $1) }
+        let perSecond = Double(samples) / MoveMotion.duration
+        for bin in 0..<50 {
+            let slice = steps[(bin * samples / 50)..<((bin + 1) * samples / 50)]
+            let fastest = slice.max { $0.distance < $1.distance }!
+            print(String(format: "%.2f  %6.1f mm/s  %@", Double(bin) / 50, fastest.distance * perSecond, fastest.part))
+        }
+    }
+}
