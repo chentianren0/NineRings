@@ -13,7 +13,7 @@ import simd
 @Suite struct RingThreeTuneTests {
     typealias Keys = [String: [(Double, Double)]]
 
-    static let names = ["ring2.lid", "ring2.tilt", "ring2.swing", "ring3.tip", "ring3.tilt", "ring3.swing", "ring3.eye", "sword"]
+    static let names = ["ring1.carry", "ring1.aside", "ring1.lid", "ring1.swing", "ring1.eye", "ring2.lid", "ring2.tilt", "ring2.swing", "ring3.tip", "ring3.tilt", "ring3.swing", "ring3.eye", "sword"]
 
     static var initial: Keys {
         if let text = ProcessInfo.processInfo.environment["NINE_RINGS_PATH3"], let parsed = parse(text) { return parsed }
@@ -47,12 +47,15 @@ import simd
         return RingThreeOff(keys: keys)
     }
 
+    /// The parts the move moves, and the bar, which the rising rods come toward. The sword is left out: its gaps to
+    /// the rings that stay on are the checker's, and its gaps to the moving rings are counted from their side.
     static let moving: Set<PartName> = [
         .ring(1), .eye(1), .shaft(1), .bead(1), .ring(2), .eye(2), .shaft(2), .bead(2),
-        .ring(3), .eye(3), .shaft(3), .bead(3), .sword,
+        .ring(3), .eye(3), .shaft(3), .bead(3), .bar,
     ]
 
-    /// The room at one point of the path, or a negative penalty when something is wrong.
+    /// The room at one point of the path, or a negative penalty when something is wrong. Only rings 1 to 4 and the
+    /// rods of rings 1 to 3 are checked, for speed; the checker looks at everything.
     static func room(_ path: RingThreeOff, at parameter: Double, previous: ToyPose? = nil) -> (room: Double, why: String) {
         let pose = path.pose(at: parameter)
         var penalty = 0.0
@@ -63,28 +66,28 @@ import simd
             let wireAngle = asin(min(1, abs(simd_dot(wire, rodDown)))) * 180 / .pi
             if wireAngle > 55 { penalty += (wireAngle - 55) / 10 + 1; why.append("wire along rod \(ring)") }
         }
-        let failures = Relations.failures(in: pose, mayBeOff: [1, 2, 3])
-            + (previous.map { Relations.railChangeFailures(from: $0, to: pose) } ?? [])
+        var failures = StepAsideScanTests.failures(pose, n: 3, rods: true)
+        for ring in 1...3 where Relations.areLinked(pose.rod(ring).eye, pose.ring(ring).circle) == false {
+            failures.append("ring \(ring) out of its eye")
+        }
+        failures += previous.map { Relations.railChangeFailures(from: $0, to: pose) } ?? []
         if !failures.isEmpty { penalty += Double(failures.count); why += failures }
-        let holeRoom = Relations.holeRoom(1, in: pose) ?? -1
-        if holeRoom < 0.05 { penalty += (0.05 - holeRoom) * 10 + 0.5; why.append("rod 1 tight in its hole \(holeRoom)") }
-
-        let shapes = pose.shapes
-        let withoutBar = shapes.filter { $0.name != .bar }
-        let gap = Gaps.smallest(in: withoutBar, involving: moving)
-        // Bead 1 rises toward the bar; it should keep at least the resting gap.
-        let beadOne = Gaps.smallest(in: shapes.filter { $0.name == .bar || $0.name == .bead(1) })?.distance ?? 10
-        let beadRoom = (beadOne - Layout.restingGap) * 6 + 1.5
+        let gap = Gaps.smallest(in: pose.shapes, involving: moving)
         if let gap { why.append("\(gap)") }
-        let room = min(gap?.distance ?? 10, beadRoom, 1.5)
+        let room = min(gap?.distance ?? 10, 1.5)
         return penalty > 0 ? (min(room, 0) - penalty, why.joined(separator: "; ")) : (room, why.joined(separator: "; "))
     }
 
-    static func score(_ keys: Keys, samples: Int = 300) -> Double {
+    static func score(_ keys: Keys, samples: Int = Int(ProcessInfo.processInfo.environment["NINE_RINGS_SAMPLES"] ?? "200") ?? 200) -> Double {
         guard let path = path(keys) else { return -100 }
-        let progress = (0...samples).map { Double($0) / Double(samples) }
+        // `NINE_RINGS_WINDOW=a,b` scores only that span of the path, and its mirror image `1-b,1-a`.
+        let window = ProcessInfo.processInfo.environment["NINE_RINGS_WINDOW"].map { $0.split(separator: ",").compactMap { Double($0) } }
+        let progress = (0...samples).map { Double($0) / Double(samples) }.filter { t in
+            guard let window, window.count == 2 else { return true }
+            return (t >= window[0] && t <= window[1]) || (t >= 1 - window[1] && t <= 1 - window[0])
+        }
         let rooms = Sweep.inParallel(progress.count) { index in
-            let previous = index > 0 ? path.pose(at: progress[index - 1]) : nil
+            let previous = path.pose(at: progress[index] - 1 / Double(samples))
             return room(path, at: progress[index], previous: previous).room
         }
         return rooms.min() ?? -100
@@ -95,16 +98,21 @@ import simd
     static func free(_ keys: Keys) -> [Item] {
         let only = ProcessInfo.processInfo.environment["NINE_RINGS_TUNE_ONLY"].map { Set($0.split(separator: ",").map(String.init)) }
         var list: [Item] = []
+        // `NINE_RINGS_KEY_WINDOW=a,b` frees only the keys placed within that span of the path or its mirror image.
+        let keyWindow = ProcessInfo.processInfo.environment["NINE_RINGS_KEY_WINDOW"].map { $0.split(separator: ",").compactMap { Double($0) } }
         for name in names where only?.contains(name) ?? true {
             let count = keys[name]!.count
             for k in 0..<count {
+                let place = keys[name]![k].0
+                if let keyWindow, keyWindow.count == 2,
+                   !(keyWindow[0]...keyWindow[1]).contains(place), !(keyWindow[0]...keyWindow[1]).contains(1 - place) { continue }
                 let isEnd = k == 0 || k == count - 1
                 // The ends of the move are fixed; elsewhere every key's place is free, and every value but an end
                 // value, which is a rest pose.
                 let fixedProgress = (name == "ring2.lid" || name == "sword") && isEnd
-                let fixedValue = isEnd && !["ring2.swing", "ring2.tilt"].contains(name)
+                let fixedValue = isEnd
                 if !fixedProgress { list.append(Item(name: name, key: k, isProgress: true, step: 0.01)) }
-                if !fixedValue { list.append(Item(name: name, key: k, isProgress: false, step: ["ring3.eye", "sword"].contains(name) ? 0.8 : 6)) }
+                if !fixedValue { list.append(Item(name: name, key: k, isProgress: false, step: ["ring3.eye", "ring1.eye", "ring1.aside", "sword"].contains(name) ? 0.8 : (name == "ring1.carry" ? 0.1 : 6))) }
             }
         }
         return list
@@ -112,10 +120,6 @@ import simd
 
     static func nudge(_ keys: inout Keys, _ item: Item, by amount: Double) {
         if item.isProgress { keys[item.name]![item.key].0 += amount } else { keys[item.name]![item.key].1 += amount }
-        // The swing of ring 2 starts and ends at zero.
-        if ["ring2.swing", "ring2.tilt"].contains(item.name) && !item.isProgress && (item.key == 0 || item.key == keys[item.name]!.count - 1) {
-            keys[item.name]![item.key].1 = 0
-        }
     }
 
     @Test(.enabled(if: ProcessInfo.processInfo.environment["NINE_RINGS_TUNE3"] != nil))
@@ -164,6 +168,38 @@ import simd
             try? "\(score)\n\(text(keys))\n".write(toFile: path, atomically: true, encoding: .utf8)
         }
         fflush(stdout)
+    }
+
+    /// Where along the path the pose bends most sharply: a jump in velocity shows as a bend that grows as the step
+    /// shrinks. Run with `NINE_RINGS_BEND3=1`.
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["NINE_RINGS_BEND3"] != nil))
+    func bends() {
+        let path = RingThreeOff.written
+        func numbers(_ t: Double) -> [Double] {
+            let pose = path.pose(at: t)
+            var values = [pose.swordSlide]
+            for part in pose.rings + pose.rods {
+                values += [part.position.x, part.position.y, part.position.z]
+                for axis in [SIMD3<Double>(1, 0, 0), SIMD3(0, 1, 0), SIMD3(0, 0, 1)] {
+                    let turned = part.worldDirection(axis) * 10
+                    values += [turned.x, turned.y, turned.z]
+                }
+            }
+            return values
+        }
+        for step in [1e-3, 1e-4] {
+            var worst = (bend: 0.0, at: 0.0, index: 0)
+            var t = step
+            while t < 1 - step {
+                let (a, b, c) = (numbers(t - step), numbers(t), numbers(t + step))
+                for i in b.indices {
+                    let bend = abs(a[i] - 2 * b[i] + c[i]) / (step * step)
+                    if bend > worst.bend { worst = (bend, t, i) }
+                }
+                t += step / 3.7
+            }
+            print("bend at step \(step): \(worst.bend) at path \(worst.at), number \(worst.index) (part \((worst.index - 1) / 12))")
+        }
     }
 
     @Test(.enabled(if: ProcessInfo.processInfo.environment["NINE_RINGS_REPORT3"] != nil))

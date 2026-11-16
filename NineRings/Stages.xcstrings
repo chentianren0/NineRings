@@ -121,6 +121,18 @@
         }
       }
     },
+    "Ring 2 back on": {
+      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ring 2 back on"
+          }
+        }
+      }
+    },
     "Ring 2 hangs": {
       "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
       "extractionState": "manual",
@@ -153,6 +165,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ring 2 over the tip"
+          }
+        }
+      }
+    },
+    "Ring 2 steps aside": {
+      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ring 2 steps aside"
+          }
+        }
+      }
+    },
+    "Ring 3 hangs": {
+      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ring 3 hangs"
+          }
+        }
+      }
+    },
+    "Ring 3 lifts": {
+      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ring 3 lifts"
+          }
+        }
+      }
+    },
+    "Ring 3 over the tip": {
+      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ring 3 over the tip"
           }
         }
       }

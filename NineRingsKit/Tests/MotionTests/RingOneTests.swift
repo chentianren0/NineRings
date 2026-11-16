@@ -37,12 +37,13 @@ let ringOneOn = ringOneOff.reversed
         }
     }
 
-    @Test func everyBeadOfARingThatIsOnRestsAHairUnderTheBar() throws {
+    /// The bar is held ``Layout/barRaise`` above where these beads would rest against it.
+    @Test func everyBeadOfARingThatIsOnHangsTheRaiseAndAHairUnderTheBar() throws {
         let pose = try #require(RestPoses.pose(for: .allOn))
         let barBottom = Layout.bar.position.y - Dimensions.Bar.thickness / 2
         for ring in PuzzleState.rings {
             let beadTop = pose.rod(ring).worldPoint(SIMD3(0, Dimensions.Rod.beadCenterY, 0)).y + Dimensions.Rod.beadRadius
-            #expect(abs(barBottom - beadTop - Layout.restingGap) < 1e-9)
+            #expect(abs(barBottom - beadTop - Layout.restingGap - Layout.barRaise) < 1e-9)
         }
     }
 
@@ -182,7 +183,7 @@ let ringOneOn = ringOneOff.reversed
     }
 
     @Test func movesNotWrittenYetHaveNoMotion() {
-        #expect(MoveMotion(Move(ring: 3, from: PuzzleState("011111111")!)!) == nil)
+        #expect(MoveMotion(Move(ring: 4, from: PuzzleState("001111111")!)!) == nil)
         #expect(MoveMotion(Move(ring: 1, from: PuzzleState("101111111")!)!) == nil)
         #expect(Move(ring: 3, from: .allOn) == nil)
     }

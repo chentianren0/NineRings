@@ -29,14 +29,15 @@ public enum RestPoses {
         )
     }
 
-    /// The states whose rest has been written and checked so far: every ring on, ring 1 alone off, and ring 2
-    /// alone off. A ring that is off hangs from the next ring the same way wherever it is, so ring 2 off rests as
-    /// ring 1 off does, one hole further on, with ring 1 on in front of it and rod 1 down through it.
+    /// The states whose rest has been written and checked so far: every ring on, ring 1 alone off, ring 2 alone
+    /// off, and rings 1 and 3 off. A ring that is off hangs the same way wherever it is, whether the next ring is on
+    /// or hangs too: so ring 2 off rests as ring 1 off does, one hole further on, and a chain of hanging rings is a
+    /// row of parallel rings, each with its eye in the bowl of the ring behind it (see ``HangingChain``).
     ///
-    /// Other arrangements, such as a chain of off rings hanging from one another or ring 9 off on the bar, come
-    /// with the moves that reach them.
+    /// Other arrangements, such as ring 9 off on the bar, come with the moves that reach them.
     public static func isWritten(_ state: PuzzleState) -> Bool {
-        state == .allOn || state == PuzzleState.allOn.moving(1) || state == PuzzleState.allOn.moving(2)
+        let written: [PuzzleState] = [.allOn, PuzzleState.allOn.moving(1), PuzzleState.allOn.moving(2), PuzzleState.allOn.moving(1).moving(3)]
+        return written.contains(state)
     }
 
     /// The toy at rest in `state`, or nil when that rest has not been written yet.

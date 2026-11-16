@@ -8,15 +8,16 @@ Nothing in this app is simulated. The place of every part of the toy is a pure f
 
 - **We write the path of the ring that moves**, as a handful of smooth curves of the progress. Every turn of the ring is about an axis through its eye.
 - **Every other part follows by rule.** A rod is a straight line from its eye, which sits on its ring's wire, through the middle of its own hole in the bar; it turns about its own axis so that its eye faces along the wire. The bead is at its lower end.
-- **The bar stays still and level.** Rings and rods that the move does not involve stay still too.
+- **The bar stays still and level, held a little high.** It sits 18 mm above the height at which the beads of the rings that are on would rest against it, so those beads hang free below it and every rod has room to rise. Rings and rods that the move does not involve stay still too.
 - **The sword stays level and slides along its own length.** That is how its tip comes to the ring for the lift over it, and moves away again so that there is enough slot in front of the ring for its drop.
 
 The toy is simplified on purpose. It keeps what explains the mechanism (what passes through what, that nothing passes through anything, that a ring leaves the rails only over the tip end, and the stages of a move in the order a person does them) and gives up gravity-true hanging, a swinging bar and the exact lean of each ring.
 
-So far two moves are written, each coming off with every other ring on and going back on along the same path backwards:
+So far three moves are written, each coming off and going back on along the same path backwards:
 
-- **Ring 1**, in six stages: flatten, over the tip, back over the slot, turn, down through the slot, hang.
-- **Ring 2**, in five: ring 1 steps aside, ring 2 over the tip, down through the slot, ring 2 hangs, ring 1 back on. Going on, they read: ring 1 steps aside, ring 2 lifts, up through the slot, ring 2 over the tip, ring 1 back on.
+- **Ring 1**, with every other ring on, in six stages: flatten, over the tip, back over the slot, turn, down through the slot, hang.
+- **Ring 2**, with every other ring on, in five: ring 1 steps aside, ring 2 over the tip, down through the slot, ring 2 hangs, ring 1 back on. Going on, they read: ring 1 steps aside, ring 2 lifts, up through the slot, ring 2 over the tip, ring 1 back on.
+- **Ring 3**, with ring 1 off and every other ring on, in five: ring 2 steps aside, ring 3 over the tip, down through the slot, ring 3 hangs, ring 2 back on. Going on: ring 2 steps aside, ring 3 lifts, up through the slot, ring 3 over the tip, ring 2 back on.
 
 Other states and moves come later; the code is shaped for them but does not fake them.
 
@@ -41,11 +42,23 @@ With the nominal sizes, a few things are not free choices, and the checker found
 - So ring 1 cannot drop straight through the slot. Its eye goes down into the slot first; the ring tips over toward the tip, rolls nearly flat and swings from side to side, so that it slips through the slot at a slant, partly over one rail and partly under the other; and only when it hangs across the sword does the eye sink below the rails and the rod leave the slot.
 - Ring 1's eye sits 32 mm from the tip's end with the sword at home: any further and rod 9 would meet the rails where they close; any nearer and the slot in front of ring 1 would be too short for the drop.
 
-### Ring 3: blocked under the present rules
+### How hanging rings hang, and how they follow
 
-Ring 3's move (from ring 1 off) is not written yet: no path has been found that the checker passes, and the scans say why. Ring 2 has to step aside, as ring 1 does for ring 2, but ring 1 hangs from it with rod 1 through it, and ring 1 cannot get from the side of ring 2 it hangs on to the other: the two rings are the same size, so ring 1 cannot pass through ring 2's hole, and going round its rim would link them. So when ring 2 swings up out of the way, ring 1 ends up lying on top of it, and rod 1 has to reach above ring 2. Rod 1's bead rests under the bar, so its eye can rise no higher than the eye of a ring that is on. That stops ring 2 at about 80° from upright, still drooping toward the tip, and there ring 3 cannot lift far enough for the tip to pass out of it with 0.2 mm to spare: the best attempt comes within 0.08 mm of eye 2. `RingThreeOff` holds that attempt, and `HangingChain` the rule that carries a hanging ring, or a chain of them, along with the ring it hangs from.
+A ring that is off hangs the same way whatever it hangs from, whether the next ring is on or hangs too: its rod upright, its eye just below the rails above its own hole, leaning 60° toward the tip. A chain of hanging rings is therefore a row of parallel rings, 15 mm apart, like plates leaning on one another, each with its eye in the bowl of the ring behind it.
 
-Holding the bar higher, so that beads hang free and rods can rise, unblocks ring 3 (about 6 mm gives 0.48 mm of room where ring 2 steps aside), but it does not carry on far. The bar can go no higher than about 34 mm before it meets the rings that are on. Ring 4, with two rings hanging, needs at least 16 mm to step aside, and its rest pose allows at most about 16 mm before the hanging rods' beads meet; ring 5 steps aside only at about 34 mm, with 0.3 mm to spare, and its rest pose fails above about 10 mm; ring 6 cannot step aside at any height. Each ring that hangs from another leans about 17° further than the ring it hangs from, so a longer chain fans forward and upward, and its rods lean further and must rise further.
+When the ring in front of a moving ring steps aside, whatever hangs from it has to go too. The first hanging ring is carried with it as one piece while it starts to swing up, so the two cannot cut into each other; then it is lifted clear above it, its rod upright and sliding up in its hole, and ends drooping toward the tip in front of it, as it hangs at rest, with its rod still down through it. Any deeper rings would rise and fall with the first, straight up and down, as one piece: a deeper rod has slid further down at rest, so it has as much room to rise. That is what the bar is held high for.
+
+The scans (`PlateChainScanTests`) measured this for every ring up to 9, that is with one to seven rings hanging: the rest pose of each start state has at least 0.3 mm everywhere and lets the bar be raised up to about 27 mm; stepping aside needs a raise of at least about 9 mm and has its most room, 0.53 mm, from about 15 mm, the same for every length of chain. A chain that hangs stiffly instead, each ring repeating ring 1's relation to ring 2, fans forward and upward and runs out at ring 5.
+
+### How ring 3 comes off
+
+- **Ring 2 steps aside.** The sword is drawn back while ring 2 swings up about its wire through the eye, carrying ring 1 with it as one piece. Then ring 1 is lifted high above ring 2, its rod upright, drooping toward the tip, and ring 2 lies over the tip end, rising slightly toward the tip and turned to one side, out of ring 3's way. Rod 1 still runs down through ring 2.
+- **Ring 3 over the tip, down through the slot, ring 3 hangs** follow ring 2's own path in ring 2's move, one hole further on, with the sword 15 mm further back. While ring 3 drops, ring 1 moves to the side ring 2 is turned to, so that rod 1 leans aside and the sword can slide back toward the tip past it, giving ring 3 as much slot as ring 2 had; ring 2 rolls and turns a little meanwhile to stay out of ring 3's way.
+- **Ring 2 back on** is the step aside backwards: ring 1 comes down in front of ring 2, ring 2 is carried back down with ring 1 and lies round the rails again as the sword goes home.
+
+Rings 1 and 3 off rest as ring 1 off does, ring 3 two holes further on, with rod 2 down through it.
+
+Ring 2 back on is the step aside played backwards, key for key. The tightest place in ring 3's move is where the sword is drawn back under ring 2 as it starts to swing up: ring 2's wire beside its eye passes the tip with 0.2 mm to spare.
 
 ## Layout
 
@@ -91,15 +104,15 @@ The package's tests sample each written move at 4000 progress values in each dir
 - any two parts not joined by design keep at least 0.2 mm between their surfaces. Joined by design means only a ring and the eye that holds it, and a rod's shaft and the bar, which the rod rule below measures instead. Parts that rest against each other, such as a bead under the bar, are drawn 0.25 mm apart;
 - no point of any part moves more than 0.25 mm from one sample to the next;
 - ring k (k ≥ 2) has rod k−1 through it and no other rod; no two rings are linked; each eye is linked with its own ring and no other, and the ring's wire runs through the eye without cutting through it; each rod's shaft runs through its own hole without cutting into the hole's wall or rims, at any tilt, though it may touch them, since it slides there; each bead stays below the bar; the bar never moves;
-- a ring goes round both rails or neither; only the rings a move takes off, and ring 1 when it steps aside, ever leave them; and any ring, from one sample to the next, leaves or joins the rails only over the tip's end: where it goes round them, the sword goes through it nowhere but near the tip's end. Each side of the sword's centreline has two ends: the tip's end, where the sides meet, and the end of its grip loop, which lies inside the side's own wire, so that a ring cannot pass over it without meeting the wire;
-- in ring 2's move, rings 3 to 9, their rods and ring 1's eye stay exactly where they rest;
+- a ring goes round both rails or neither; only the ring a move takes off and the rings in front of it ever leave them; and any ring, from one sample to the next, leaves or joins the rails only over the tip's end: where it goes round them, the sword goes through it nowhere but near the tip's end. Each side of the sword's centreline has two ends: the tip's end, where the sides meet, and the end of its grip loop, which lies inside the side's own wire, so that a ring cannot pass over it without meeting the wire;
+- in ring 2's move, rings 3 to 9, their rods and ring 1's eye stay exactly where they rest; in ring 3's move, rings 4 to 9, their rods and ring 2's eye stay exactly where they rest, and rod 1 stays upright;
 - the two ends of the move are the two rest poses, and going on is coming off backwards;
 - the stages come in order and each does what its name says;
 - position and velocity are continuous, the move starts and ends at rest, and it does not stop between stages.
 
 A pose takes well under a microsecond to compute in an optimized build.
 
-Several tests are tools rather than checks, and run only when asked: `NINE_RINGS_PROFILE=1` (or `=2` for ring 2) prints the smallest gap and the fastest-moving part through the move; `NINE_RINGS_EXPLORE=1` maps where ring 1 can be with its eye at each height and searches that map for a way down; `NINE_RINGS_TUNE=1` searches the key values of the drop for the path with the most room. `NINE_RINGS_TUNE2=1` does the same for every key of ring 2's move. The key values in `RingOneOff` and `RingTwoOff` came from these searches, and are written there as plain numbers. For ring 3, `NINE_RINGS_TUNE3=1` (or `NINE_RINGS_REPORT3=1` to print the room along the path) tunes `RingThreeOff`; `NINE_RINGS_STEP_ASIDE=3` (or 4, 5, 6) scans where the ring in front could step aside to, carrying the rings that hang from it, while the ring behind lifts over the tip, and how high the bar must be held for that (`Layout.barRaise`, at present 0); and `NINE_RINGS_REACH=1` scans whether rod 1 could reach through ring 2 at all there, whatever ring 1 does (with `NINE_RINGS_FRONT=1`, keeping its eye on the side of ring 2 that ring 1 hangs on).
+Several tests are tools rather than checks, and run only when asked: `NINE_RINGS_PROFILE=1` (or `=2` for ring 2) prints the smallest gap and the fastest-moving part through the move; `NINE_RINGS_EXPLORE=1` maps where ring 1 can be with its eye at each height and searches that map for a way down; `NINE_RINGS_TUNE=1` searches the key values of the drop for the path with the most room. `NINE_RINGS_TUNE2=1` does the same for every key of ring 2's move. The key values in `RingOneOff` and `RingTwoOff` came from these searches, and are written there as plain numbers. For ring 3, `NINE_RINGS_TUNE3=1` (or `NINE_RINGS_REPORT3=1` to print the room along the path) tunes `RingThreeOff`, and `NINE_RINGS_WINDOW`, `NINE_RINGS_KEY_WINDOW` and `NINE_RINGS_TUNE_ONLY` narrow it to one stretch of the path or some of its curves; `NINE_RINGS_PLATES=rest` and `NINE_RINGS_PLATES=aside` are the scans of hanging chains described above. A typical scan takes 6 to 40 seconds, and a tuner round about a minute.
 
 ## Building and testing
 

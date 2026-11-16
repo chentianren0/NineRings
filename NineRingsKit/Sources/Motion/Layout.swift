@@ -40,8 +40,11 @@ public enum Layout {
     // MARK: The bar and the holes
 
     /// How far the bar is held above the height at which every bead of a ring that is on would rest against
-    /// its underside. Held higher, the beads hang free below it, and every rod has that much room to rise.
-    public static let barRaise = 0.0
+    /// its underside. Held higher, the beads hang free below it, and every rod has that much room to rise: the
+    /// ring that hangs from a ring stepping aside is lifted clear above that ring. Measured for rings 3 to 9 (see
+    /// `PlateChainScanTests`): stepping aside needs at least about 9 mm and has the most room from about 15 mm; the
+    /// rings hanging at rest stay clear of the bar up to about 27 mm.
+    public static let barRaise = 18.0
 
     /// The bar, level and still, held `raise` above the height at which every bead of a ring that is on would
     /// rest a hair under it.

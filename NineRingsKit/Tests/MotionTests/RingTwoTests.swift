@@ -193,8 +193,8 @@ let ringTwoOffState = PuzzleState.allOn.moving(2)
         #expect(motion.stage(at: 1).name == "Ring 1 back on")
     }
 
-    @Test func theWrittenMovesAreRingOneAndRingTwo() {
-        #expect(MoveMotion.written == [ringOneOff, ringTwoOff])
+    @Test func theWrittenMovesAreRingsOneTwoAndThree() {
+        #expect(MoveMotion.written == [ringOneOff, ringTwoOff, ringThreeOff])
         #expect(MoveMotion.written.allSatisfy { MoveMotion($0) != nil && MoveMotion($0.reversed) != nil })
     }
 }

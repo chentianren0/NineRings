@@ -3,29 +3,28 @@ import Puzzle
 import Toy
 import simd
 
-/// An attempt at the path of ring 3 coming off while ring 1 is off and every other ring is on: ring 2 steps aside,
-/// carrying ring 1 with it, ring 3 comes off over the tip and goes down through the slot round rod 2, and ring 2
-/// goes back on with ring 1 hanging from it again.
+/// The written path of ring 3 coming off while ring 1 is off and every other ring is on: ring 2 steps aside, and
+/// ring 1, which hangs from it, is lifted clear above it; ring 3 comes off over the tip and goes down through the
+/// slot round rod 2; and ring 2 goes back on with ring 1 hanging from it again.
 ///
-/// It is not one of the written moves: under the present rules no path for it has been found that the checker
-/// passes, and this is the nearest. What blocks it is how high rod 1 can reach. Its bead rests under the bar, so
-/// its eye can rise no higher than the eye of a ring that is on. Ring 1 hangs on the side of ring 2's plane
-/// toward the tip, and cannot get to the other side: the two rings are the same size, so ring 1 cannot pass
-/// through ring 2's hole, and going round its rim would link them. So when ring 2 swings up out of ring 3's way,
-/// ring 1 ends up lying on top of it, and its eye must be higher than ring 2. Rod 1 can follow ring 2 only to about
-/// 80° from upright, still drooping toward the tip, and there ring 3 cannot lift far enough for the tip to pass
-/// out of it without coming within 0.1 mm of ring 2 or of eye 2. `RingThreeAsideScanTests` and
-/// `RingThreeReachTests` are the scans that show this.
+/// Four things are written, each by curves of the path's own parameter (see ``RingTurns``), and any rings that
+/// hang below ring 1 would follow by rule (see ``HangingChain``):
 ///
-/// Four things move, by curves of the path's own parameter (see ``RingTurns``), and one more by rule:
-///
-/// - Ring 2 swings up about its wire through the eye, rolls and turns about the upright through its eye. Its eye
-///   never moves: rod 2 stays where it is, down through the slot and through ring 3.
-/// - Ring 1 hangs from ring 2 and is carried by it as one piece (see ``HangingChain``), so rod 1 slides up in its
-///   hole and leans to reach it.
+/// - Ring 2 swings up about its wire through the eye, rolls a little and turns about the upright through its eye,
+///   until it lies over the tip end, rising slightly toward the tip and turned to one side. Its eye never moves: rod 2
+///   stays where it is, down through the slot and through ring 3.
+/// - Ring 1 is carried with ring 2 as one piece while ring 2 starts to swing up, so that the two cannot cut into
+///   each other, and then lifted clear above it, its rod upright and sliding up in its hole. It ends high above
+///   ring 2, drooping toward the tip as it hangs at rest, with rod 1 down through ring 2. The bar is held high
+///   enough for this (see ``Layout/barRaise``).
 /// - Ring 3 is written as ring 2 is in ring 2's move, one hole further on: standing along the sword and then
 ///   tipped over toward the tip, tilted and swung.
-/// - The sword slides toward the grip and back.
+/// - The sword slides toward the grip and back. While ring 3 drops, ring 1 moves across to the side ring 2 is turned
+///   to, so that rod 1 leans aside and the sword can slide back toward the tip past it, giving ring 3 as much slot
+///   in front of it as ring 2 had in its own move.
+///
+/// The key values were found by a search for the path with the most room (see `RingThreeTuneTests`), and are
+/// written here as plain numbers.
 struct RingThreeOff: Sendable {
     /// The stages, as spans of the path's own parameter.
     static let stagesAlongThePath = [
@@ -36,34 +35,40 @@ struct RingThreeOff: Sendable {
         Stage(name: "Ring 2 back on", start: 0.82, end: 1),
     ]
 
+    var ringOne: RingTurns
+    /// How far ring 1 is carried with ring 2 as one piece rather than following its own path: 1 at the start and
+    /// the end of the move, 0 while it is lifted clear.
+    var ringOneCarry: Curve
+    /// How far ring 1's eye moves across the sword, toward the side ring 2 is turned to, while ring 3 drops: its rod
+    /// leans aside so that the sword can slide back toward the tip past it.
+    var ringOneAside: Curve
     var ringTwo: RingTurns
     var ringThree: RingTurns
     var swordSlide: Curve
 
     static let leanOn = RingTurns.leanOnDegrees
+    static let leanHanging = RingTurns.leanHangingDegrees
     /// Ring 3's tip when it rests on the rails or hangs: 180° less its lean.
     static let tipOn = 180 - RingTurns.leanOnDegrees
     static let tipHanging = 180 - RingTurns.leanHangingDegrees
 
-    /// The state the move starts from: ring 1 off, every other ring on.
-    static let from = PuzzleState.allOn.moving(1)
-
-    /// Ring 1 hanging from ring 2, as it rests before the move.
-    static let ringOneHanging = HangingChain(carrierAtRest: RestPoses.on(2), chainAtRest: [RestPoses.hanging(1)])
-
     /// The keys as written, each curve's keys as (path parameter, value) pairs, angles in degrees and lengths in
     /// millimetres.
     static let keys: [String: [(Double, Double)]] = [
-        "ring2.lid": [(0, leanOn), (0.12, 62), (0.20, 80), (0.80, 80), (0.88, 62), (1, leanOn)],
-        "ring2.tilt": [(0.10, 0), (0.20, 0), (0.80, 0), (0.90, 0)],
-        "ring2.swing": [(0.10, 0), (0.20, 0), (0.80, 0), (0.90, 0)],
-        "ring3.tip": [(0.20, tipOn), (0.368, 100), (0.642, 84.795), (0.776, tipHanging)],
-        "ring3.tilt": [(0.4763, 90), (0.5629, 62.031), (0.82, 90)],
-        "ring3.swing": [(0.4289, 0), (0.5428, 24.742), (0.6231, 4.12), (0.6951, -27.2), (0.7857, 0)],
-        "ring3.eye": [(0.5022, Layout.eyeHeightOn), (0.6480, -4.475), (0.7419, -5.977), (0.796, Layout.eyeHeightHanging)],
-        "sword": [(0, Layout.swordHome), (0.12, 40), (0.28, 40.4), (0.39, 42.4), (0.4911, 30.841), (0.78, 30.841), (0.88, 40), (1, Layout.swordHome)],
+        "ring1.carry": [(0.04, 1), (0.085, 1.062), (0.12, 1), (0.2, 0), (0.8, 0), (0.88, 1), (0.915, 1.062), (0.96, 1)],
+        "ring1.aside": [(0.32, 0), (0.3754, -13.225), (0.7898, -13.93), (0.85, 0)],
+        "ring1.lid": [(0.1292, leanHanging), (0.8704, leanHanging)],
+        "ring1.swing": [(0.1294, 0), (0.8694, 0)],
+        "ring1.eye": [(0.03, Layout.eyeHeightHanging), (0.1, 0), (0.2004, 17.951), (0.39, 19.6), (0.61, 18.8), (0.7996, 17.951), (0.9, 0), (0.97, Layout.eyeHeightHanging)],
+        "ring2.lid": [(0, leanOn), (0.0908, 58.041), (0.1071, 65.872), (0.1657, 84.519), (0.1999, 108.265), (0.3358, 113.738), (0.6203, 114.377), (0.8001, 108.265), (0.8343, 84.519), (0.8929, 65.872), (0.9092, 58.041), (1, leanOn)],
+        "ring2.tilt": [(0.1189, 0), (0.2004, 10.127), (0.3457, -2.397), (0.5769, -2.297), (0.7996, 10.127), (0.8811, 0)],
+        "ring2.swing": [(0.12, 0), (0.2004, -40.241), (0.4038, -45.357), (0.5978, -45.356), (0.7996, -40.241), (0.88, 0)],
+        "ring3.tip": [(0.2, tipOn), (0.348, 100), (0.6525, 84.815), (0.7564, tipHanging)],
+        "ring3.tilt": [(0.4362, 90), (0.5726, 62.496), (0.82, 90)],
+        "ring3.swing": [(0.4397, 0), (0.5135, 25.076), (0.6338, 4.599), (0.694, -27.087), (0.7756, 0)],
+        "ring3.eye": [(0.5019, Layout.eyeHeightOn), (0.6475, -4.462), (0.7429, -5.92), (0.7953, Layout.eyeHeightHanging)],
+        "sword": [(0, Layout.swordHome), (0.1114, 36.496), (0.1568, 39.246), (0.3, 40.4), (0.4111, 42.357), (0.5699, 30.784), (0.7909, 30.92), (0.8432, 39.246), (0.8886, 36.496), (1, Layout.swordHome)],
     ]
-
 
     /// The path from a set of keys, named as in ``keys``.
     init(keys: [String: [(Double, Double)]]) {
@@ -71,6 +76,16 @@ struct RingThreeOff: Sendable {
             guard let keys = keys[name] else { preconditionFailure("no keys for \(name)") }
             return degrees ? RingTurns.degrees(keys) : RingTurns.millimetres(keys)
         }
+        ringOne = RingTurns(
+            lid: curve("ring1.lid", degrees: true),
+            turn: Curve(constant: 0),
+            tip: Curve(constant: 0),
+            tilt: Curve(constant: 0),
+            swing: curve("ring1.swing", degrees: true),
+            eyeHeight: curve("ring1.eye", degrees: false)
+        )
+        ringOneCarry = curve("ring1.carry", degrees: false)
+        ringOneAside = curve("ring1.aside", degrees: false)
         ringTwo = RingTurns(
             lid: curve("ring2.lid", degrees: true),
             turn: Curve(constant: 0),
@@ -97,7 +112,13 @@ struct RingThreeOff: Sendable {
     func pose(at progress: Double) -> ToyPose {
         var rings = PuzzleState.rings.map(RestPoses.on)
         let ringTwo = ringTwo.held(2, at: progress)
-        rings[0] = Self.ringOneHanging.chain(carriedBy: ringTwo)[0]
+        let carried = HangingChain.carried(RestPoses.hanging(1), restingOn: RestPoses.on(2), now: ringTwo)
+        var own = ringOne.held(1, at: progress)
+        own.eye.z += ringOneAside.value(at: progress)
+        let ringOne = HangingChain.blend(own, carried, ringOneCarry.value(at: progress))
+        // Rings hanging below ring 1, if there were any, rise and fall with it.
+        for (offset, ring) in HangingChain.below(1, eyeHeight: ringOne.eye.y).enumerated() { rings[1 - 2 - offset] = ring }
+        rings[0] = ringOne
         rings[1] = ringTwo
         rings[2] = ringThree.held(3, at: progress)
         return RestPoses.pose(holding: rings, swordSlide: swordSlide.value(at: progress))

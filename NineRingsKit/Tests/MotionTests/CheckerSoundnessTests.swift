@@ -263,9 +263,10 @@ let probeBarTop = Layout.bar.position.y + Dimensions.Bar.thickness / 2
     }
 
     @Test func aBeadUpIntoTheBar() {
-        // Ring 4 and its rod lifted half a millimetre, so the bead, a quarter millimetre under the bar, goes into it.
+        // Ring 4 and its rod lifted half a millimetre more than the bar is raised, so the bead, which hangs that much
+        // and a quarter millimetre under the bar, goes into it.
         let rest = RestPoses.on(4)
-        let held = HeldRing(eye: rest.eye + Vector(0, 0.5, 0), towardCenter: rest.towardCenter, alongWire: rest.alongWire)
+        let held = HeldRing(eye: rest.eye + Vector(0, Layout.barRaise + 0.5, 0), towardCenter: rest.towardCenter, alongWire: rest.alongWire)
         expectCaught("bead into bar", probeAllOn.probeHolding(4, held), .bead(4), .bar)
     }
 
@@ -338,9 +339,10 @@ let probeBarTop = Layout.bar.position.y + Dimensions.Bar.thickness / 2
     }
 
     @Test func aBeadAboveTheBar() {
-        // Ring 4 and its rod lifted 12 mm: the whole bead is above the bar and the shaft no longer reaches it.
+        // Ring 4 and its rod lifted 12 mm more than the bar is raised: the whole bead is above the bar and the shaft
+        // no longer reaches it.
         let rest = RestPoses.on(4)
-        let held = HeldRing(eye: rest.eye + Vector(0, 12, 0), towardCenter: rest.towardCenter, alongWire: rest.alongWire)
+        let held = HeldRing(eye: rest.eye + Vector(0, Layout.barRaise + 12, 0), towardCenter: rest.towardCenter, alongWire: rest.alongWire)
         let pose = probeAllOn.probeHolding(4, held)
         expectReported("bead above bar", pose, "bead 4 is not below the bar")
         expectReported("bead above bar", pose, "rod 4 does not reach through the bar")
