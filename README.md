@@ -125,6 +125,21 @@ To open the app where ring 2's move begins, with that move on the slider, launch
 
 A pull request that touches the package, the app or the project runs the package's tests and builds the app for the Mac and for iPhone and iPad (`.github/workflows/checks.yml`), on the Xcode the project is developed with. The same checks run again on `main` after each merge, because two pull requests that each pass alone can still fail together. They can also be started by hand from the Actions tab.
 
+### Running a tool on GitHub
+
+The tools that run only when asked, the searches and scans, can also run on GitHub's machines (`.github/workflows/tools.yml`), so that a long one does not keep a Mac busy and several can run side by side. It is started by hand, on any branch that has been pushed:
+
+```
+gh workflow run tools.yml --ref <branch> -f filter=TuneTests -f environment="NINE_RINGS_TUNE=1" -f copies=3 -f minutes=120
+```
+
+- `filter` is the test to run, as for `swift test --filter`. `environment` is the tool's variables, as `NINE_RINGS_NAME=value` pairs separated by spaces.
+- `copies` runs up to five side by side. Each copy gets `NINE_RINGS_COPY` set to its number and `NINE_RINGS_COPIES` to how many there are, so that a tool can start each from a different place.
+- `minutes` stops the tool after that long, at most 340. A tool that may be stopped should write what it has found to a file in `tool-output/` as it goes, since the end of what it prints can be lost.
+- What each copy printed, and everything in `tool-output/`, is kept with the run: `gh run watch` waits for it and `gh run download` fetches it.
+
+One of these machines has 3 cores, and the full tests take about three times as long there as on an idle Mac. So a single short run is quicker at home. Running there pays for a tool that takes more than about twenty minutes, or for several variants at once.
+
 ## Seeing the app
 
 A debug build of the Mac app can draw the move to PNG files without opening a window, so an agent can look at what the app renders. Each frame is posed exactly as the slider poses it: the app's own player is set to the progress, and the app's scene draws the pose it gives, framed as the app frames it.
