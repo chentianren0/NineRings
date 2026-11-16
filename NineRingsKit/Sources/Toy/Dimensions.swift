@@ -47,7 +47,8 @@ public enum Dimensions {
     /// its frame is the toy's frame moved along x by ``ToyPose/swordSlide``.
     ///
     /// Two rails run side by side and join at the tip in a half circle. The tip end rises out of the plane of the
-    /// rails. Toward the grip the rails converge at the shoulder until their wires touch, then run on as the neck.
+    /// rails. Toward the grip the rails converge at the shoulder until their wires touch, then run on as the neck,
+    /// which ends in a grip loop each side. ``SwordShape`` is the centreline these sizes describe.
     public enum Sword {
         public static let wireRadius = 1.1
         /// Distance of each rail's centreline from the middle of the slot; also the radius of the tip's half circle.
@@ -57,8 +58,10 @@ public enum Dimensions {
         public static let tipRiseLength = 20.0
         /// Where the straight rails end and start to converge.
         public static let railEndX = 150.0
-        /// Where the two wires touch, which closes the slot.
+        /// The corner where the rails, turning in, come to the line on which the two wires touch, which closes the
+        /// slot. With the bend round the corner, they touch from about 2 mm further on.
         public static let shoulderX = 154.0
+        /// Where the neck ends: its wire runs on straight from here into the grip loop.
         public static let neckEndX = 226.0
 
         /// Height of the rails' centreline at `x`. It is zero at the tip's end and level beyond the rise.
@@ -69,7 +72,12 @@ public enum Dimensions {
         /// Height of the straight part of the rails.
         public static let railHeight = height(atX: tipRiseLength)
 
-        /// For drawing only: the two round grip loops at the end of the neck are about this long and, together, this far across.
+        /// Where the wire bends, at the end of the tip's rise, where the rails turn in to the shoulder and where
+        /// they turn back along the neck, its centreline bends round this radius, as a bent wire does.
+        public static let bendRadius = 3.0
+
+        /// The two grip loops at the end of the neck, one each side, are this long and, together, this far across,
+        /// outside the wire.
         public static let gripLoopLength = 27.0
         public static let gripLoopSpan = 31.0
     }
