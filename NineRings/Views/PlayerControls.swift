@@ -5,7 +5,7 @@ import SwiftUI
 /// the stages of the move playing or played last, and the buttons.
 ///
 /// It follows the width it is given, never the device: the buttons lose their titles, then wrap onto a second
-/// row, as the width shrinks, and the stage names give way to stage numbers.
+/// row, as the width shrinks.
 struct PlayerControls: View {
     @Bindable var player: Player
     /// Covers the toy, returns every ring to on, and uncovers it.
@@ -53,12 +53,30 @@ private struct ControlButtons: View {
                 }
                 count
             }
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 10) {
+                    playButtons
+                }
+                HStack(spacing: 10) {
+                    changeButtons
+                    Spacer(minLength: 0)
+                    count
+                }
+            }
+            .labelStyle(.iconOnly)
         }
         .buttonStyle(.bordered)
     }
 
     @ViewBuilder
     private var buttons: some View {
+        playButtons
+        changeButtons
+    }
+
+    /// Play or pause, and the speed.
+    @ViewBuilder
+    private var playButtons: some View {
         Button {
             player.togglePlay()
         } label: {
@@ -82,7 +100,13 @@ private struct ControlButtons: View {
         .pickerStyle(.menu)
         .fixedSize()
         .help(Text("Playing speed", comment: "Tooltip on the speed menu."))
+        // Without this the menu itself has no spoken name: the label is a separate image beside it.
+        .accessibilityLabel(Text("Speed", comment: "Menu that chooses how fast moves play."))
+    }
 
+    /// Undo, reset and solve.
+    @ViewBuilder
+    private var changeButtons: some View {
         Button {
             player.undo()
         } label: {
@@ -116,7 +140,8 @@ private struct ControlButtons: View {
 }
 
 /// A scrubber for the progress of a move: a track with a mark where each stage begins, a thumb to drag, and
-/// the stages' names under their stretches of the track.
+/// the stages' numbers under their stretches of the track. The status line names the stage; the names would not
+/// fit under the shortest stretches at any width.
 struct StageScrubber: View {
     @Binding var progress: Double
     let stages: [Stage]
@@ -147,20 +172,22 @@ struct StageScrubber: View {
             Slider(value: $progress, in: 0...1) {
                 Text("Progress", comment: "Spoken name of the slider that runs through the move.")
             }
+            .accessibilityValue(spokenValue)
         }
     }
 
+    /// How far through the move, and the stage it is in there.
+    private var spokenValue: Text {
+        let percent = progress.formatted(.percent.precision(.fractionLength(0)))
+        guard let stage = stages.last(where: { $0.start <= progress }) ?? stages.first else { return Text(percent) }
+        return Text("\(percent), \(Sentences.stageName(stage))", comment: "Spoken value of the slider that runs through the move: how far through it is, then the name of the stage there.")
+    }
+
     private var labels: some View {
-        ViewThatFits(in: .horizontal) {
-            StageLabels(spans: spans) {
-                ForEach(stages, id: \.name) { stage in
-                    Text(Sentences.stageName(stage))
-                }
-            }
-            StageLabels(spans: spans) {
-                ForEach(Array(stages.enumerated()), id: \.offset) { index, _ in
-                    Text(index + 1, format: .number)
-                }
+        // A stage is known by where it starts: unique within a move, even if two stages shared a name.
+        StageLabels(spans: spans) {
+            ForEach(Array(stages.enumerated()), id: \.element.start) { index, _ in
+                Text(index + 1, format: .number)
             }
         }
         .font(.caption)
@@ -186,7 +213,7 @@ struct StageScrubber: View {
                     Capsule()
                         .fill(.tint)
                         .frame(width: max(0, width * progress), height: 6)
-                    ForEach(stages.dropFirst(), id: \.name) { stage in
+                    ForEach(stages.dropFirst(), id: \.start) { stage in
                         Rectangle()
                             .fill(.secondary)
                             .frame(width: 1.5, height: 16)
@@ -217,8 +244,7 @@ struct StageScrubber: View {
     }
 }
 
-/// Lays out one label per stage, each centred under its stretch of the track. Its ideal width is the width at
-/// which every label fits within its own stretch, so that `ViewThatFits` can choose shorter labels when narrow.
+/// Lays out one label per stage, each centred under its stretch of the track, and kept within the track.
 private struct StageLabels: SwiftUI.Layout {
     let spans: [ClosedRange<Double>]
 

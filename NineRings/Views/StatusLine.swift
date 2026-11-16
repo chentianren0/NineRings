@@ -10,8 +10,8 @@ struct StatusLine: View {
 
     var body: some View {
         Label {
-            // Two lines are always kept, so that the controls do not jump as the line changes; a long reason may
-            // take a third.
+            // Two lines are always kept, so that the controls do not jump as the line changes. A long reason takes
+            // as many more as it needs: cut short, it would no longer say why.
             ZStack(alignment: .topLeading) {
                 Text(verbatim: "\n").hidden().accessibilityHidden(true)
                 Text(Sentences.status(status))
@@ -24,7 +24,6 @@ struct StatusLine: View {
                 .foregroundStyle(isBlocked ? AnyShapeStyle(.orange) : AnyShapeStyle(.secondary))
         }
         .font(.callout)
-        .lineLimit(3)
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
         .onChange(of: status) { _, status in
@@ -81,20 +80,27 @@ enum Sentences {
         case .note(.notWritten(let move, let whileSolving)):
             if whileSolving {
                 return move.takesOff
-                    ? LocalizedStringResource("Solving stopped: the next move, ring \(move.ring) coming off, is not written yet.", comment: "Status when solving reaches a move the app cannot show yet. The variable is the ring's number.")
-                    : LocalizedStringResource("Solving stopped: the next move, ring \(move.ring) going on, is not written yet.", comment: "Status when solving reaches a move the app cannot show yet. The variable is the ring's number.")
+                    ? LocalizedStringResource("Solving stopped: the next move, ring \(move.ring) coming off, is not in the app yet.", comment: "Status when solving reaches a move the app cannot show yet. The variable is the ring's number.")
+                    : LocalizedStringResource("Solving stopped: the next move, ring \(move.ring) going on, is not in the app yet.", comment: "Status when solving reaches a move the app cannot show yet. The variable is the ring's number.")
             }
             return move.takesOff
-                ? LocalizedStringResource("Ring \(move.ring) can come off now, but that move is not written yet.", comment: "Status after tapping a ring whose move is allowed but not yet in the app. The variable is the ring's number.")
-                : LocalizedStringResource("Ring \(move.ring) can go on now, but that move is not written yet.", comment: "Status after tapping a ring whose move is allowed but not yet in the app. The variable is the ring's number.")
+                ? LocalizedStringResource("Ring \(move.ring) can come off now, but that move is not in the app yet.", comment: "Status after tapping a ring whose move is allowed but not yet in the app. The variable is the ring's number.")
+                : LocalizedStringResource("Ring \(move.ring) can go on now, but that move is not in the app yet.", comment: "Status after tapping a ring whose move is allowed but not yet in the app. The variable is the ring's number.")
         case .resting(let state):
             if state == .allOff {
                 return LocalizedStringResource("All rings are off. The puzzle is solved.", comment: "Status when every ring is off the sword.")
             }
+            #if os(macOS)
             if state == .allOn {
-                return LocalizedStringResource("All nine rings are on the sword. Tap a ring to move it.", comment: "Status at the start, with every ring on.")
+                return LocalizedStringResource("All nine rings are on the sword. Click a numbered marker to move its ring.", comment: "Status at the start, with every ring on, on the Mac. The markers are the row of numbered discs, one for each ring.")
             }
-            return LocalizedStringResource("Tap a ring to move it.", comment: "Status when nothing is moving.")
+            return LocalizedStringResource("Click a numbered marker to move its ring.", comment: "Status when nothing is moving, on the Mac. The markers are the row of numbered discs, one for each ring.")
+            #else
+            if state == .allOn {
+                return LocalizedStringResource("All nine rings are on the sword. Tap a numbered marker to move its ring.", comment: "Status at the start, with every ring on. The markers are the row of numbered discs, one for each ring.")
+            }
+            return LocalizedStringResource("Tap a numbered marker to move its ring.", comment: "Status when nothing is moving. The markers are the row of numbered discs, one for each ring.")
+            #endif
         }
     }
 
@@ -108,7 +114,7 @@ enum Sentences {
             )
         case .previousRingOff(let previous):
             LocalizedStringResource(
-                "Ring \(ring) can’t move while ring \(previous) is off: ring \(previous)’s rod runs through ring \(ring), and it is out of the slot, so ring \(ring) can’t pass through the slot.",
+                "Ring \(ring) can’t move while ring \(previous) is off: ring \(previous)’s rod runs through ring \(ring), and that rod is out of the slot, so ring \(ring) can’t pass through the slot.",
                 comment: "Why a ring cannot move. The first, fourth and fifth variables are the ring tapped; the second and third the ring just before it, which is off. A ring's rod is the wire that holds it; the slot is the gap between the sword's two rails."
             )
         }

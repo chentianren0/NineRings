@@ -99,11 +99,11 @@ private struct RingMarker: View {
         case (true, nil):
             marker.isWritten
                 ? LocalizedStringResource("On, can move", comment: "Spoken value of a ring marker.")
-                : LocalizedStringResource("On, can move, but the move is not written yet", comment: "Spoken value of a ring marker.")
+                : LocalizedStringResource("On, can move, but the move is not in the app yet", comment: "Spoken value of a ring marker.")
         case (false, nil):
             marker.isWritten
                 ? LocalizedStringResource("Off, can move", comment: "Spoken value of a ring marker.")
-                : LocalizedStringResource("Off, can move, but the move is not written yet", comment: "Spoken value of a ring marker.")
+                : LocalizedStringResource("Off, can move, but the move is not in the app yet", comment: "Spoken value of a ring marker.")
         case (true, let block?):
             LocalizedStringResource("On, \(Sentences.shortReason(block))", comment: "Spoken value of a ring marker that is on and cannot move. The variable says why.")
         case (false, let block?):

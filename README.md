@@ -66,7 +66,7 @@ The screen is the puzzle itself: the toy in 3D with most of the space, and under
 
 - **A line** says what is happening or why nothing is: the move and its stage while one plays, the reason when a ring is blocked, and a quiet note when a move is not written yet.
 - **Nine ring markers**, ring 1 on the left, the tip's side as the toy is first seen. A filled disc is a ring that is on, an outline one that is off. A bar under the number marks a ring that can move now: solid when its move is written, an outline while it is not. Tapping a marker, or pressing its number key, asks to move that ring. The strip runs left to right in every language, since it mirrors the toy.
-- **The slider** runs through the move that is playing or was played last, with its stages, and can be dragged either way. At its right end the move is made, at its left end it is not.
+- **The slider** runs through the move that is playing or was played last, with its stages marked and numbered, and can be dragged either way; the line names the stage. At its right end the move is made, at its left end it is not.
 - **Buttons** for play and pause (Space), speed, undo (⌘Z), reset and solve, and the count of moves made.
 
 How it behaves:
@@ -78,7 +78,7 @@ How it behaves:
 - Solve plays the shortest way from where the toy is to all rings off, move after move, and stops with a line at the first move that is not written. A tap while solving takes over: the rest of the way is dropped and the ring tapped comes next.
 - Play runs the move on the slider forward; undo runs it backward, then the move before, one at a time. Undo drops anything waiting.
 - Reset covers the toy for a moment, puts every ring back on and uncovers it.
-- The layout follows the window's size as it changes, never the device. The controls go beside the toy only when the window is too short to have them underneath and wide enough to spare a column. Underneath, they take what they need up to a little over half the height, and scroll past that. The buttons lose their titles, then wrap, as the width shrinks, and the stage names give way to numbers.
+- The layout follows the window's size as it changes, never the device. The controls go beside the toy only when the window is too short to have them underneath and wide enough to spare a column. Underneath, they take what they need up to a little over half the height, and scroll past that. The buttons lose their titles, then wrap onto two rows, as the width shrinks. On the Mac the window goes no smaller than 320 by 400 points, where the nine markers still fit across and the toy still shows above the controls.
 
 The **Written Moves** menu in the toolbar sets the toy where a written move begins and plays it, so that every written move can be reached even before the moves that lead to it are written.
 
@@ -127,7 +127,7 @@ To open the app where ring 2's move begins, with that move on the slider, launch
 
 ## Checks on GitHub
 
-A pull request that touches the package, the app or the project runs the package's tests and builds the app for the Mac and for iPhone and iPad (`.github/workflows/checks.yml`), on the Xcode the project is developed with. It can also be started by hand from the Actions tab.
+A pull request that touches the package, the app or the project runs the package's tests and builds the app for the Mac and for iPhone and iPad (`.github/workflows/checks.yml`), on the Xcode the project is developed with. The same checks run again on `main` after each merge, because two pull requests that each pass alone can still fail together. They can also be started by hand from the Actions tab.
 
 ## Seeing the app
 
