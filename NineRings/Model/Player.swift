@@ -36,7 +36,9 @@ enum PlaybackSpeed: String, CaseIterable, Identifiable {
 @MainActor
 @Observable
 final class Player {
-    /// The moves that are written, each coming off every ring on. Each goes back on along the same path.
+    /// The moves of the written moves menu: each ring coming off where it first does on the way from every ring on to
+    /// every ring off. Each goes back on along the same path. Every other move is written too, and plays when its ring
+    /// is tapped.
     static let moves = MoveMotion.written
 
     @ObservationIgnored private var session: PuzzleSession

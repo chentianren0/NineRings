@@ -36,20 +36,26 @@ public struct ToyPose: Sendable, Equatable {
     public var rods: [PartPose]
     public var bar: PartPose
     /// How far the sword is slid along its own length from home, in millimetres; positive toward the grip.
-    /// The sword stays level, so this is all there is to its pose.
     public var swordSlide: Double
+    /// How far the sword is raised from home, in millimetres; negative when it is lowered. The sword stays level,
+    /// so its slide and its height are all there is to its pose.
+    public var swordHeight: Double
 
-    public init(rings: [PartPose], rods: [PartPose], bar: PartPose, swordSlide: Double) {
+    public init(rings: [PartPose], rods: [PartPose], bar: PartPose, swordSlide: Double, swordHeight: Double = 0) {
         precondition(rings.count == 9 && rods.count == 9, "the toy has nine rings and nine rods")
         self.rings = rings
         self.rods = rods
         self.bar = bar
         self.swordSlide = swordSlide
+        self.swordHeight = swordHeight
     }
+
+    /// Where the sword's origin is: home moved by its slide and its height.
+    public var swordOffset: SIMD3<Double> { SIMD3(swordSlide, swordHeight, 0) }
 
     /// The sword's frame in the toy's frame.
     public var sword: PartPose {
-        PartPose(position: SIMD3(swordSlide, 0, 0), orientation: simd_quatd(ix: 0, iy: 0, iz: 0, r: 1))
+        PartPose(position: swordOffset, orientation: simd_quatd(ix: 0, iy: 0, iz: 0, r: 1))
     }
 
     public func ring(_ number: Int) -> PartPose { rings[number - 1] }

@@ -8,34 +8,43 @@ import Toy
 /// progress 1 the rest pose of the state after it.
 ///
 /// A ring going on follows the very path of that ring coming off, run backwards.
+///
+/// The toy has two moves: ring 1's (``RingOneOff``), and the second ring on the sword's (``PairMoveOff``), the same for
+/// rings 2 to 9, one hole further along for each.
 public struct MoveMotion: Sendable {
     public let move: Move
 
     /// How long the move takes at full speed, in seconds.
     public static let duration = 3.0
 
-    /// The motion of `move`, or nil when that move has not been written yet. So far two moves are written, each
-    /// coming off with every other ring on and going back on: ring 1, and ring 2 with ring 1 stepping aside.
+    /// The motion of `move`. Every legal move is written: ring 1's, and the second ring on the sword's, which is one
+    /// move for rings 2 to 9 (``PairMoveOff``). Each comes off from any state the rule allows, whatever the rings
+    /// behind are, and goes back on along the same path. The initializer stays failable so that a move can be left
+    /// unwritten again without changing its callers.
     public init?(_ move: Move) {
-        let written = (move.ring == 1 || move.ring == 2) && (move.from == .allOn || move.to == .allOn)
-        guard written else { return nil }
         self.move = move
     }
 
-    /// The moves that are written, each coming off every ring on. Each goes back on along the same path.
-    public static let written: [Move] = [1, 2].compactMap { Move(ring: $0, from: .allOn) }
+    /// One move for each ring, the menu of written moves: each ring coming off where it first does on the way from
+    /// every ring on to every ring off, ring k−1 on with every ring in front of it off and every ring behind it on.
+    /// Each goes back on along the same path.
+    public static let written: [Move] = PuzzleState.rings.compactMap { Move(ring: $0, from: PairMoveOff.firstPlace($0)) }
 
     /// The toy a fraction `progress` of the way through the move. Progress outside 0...1 is held at the ends.
     public func pose(at progress: Double) -> ToyPose {
         let progress = offProgress(progress)
-        return move.ring == 1 ? RingOneOff.pose(atProgress: progress) : RingTwoOff.pose(atProgress: progress)
+        // The state with the ring on, where coming off begins.
+        let on = move.takesOff ? move.from : move.to
+        return move.ring == 1
+            ? RingOneOff.pose(atProgress: progress, from: on)
+            : PairMoveOff.pose(ring: move.ring, from: on, atProgress: progress)
     }
 
     /// The stages in the order the move goes through them, each with its span of progress.
     public var stages: [Stage] {
-        let comingOff = move.ring == 1 ? RingOneOff.stages : RingTwoOff.stages
+        let comingOff = move.ring == 1 ? RingOneOff.stages : PairMoveOff.stages(ring: move.ring)
         if move.takesOff { return comingOff }
-        let names = move.ring == 1 ? Self.ringOneNamesGoingOn : Self.ringTwoNamesGoingOn
+        let names = move.ring == 1 ? Self.ringOneNamesGoingOn : Self.pairNamesGoingOn(ring: move.ring)
         return zip(comingOff.reversed(), names).map { stage, name in
             Stage(name: name, start: 1 - stage.end, end: 1 - stage.start)
         }
@@ -52,9 +61,9 @@ public struct MoveMotion: Sendable {
         "Lift", "Up through the slot", "Turn", "Out past the tip", "Over the tip", "Lean",
     ]
 
-    private static let ringTwoNamesGoingOn = [
-        "Ring 1 steps aside", "Ring 2 lifts", "Up through the slot", "Ring 2 over the tip", "Ring 1 back on",
-    ]
+    private static func pairNamesGoingOn(ring: Int) -> [String] {
+        ["Sword moves away", "Ring \(ring) lifts", "Up through the slot", "Ring \(ring) over the tip", "Sword comes back"]
+    }
 
     private func offProgress(_ progress: Double) -> Double {
         let clamped = min(max(progress, 0), 1)

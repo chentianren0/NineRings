@@ -13,7 +13,7 @@ import Toy
 ///
 /// - `-capture-frames 16`: that many frames evenly across the move, from every ring on (progress 0) to its ring
 ///   off (progress 1). Or `-capture-progress 0,0.25,0.5` for frames at given progress values.
-/// - `-capture-move 2`: ring 2's move rather than ring 1's.
+/// - `-capture-move 3`: ring 3's move in the written moves menu rather than ring 1's; any ring from 1 to 9.
 /// - `-capture-views side,top,tip`: the app's camera presets, or a yaw and a pitch in degrees, as `30:20`.
 /// - `-capture-sheet`: also lays the frames of each view out on one contact sheet, labelled with their progress
 ///   and stage.
@@ -44,22 +44,24 @@ enum Capture {
             let player = Player(move: request.move)
             let framing = ContentView.framing
             let ring = request.move.ring
+            let prefix = "ring\(ring)"
             let renderer = try await Renderer(size: request.size, appearance: request.appearance, floor: framing.lower.y - 6)
             for view in request.views {
                 var frames: [ContactSheet.Frame] = []
                 for progress in request.progress {
                     // The same path as the slider: set the player's progress, draw the pose it gives.
                     player.progress = progress
-                    let name = "ring\(ring)-p\(format(progress))-\(view.name)-\(request.appearance.rawValue).png"
+                    let name = "\(prefix)-p\(format(progress))-\(view.name)-\(request.appearance.rawValue).png"
                     let url = request.directory.appending(path: name)
                     let box = request.focus.map { ToyBounds(center: $0.center, size: $0.size) } ?? framing
+                    let stageName = player.stageName
                     guard let pose = player.pose else { continue }
                     let image = try await renderer.render(pose, view: view, framing: box, to: url)
                     print("capture: wrote \(url.path)")
-                    frames.append(ContactSheet.Frame(image: image, caption: "\(format(progress))  \(player.stageName)"))
+                    frames.append(ContactSheet.Frame(image: image, caption: "\(format(progress))  \(stageName)"))
                 }
                 if request.sheet {
-                    let url = request.directory.appending(path: "ring\(ring)-sheet-\(view.name)-\(request.appearance.rawValue).png")
+                    let url = request.directory.appending(path: "\(prefix)-sheet-\(view.name)-\(request.appearance.rawValue).png")
                     try ContactSheet.write(frames, title: "Ring \(ring) coming off, seen from the \(view.title)", appearance: request.appearance, to: url)
                     print("capture: wrote \(url.path)")
                 }

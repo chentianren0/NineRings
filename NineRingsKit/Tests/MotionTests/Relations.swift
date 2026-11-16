@@ -38,9 +38,9 @@ enum Relations {
     /// Where each side of the sword goes through ring `number`'s disc, in the sword's own frame.
     static func swordCrossings(of number: Int, in pose: ToyPose) -> (near: [Vector], far: [Vector]) {
         let circle = pose.ring(number).circle
-        let slide = SIMD3(pose.swordSlide, 0, 0)
-        let near = crossings(of: pose.swordCenterline(side: 1), through: circle).map { $0 - slide }
-        let far = crossings(of: pose.swordCenterline(side: -1), through: circle).map { $0 - slide }
+        let offset = pose.swordOffset
+        let near = crossings(of: pose.swordCenterline(side: 1), through: circle).map { $0 - offset }
+        let far = crossings(of: pose.swordCenterline(side: -1), through: circle).map { $0 - offset }
         return (near, far)
     }
 
@@ -76,9 +76,10 @@ enum Relations {
 
     /// The facts about one pose that must hold at every instant. Each is a sentence when it fails.
     ///
-    /// Every ring must go round both rails except those in `mayBeOff`, which may go round both or neither: ring 1,
-    /// and whichever rings the move takes off or puts on.
-    static func failures(in pose: ToyPose, mayBeOff: Set<Int> = [1]) -> [String] {
+    /// Every ring must go round both rails except those in `mayBeOff`, which may go round both or neither, and those
+    /// in `mustStayOff`, which must go round neither: the rings that are off before a move and after it, which have no
+    /// part in it.
+    static func failures(in pose: ToyPose, mayBeOff: Set<Int> = [1], mustStayOff: Set<Int> = []) -> [String] {
         var failures: [String] = []
         let rings = (1...9).map { pose.ring($0).circle }
 
@@ -88,7 +89,9 @@ enum Relations {
             if near.count % 2 != far.count % 2 {
                 failures.append("ring \(ring) goes round one rail of the sword but not the other")
             }
-            if !mayBeOff.contains(ring) && !isRoundTheRails(ring, in: pose) {
+            if mustStayOff.contains(ring) {
+                if isRoundTheRails(ring, in: pose) { failures.append("ring \(ring) has got onto the rails") }
+            } else if !mayBeOff.contains(ring) && !isRoundTheRails(ring, in: pose) {
                 failures.append("ring \(ring) has left the rails")
             }
 
@@ -213,7 +216,7 @@ enum Relations {
         zip(a.rings, b.rings).allSatisfy { isClose($0, $1, tolerance: tolerance) }
             && zip(a.rods, b.rods).allSatisfy { isClose($0, $1, tolerance: tolerance) }
             && isClose(a.bar, b.bar, tolerance: tolerance)
-            && abs(a.swordSlide - b.swordSlide) <= tolerance
+            && simd_distance(a.swordOffset, b.swordOffset) <= tolerance
     }
 
     /// The angle of the rotation that takes one orientation to the other.
@@ -241,7 +244,7 @@ enum Relations {
             let beadOffAxis = simd_length(simd_cross(beadCenter, axis))
             return max(Rod.eyeRadius + Rod.wireRadius, beadOffAxis + Rod.beadRadius)
         }
-        var largest = (distance: abs(a.swordSlide - b.swordSlide), part: "sword")
+        var largest = (distance: simd_distance(a.swordOffset, b.swordOffset), part: "sword")
         for number in 1...9 {
             let ring = step(a.ring(number), b.ring(number), reach: ringReach)
             if ring > largest.distance { largest = (ring, "ring \(number)") }

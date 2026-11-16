@@ -5,7 +5,7 @@ import Puzzle
 import Toy
 import simd
 
-/// A move written as keys, as `RingOneOff` and `RingTwoOff` write theirs: for each named curve, (path parameter,
+/// A move written as keys, as `RingOneOff` and `PairMoveOff` write theirs: for each named curve, (path parameter,
 /// value) pairs, angles in degrees and lengths in millimetres. Some numbers are free for a search to change, each
 /// with a step that says how far a change of one unit goes.
 struct KeyedMove: Sendable {

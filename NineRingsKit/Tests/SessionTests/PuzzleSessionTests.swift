@@ -2,6 +2,8 @@ import Motion
 import Puzzle
 import Testing
 @testable import Session
+import Toy
+import simd
 
 /// The checks are written so that they stay true as more moves are written: where a test needs a move that is
 /// not written yet, it looks for one, and is skipped, saying so, when there is none left.
@@ -368,6 +370,57 @@ import Testing
         } else {
             #expect(session.state == .allOff)
         }
+    }
+
+    /// Solve played the whole way, as the app plays it, a fiftieth of a move a frame, from every ring on to every ring
+    /// off, and then every move undone back to every ring on: every one of the 341 moves of the shortest way, and the
+    /// toy never jumps. Where one move hands over to the next, the last pose of the one is the first of the other,
+    /// the rest of the state between them; and from one frame to the next no part moves further than a fiftieth of
+    /// a move can carry it.
+    @Test func solvingToTheEndAndUndoingEveryMovePlaysWithoutAJump() throws {
+        func isClose(_ a: ToyPose, _ b: ToyPose) -> Bool {
+            zip(a.rings + a.rods + [a.bar], b.rings + b.rods + [b.bar]).allSatisfy {
+                simd_distance($0.position, $1.position) < 1e-9 && simd_distance($0.orientation.vector, $1.orientation.vector) < 1e-9
+            } && simd_distance(a.swordOffset, b.swordOffset) < 1e-9
+        }
+        func travel(_ a: ToyPose, _ b: ToyPose) -> Double {
+            zip(a.rings + a.rods, b.rings + b.rods).map { simd_distance($0.position, $1.position) }.max()! + simd_distance(a.swordOffset, b.swordOffset)
+        }
+        var session = PuzzleSession()
+        var handOvers = 0, largest = 0.0
+        /// Plays until nothing plays, checking every frame and every hand-over.
+        func playChecking(_ session: inout PuzzleSession) throws {
+            var previous = try #require(session.pose)
+            var playing = session.current
+            while session.isPlaying {
+                let before = session
+                session.advance(by: 1.0 / 50)
+                let pose = try #require(session.pose)
+                if session.current != playing, let old = before.motion, let new = session.motion {
+                    // The frame that ends one move and begins the next shows the next at its start.
+                    let end = before.direction == .forward ? 1.0 : 0.0
+                    #expect(isClose(old.pose(at: end), new.pose(at: session.progress)), "from \(String(describing: playing)) to \(String(describing: session.current))")
+                    #expect(isClose(new.pose(at: session.progress), try #require(RestPoses.pose(for: session.state))))
+                    handOvers += 1
+                    playing = session.current
+                } else {
+                    largest = max(largest, travel(previous, pose))
+                }
+                previous = pose
+            }
+        }
+        session.solve()
+        try playChecking(&session)
+        #expect(session.state == .allOff && session.moveCount == 341 && handOvers == 340)
+        #expect(session.pose.map { isClose($0, RestPoses.pose(for: .allOff)!) } == true)
+        while session.canUndo {
+            session.undo()
+            try playChecking(&session)
+        }
+        #expect(session.state == .allOn && session.moveCount == 0)
+        #expect(session.pose.map { isClose($0, RestPoses.pose(for: .allOn)!) } == true)
+        print("solve to the end and back: \(handOvers) hand-overs between moves; at most \(String(format: "%.2f", largest)) mm from one frame to the next")
+        #expect(largest < 20)
     }
 
     @Test func solveStartsAfterTheMoveInHand() {

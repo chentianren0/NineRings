@@ -3,7 +3,9 @@ import Puzzle
 import Toy
 import simd
 
-/// The written path of ring 1 coming off while every other ring is on.
+/// The written path of ring 1 coming off. It is written with every other ring on, and played whatever the rings behind
+/// are: they keep still, and ring 1 comes off in front of them all. Where the description below speaks of ring 2, it
+/// is ring 2 on; with ring 2 off, ring 1 comes to hang the same way, in front of ring 2 hanging.
 ///
 /// The path is a handful of numbers, each a ``Curve`` of the progress, and one rule that turns them into where the
 /// ring is (see ``RingTurns``). Every turn of the ring is about an axis through its eye, so the eye is where the
@@ -67,25 +69,27 @@ struct RingOneOff: Sendable {
         turns.held(1, at: progress)
     }
 
-    /// The toy at `progress` along the path's own parameter.
-    func pose(at progress: Double) -> ToyPose {
-        var rings = PuzzleState.rings.map(RestPoses.on)
+    /// The toy at `progress` along the path's own parameter, with the rings behind ring 1 resting as they do in
+    /// `state`. They keep still whatever they are: ring 1 comes off in front of them all.
+    func pose(at progress: Double, from state: PuzzleState = .allOn) -> ToyPose {
+        var rings = PuzzleState.rings.map { RestPoses.resting($0, in: state) }
         rings[0] = held(at: progress)
         return RestPoses.pose(holding: rings, swordSlide: swordSlide.value(at: progress))
     }
 
     // MARK: Timing
 
-    /// How the move's progress maps onto the path's own parameter (see ``Pacing``).
-    static let pacing = Pacing(written.pose(at:))
+    /// How the move's progress maps onto the path's own parameter (see ``Pacing``). The rings behind keep still, so
+    /// it is the same whatever they are.
+    static let pacing = Pacing { written.pose(at: $0) }
 
     static var timing: Curve { pacing.timing }
 
     /// The stages as spans of the move's progress.
     static let stages: [Stage] = pacing.stages(stagesAlongThePath)
 
-    /// The toy a fraction `progress` of the way through the move.
-    static func pose(atProgress progress: Double) -> ToyPose {
-        written.pose(at: pacing.pathParameter(atProgress: progress))
+    /// The toy a fraction `progress` of the way through the move, the rings behind resting as in `state`.
+    static func pose(atProgress progress: Double, from state: PuzzleState = .allOn) -> ToyPose {
+        written.pose(at: pacing.pathParameter(atProgress: progress), from: state)
     }
 }

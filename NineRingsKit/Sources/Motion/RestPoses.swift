@@ -18,44 +18,44 @@ public enum RestPoses {
         )
     }
 
-    /// How a ring that is off rests while the next ring is on: below the sword, hanging from its eye, which is
-    /// held up just above the next ring's lower arc; its rod has slid down and is out of the slot.
+    /// How a ring that is off rests, whatever the rings next to it are: below the sword, its eye just under the
+    /// rails, so that its rod is out of the slot, and leaning toward the tip more than a ring that is on. Its rod
+    /// runs through the next ring whether that ring is on or off: off rings next to one another lie like parallel
+    /// plates, one hole apart. Ring 9 has no next ring and rests the same way.
     public static func hanging(_ ring: Int) -> HeldRing {
-        precondition(ring < PuzzleState.ringCount, "ring 9 has no next ring to hang from")
-        return HeldRing(
+        HeldRing(
             eye: SIMD3(Layout.hole(ring).x, Layout.eyeHeightHanging, 0),
             towardCenter: SIMD3(-sin(Layout.leanHanging), -cos(Layout.leanHanging), 0),
             alongWire: SIMD3(0, 0, 1)
         )
     }
 
-    /// The states whose rest has been written and checked so far: every ring on, ring 1 alone off, and ring 2
-    /// alone off. A ring that is off hangs from the next ring the same way wherever it is, so ring 2 off rests as
-    /// ring 1 off does, one hole further on, with ring 1 on in front of it and rod 1 down through it.
-    ///
-    /// Other arrangements, such as a chain of off rings hanging from one another or ring 9 off on the bar, come
-    /// with the moves that reach them.
+    /// How ring `ring` rests in `state`: on or off, decided by that ring alone.
+    public static func resting(_ ring: Int, in state: PuzzleState) -> HeldRing {
+        state.isOn(ring) ? on(ring) : hanging(ring)
+    }
+
+    /// Whether the rest of `state` is written. Each ring rests by its own state alone, so every state's is.
     public static func isWritten(_ state: PuzzleState) -> Bool {
-        state == .allOn || state == PuzzleState.allOn.moving(1) || state == PuzzleState.allOn.moving(2)
+        true
     }
 
     /// The toy at rest in `state`, or nil when that rest has not been written yet.
     public static func pose(for state: PuzzleState) -> ToyPose? {
         guard isWritten(state) else { return nil }
-        let held = PuzzleState.rings.map { ring in
-            state.isOn(ring) ? on(ring) : hanging(ring)
-        }
+        let held = PuzzleState.rings.map { resting($0, in: state) }
         return pose(holding: held, swordSlide: Layout.swordHome)
     }
 
     /// The toy with every ring held as given, each rod placed by the rod rule.
-    static func pose(holding rings: [HeldRing], swordSlide: Double) -> ToyPose {
+    static func pose(holding rings: [HeldRing], swordSlide: Double, swordHeight: Double = 0) -> ToyPose {
         precondition(rings.count == PuzzleState.ringCount, "the toy has nine rings")
         return ToyPose(
             rings: rings.map(\.ringPose),
             rods: zip(PuzzleState.rings, rings).map { ring, held in held.rodPose(hole: Layout.hole(ring)) },
             bar: Layout.bar,
-            swordSlide: swordSlide
+            swordSlide: swordSlide,
+            swordHeight: swordHeight
         )
     }
 }

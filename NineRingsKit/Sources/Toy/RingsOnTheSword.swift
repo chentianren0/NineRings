@@ -32,7 +32,7 @@ extension ToyPose {
     }
 
     private func inSwordFrame(_ part: PartPose) -> PartPose {
-        PartPose(position: part.position - SIMD3(swordSlide, 0, 0), orientation: part.orientation)
+        PartPose(position: part.position - swordOffset, orientation: part.orientation)
     }
 
     private static let swordSides = [SwordShape.centerline(side: 1), SwordShape.centerline(side: -1)]

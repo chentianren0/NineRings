@@ -1,4 +1,5 @@
 import Motion
+import Puzzle
 import SwiftUI
 
 /// The toy in 3D with most of the space, and the controls under it, or beside it when the window is wide and
@@ -25,9 +26,15 @@ struct ContentView: View {
         rig = CameraRig(framing: framing)
     }
 
-    /// The box around the toy over every move that can be shown.
+    /// The box around the toy over the moves of the first three rings, each from where it first comes off, and
+    /// ring 3's with every ring behind it off, whose beads go lowest as the sword takes them down. That holds every
+    /// ring and the bar in every move, and the sword as far as it slides for ring 3. For a later ring the sword is
+    /// drawn back one hole further for each ring, and its grip leaves the frame for a while: framing that too would
+    /// show the toy at two thirds of its size in every move.
     static let framing: ToyBounds = {
-        let poses = Player.moves.compactMap(MoveMotion.init).flatMap { motion in
+        let lowest = Move(ring: 3, from: PuzzleState(bits: 0b110))
+        let moves = Array(Player.moves.prefix(3)) + [lowest].compactMap { $0 }
+        let poses = moves.compactMap(MoveMotion.init).flatMap { motion in
             (0...40).map { motion.pose(at: Double($0) / 40) }
         }
         return ToyBounds(poses)

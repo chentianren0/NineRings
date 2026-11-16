@@ -8,7 +8,7 @@ import simd
 struct Sweep {
     static let samples = 4000
 
-    let motion: MoveMotion
+    let move: Move
     let progress: [Double]
     let poses: [ToyPose]
     /// The smallest gap at each sample.
@@ -17,9 +17,14 @@ struct Sweep {
     let steps: [(distance: Double, part: String)]
 
     init(_ motion: MoveMotion, samples: Int = Sweep.samples) {
-        self.motion = motion
+        self.init(motion.move, samples: samples, pose: motion.pose(at:))
+    }
+
+    /// A move given by its pose at each progress, such as a trial path that is not one of the written moves.
+    init(_ move: Move, samples: Int = Sweep.samples, pose: (Double) -> ToyPose) {
+        self.move = move
         progress = (0...samples).map { Double($0) / Double(samples) }
-        poses = progress.map(motion.pose(at:))
+        poses = progress.map(pose)
         let poses = poses
         gaps = Sweep.inParallel(poses.count) { index in
             guard let gap = Gaps.smallest(in: poses[index].shapes) else {
@@ -40,17 +45,23 @@ struct Sweep {
         return (steps[index].distance, steps[index].part, progress[index])
     }
 
-    /// The rings that may be off the rails during the move: ring 1, which steps aside for ring 2, and every ring up
-    /// to the one that moves.
-    var mayBeOff: Set<Int> { Set(1...motion.move.ring) }
+    /// The rings that may be off the rails during the move: the ring that moves, and in the second ring's move ring
+    /// k−1, which the sword leaves and comes back into while it keeps still. Every other ring that is on must stay
+    /// round the rails.
+    var mayBeOff: Set<Int> { move.ring == 1 ? [1] : [move.ring - 1, move.ring] }
+
+    /// The rings that must stay off the rails throughout the move: every ring that is off before it and after it, in
+    /// front of the moving ring or behind it. Such a ring has no part in the move; one that got onto the rails and off
+    /// again would be a move of its own hidden inside this one.
+    var mustStayOff: Set<Int> { Set(PuzzleState.rings.filter { $0 != move.ring && !move.from.isOn($0) }) }
 
     /// The first progress, if any, at which a relation fails, with what failed: a relation of the pose there, or
     /// a ring that leaves or joins the rails away from the tip end between the sample before and that one.
     var firstRelationFailure: (progress: Double, failures: [String])? {
         let poses = poses
-        let mayBeOff = mayBeOff
+        let mayBeOff = mayBeOff, mustStayOff = mustStayOff
         let failures = Sweep.inParallel(poses.count) { index in
-            Relations.failures(in: poses[index], mayBeOff: mayBeOff)
+            Relations.failures(in: poses[index], mayBeOff: mayBeOff, mustStayOff: mustStayOff)
                 + (index > 0 ? Relations.railChangeFailures(from: poses[index - 1], to: poses[index]) : [])
         }
         guard let index = failures.firstIndex(where: { !$0.isEmpty }) else { return nil }
