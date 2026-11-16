@@ -373,33 +373,36 @@ let probeBarTop = Layout.bar.position.y + Dimensions.Bar.thickness / 2
         expectReported("shaft through bar", pose, "rod 4 does not fit through its hole")
     }
 
-    /// The rod rule checks only where the shaft's axis meets the bar's two faces, allowing it up to 0.6 mm off the
-    /// hole's axis. A tilted shaft's section in the bar is an ellipse wider than the shaft, so it can cut into the
-    /// hole's wall with its axis well inside that allowance.
+    /// A tilted shaft's section in the bar is an ellipse wider than the shaft, so it can cut into the wall or the
+    /// rims of its hole with its axis through the hole's middle. The rod rule measures the shaft's true room in its
+    /// hole, which must agree with brute force, so the largest tilt it lets through is the largest at which the
+    /// shaft really fits.
     @Test func aTiltedShaftCutsIntoTheWallOfItsHole() {
         let rest = probeAllOn.rod(4)
         let hole = Layout.hole(4)
-        let tilt = 45 * Double.pi / 180
-        let turned = probeTurned(rest, by: tilt, about: Vector(0, 0, 1))
         let reach = simd_distance(rest.position, hole)
-        let tilted = PartPose(position: hole + reach * turned.worldDirection(SIMD3(0, 1, 0)), orientation: turned.orientation)
-        let pose = probeAllOn.probeReplacing(rod: 4, with: tilted)
-        let clearance = ProbeBrute.holeClearance(tilted, hole: 4, bar: pose.bar)
+        func tilted(_ degrees: Double) -> PartPose {
+            let turned = probeTurned(rest, by: degrees * Double.pi / 180, about: Vector(0, 0, 1))
+            return PartPose(position: hole + reach * turned.worldDirection(SIMD3(0, 1, 0)), orientation: turned.orientation)
+        }
+        let pose = probeAllOn.probeReplacing(rod: 4, with: tilted(45))
+        let clearance = ProbeBrute.holeClearance(tilted(45), hole: 4, bar: pose.bar)
         let holeFailures = Relations.failures(in: pose).filter { $0.hasPrefix("rod 4 does not") }
 
-        // The largest tilt the rod rule lets through, and the largest at which the shaft really fits.
-        func room(at degrees: Double) -> Double {
-            let turned = probeTurned(rest, by: degrees * Double.pi / 180, about: Vector(0, 0, 1))
-            let rod = PartPose(position: hole + reach * turned.worldDirection(SIMD3(0, 1, 0)), orientation: turned.orientation)
-            return ProbeBrute.holeClearance(rod, hole: 4, bar: Layout.bar)
+        // The largest tilt at which the shaft really fits, and the largest the rod rule lets through.
+        let tilts = Array(stride(from: 0.0, through: 60, by: 0.1))
+        let fits = tilts.last { ProbeBrute.holeClearance(tilted($0), hole: 4, bar: Layout.bar) >= 0 } ?? 0
+        let allowed = tilts.last { Relations.failures(in: probeAllOn.probeReplacing(rod: 4, with: tilted($0))).allSatisfy { !$0.hasPrefix("rod 4 does not") } } ?? 0
+        var largestDisagreement = 0.0
+        for degrees in stride(from: 0.0, through: 50, by: 2.5) {
+            let room = Relations.holeRoom(4, in: probeAllOn.probeReplacing(rod: 4, with: tilted(degrees))) ?? -.infinity
+            largestDisagreement = max(largestDisagreement, abs(room - ProbeBrute.holeClearance(tilted(degrees), hole: 4, bar: Layout.bar)))
         }
-        let fits = Array(stride(from: 0.0, through: 60, by: 0.1)).last { room(at: $0) >= 0 } ?? 0
-        let allowance = (Dimensions.Bar.holeRadius - Dimensions.Rod.wireRadius) / (Dimensions.Bar.thickness / 2)
-        print("probe tilted shaft: at 45° the shaft cuts \(String(format: "%.3f", -clearance)) mm into its hole's wall; it fits up to \(String(format: "%.1f", fits))°, the rod rule allows up to \(String(format: "%.1f", atan(allowance) * 180 / .pi))°")
+        print("probe tilted shaft: at 45° the shaft cuts \(String(format: "%.3f", -clearance)) mm into its hole's wall; it fits up to \(String(format: "%.1f", fits))°, the rod rule allows up to \(String(format: "%.1f", allowed))°; the rule's room and brute force differ by at most \(String(format: "%.1e", largestDisagreement)) mm")
         #expect(clearance < 0)
-        withKnownIssue("The rod rule tests only where the shaft's axis crosses the bar's faces, so a shaft tilted between about 37° and 50° cuts into its hole's wall unseen; and the gap rule excuses every shaft with the bar.") {
-            #expect(!holeFailures.isEmpty)
-        }
+        #expect(!holeFailures.isEmpty)
+        #expect(abs(allowed - fits) < 0.15, "the scan steps by 0.1°")
+        #expect(largestDisagreement < 1e-4)
     }
 
     /// The rod rule through ring 1's move: rod 1 tilts as ring 1 goes down, and must still fit its hole.
@@ -469,25 +472,27 @@ let probeBarTop = Layout.bar.position.y + Dimensions.Bar.thickness / 2
     }
 
     /// The sword's centreline stops at the end of the neck; the grip that closes it is left out. A ring round the
-    /// neck can slide off that end without touching anything and without any relation failing.
+    /// neck can slide off that end without touching anything, so the relation that a ring leaves the rails only over
+    /// the tip end, which the sweep checks for every ring from each sample to the next, must catch it.
     @Test func aRingSlidingOffTheEndOfTheNeck() {
         var leaves = false
         var wasRound = true
         var smallest = Double.infinity
         var failures: [String] = []
+        var previous: ToyPose?
         for index in 0...500 {
             let x = 200 + Double(index) * 0.1
             let pose = probeAllOn.probeReplacing(ring: 1, with: PartPose(position: Vector(x, probeRailHeight, 0), orientation: probeAcross))
             smallest = min(smallest, ProbeVerdict(pose, .ring(1), .sword).pairGap)
             failures += Relations.failures(in: pose).filter { $0.contains("rail") }
+            if let previous { failures += Relations.railChangeFailures(from: previous, to: pose) }
             let round = Relations.isRoundTheRails(1, in: pose)
             if wasRound && !round { leaves = true }
             wasRound = round
+            previous = pose
         }
         print("probe off the neck's end: ring 1 leaves the rails \(leaves), smallest gap to the sword \(smallest), sword relations \(failures)")
         #expect(leaves && smallest > 5)
-        withKnownIssue("The sword's centreline ends open at the end of the neck, so a ring can leave the sword over the grip end with no gap and no relation failing; only ring 1's own test of the tip end, which no other ring has, would see it.") {
-            #expect(!failures.isEmpty)
-        }
+        #expect(failures == ["ring 1 leaves the rails away from the tip end"])
     }
 }

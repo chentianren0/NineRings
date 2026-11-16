@@ -58,10 +58,10 @@ With the nominal sizes, a few things are not free choices, and the checker found
 
 The package's tests sample each written move at 4000 progress values in each direction and check, at every sample:
 
-- any two parts not joined by design keep at least 0.2 mm between their surfaces. Joined by design means only a ring and the eye that holds it, and a rod and the bar at its own hole. Parts that rest against each other, such as a bead under the bar, are drawn 0.25 mm apart;
+- any two parts not joined by design keep at least 0.2 mm between their surfaces. Joined by design means only a ring and the eye that holds it, and a rod's shaft and the bar, which the rod rule below measures instead. Parts that rest against each other, such as a bead under the bar, are drawn 0.25 mm apart;
 - no point of any part moves more than 0.25 mm from one sample to the next;
-- ring k (k ≥ 2) has rod k−1 through it and no other rod; no two rings are linked; each eye is linked with its own ring and no other, and the ring's wire runs through the eye without cutting through it; each rod runs through its own hole; each bead stays below the bar; the bar never moves;
-- a ring goes round both rails or neither; only the rings a move takes off, and ring 1 when it steps aside, ever leave them, and only over the tip's end;
+- ring k (k ≥ 2) has rod k−1 through it and no other rod; no two rings are linked; each eye is linked with its own ring and no other, and the ring's wire runs through the eye without cutting through it; each rod's shaft runs through its own hole without cutting into the hole's wall or rims, at any tilt, though it may touch them, since it slides there; each bead stays below the bar; the bar never moves;
+- a ring goes round both rails or neither; only the rings a move takes off, and ring 1 when it steps aside, ever leave them; and any ring, from one sample to the next, leaves or joins the rails only over the tip's end: where it goes round them, the sword goes through it nowhere but near the tip's end. The sword's centreline ends at the tip's end and at the end of the neck, and this is what stops a ring leaving over the neck's end, where the grip is not checked;
 - in ring 2's move, rings 3 to 9, their rods and ring 1's eye stay exactly where they rest;
 - the two ends of the move are the two rest poses, and going on is coming off backwards;
 - the stages come in order and each does what its name says;

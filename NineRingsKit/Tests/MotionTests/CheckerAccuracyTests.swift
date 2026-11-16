@@ -180,17 +180,16 @@ private func checkerDistance(_ a: ShapeCore, _ b: ShapeCore) -> Double {
         print(String(format: "accuracy through ring 1's move: largest error %.2e mm (%@ at a gap of %.3f mm); among pairs within 1 mm, %.2e mm; smallest true gap %.3f mm", worst.0.error, worst.0.pair, worst.0.gap, worstNear, smallestGap))
         #expect(worstNear < 1e-6)
         #expect(smallestGap >= smallestAllowedGap - 1e-6)
-        withKnownIssue("A sample where the distance has zero slope but is still falling is taken for the minimum, and the true minimum just past it is never bracketed (see aFlatSampleHidesTheMinimumJustPastIt).") {
-            #expect(worst.0.error < 1e-6)
-        }
+        #expect(worst.0.error < 1e-6)
     }
 
     /// The search looks for a falling slope followed by a rising one between two samples. A sample can have zero
     /// slope without being a minimum: a ring's sample whose nearest point on a straight piece is that piece's end,
     /// with the piece running on along the ring's own direction, inside its curve. The distance still falls past
-    /// that sample, as the ring curves in toward the piece, and turns up again within one sample. The search
-    /// takes the flat sample for the minimum and never brackets the true one. Ring 1's samples lie on the sword's
-    /// middle plane, where the tip's apex begins both tip pieces, whenever ring 1 is square to the sword.
+    /// that sample, as the ring curves in toward the piece, and turns up again within one sample, so the slope
+    /// never shows falling-then-rising across a pair of samples. The search must look beside such a sample by the
+    /// distance itself. Ring 1's samples lie on the sword's middle plane, where the tip's apex begins both tip
+    /// pieces, whenever ring 1 is square to the sword.
     @Test func aFlatSampleHidesTheMinimumJustPastIt() {
         var worst = (error: 0.0, label: "")
         for (name, radius, samples) in [("ring", Dimensions.Ring.radius, 96), ("eye", Dimensions.Rod.eyeRadius, 96)] {
@@ -216,9 +215,7 @@ private func checkerDistance(_ a: ShapeCore, _ b: ShapeCore) -> Double {
             }
         }
         print(String(format: "flat sample: the largest error is %.4f mm (%@)", worst.error, worst.label))
-        withKnownIssue("A sample with zero slope that is not a minimum hides the true minimum within the next sample: by about 0.005 mm for ring 1 at the tip's apex, and up to about 0.01 mm for a ring and a straight piece that ends part way to the next sample.") {
-            #expect(worst.error < 1e-6)
-        }
+        #expect(worst.error < 1e-6)
     }
 
     /// `Gaps.smallest` skips a pair whose bounding spheres are further apart than the reach. Every pair it would
