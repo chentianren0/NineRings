@@ -75,7 +75,15 @@ enum Gaps {
         var approaches: [Approach] = []
         switch other {
         case .circle(let circle): Approaches.find(curve, circle, within: .infinity, samples: samples, into: &approaches)
-        case .segment(let segment): Approaches.find(curve, segment, within: .infinity, samples: samples, into: &approaches)
+        case .segment(let segment):
+            Approaches.find(curve, segment, within: .infinity, samples: samples, into: &approaches)
+            // Where the curve is nearest the piece at one of its ends, the distance is the curve's distance to that
+            // end, which the curve gives exactly. A short piece, such as one of the tip's, can be nearest a ring
+            // by each of its ends less than two samples apart, with the slope rising at both samples between, so
+            // the sampling alone can miss the lower of the two.
+            for end in [segment.start, segment.end] {
+                approaches.append(Approach(pointA: curve.nearestPoint(to: end), pointB: end))
+            }
         case .point(let point): Approaches.find(curve, PointCore(position: point), within: .infinity, samples: samples, into: &approaches)
         case .stadium(let stadium): Approaches.find(curve, stadium, within: .infinity, samples: samples, into: &approaches)
         }

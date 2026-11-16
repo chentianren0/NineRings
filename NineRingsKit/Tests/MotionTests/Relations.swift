@@ -50,6 +50,29 @@ enum Relations {
         return near.count % 2 == 1 && far.count % 2 == 1
     }
 
+    /// How far from the tip's end, along the sword, the sword may go through a ring that is leaving or joining the
+    /// rails.
+    static let tipEnd = Dimensions.Sword.railOffset / 2
+
+    /// A ring leaves the rails, or joins them, only over the tip end. Whether a ring goes round the rails can
+    /// change only where an end of the sword's centreline passes through the ring's disc, or where the sword's
+    /// wire passes through the ring's wire, which the gaps forbid; the centreline has two ends, the tip's end and
+    /// the end of the neck. So between two poses one after the other, a ring may stop or start going round the
+    /// rails only if, in the pose where it does go round them, the sword goes through it nowhere but near the
+    /// tip's end. Each failure is a sentence.
+    static func railChangeFailures(from before: ToyPose, to after: ToyPose) -> [String] {
+        var failures: [String] = []
+        for ring in 1...9 {
+            let wasRound = isRoundTheRails(ring, in: before)
+            guard wasRound != isRoundTheRails(ring, in: after) else { continue }
+            let (near, far) = swordCrossings(of: ring, in: wasRound ? before : after)
+            if (near + far).contains(where: { $0.x >= tipEnd }) {
+                failures.append("ring \(ring) \(wasRound ? "leaves" : "joins") the rails away from the tip end")
+            }
+        }
+        return failures
+    }
+
     /// The facts about one pose that must hold at every instant. Each is a sentence when it fails.
     ///
     /// Every ring must go round both rails except those in `mayBeOff`, which may go round both or neither: ring 1,
@@ -114,26 +137,14 @@ enum Relations {
     /// The rod rule: the shaft runs through its own hole, the eye sits on its ring's wire with the wire through
     /// it, and the bead is below the bar.
     private static func rodFailures(_ number: Int, in pose: ToyPose) -> [String] {
-        typealias Bar = Dimensions.Bar
         var failures: [String] = []
         let rod = pose.rod(number)
         let ring = pose.ring(number).circle
-        let shaft = rod.shaft
-        let hole = pose.bar.worldPoint(SIMD3(Bar.holeX(number), 0, 0))
-        let up = pose.bar.worldDirection(SIMD3(0, 1, 0))
 
-        for face in [-Bar.thickness / 2, Bar.thickness / 2] {
-            let startHeight = simd_dot(shaft.start - hole, up) - face
-            let endHeight = simd_dot(shaft.end - hole, up) - face
-            guard startHeight > 0, endHeight < 0 else {
-                failures.append("rod \(number) does not reach through the bar")
-                continue
-            }
-            let point = shaft.start + (shaft.end - shaft.start) * (startHeight / (startHeight - endHeight))
-            let offAxis = simd_length((point - hole) - simd_dot(point - hole, up) * up)
-            if offAxis > Bar.holeRadius - Dimensions.Rod.wireRadius {
-                failures.append("rod \(number) does not fit through its hole")
-            }
+        switch holeRoom(number, in: pose) {
+        case nil: failures.append("rod \(number) does not reach through the bar")
+        case let room? where room < 0: failures.append("rod \(number) does not fit through its hole")
+        default: break
         }
 
         if simd_distance(ring.nearestPoint(to: rod.position), rod.position) > 1e-9 {
@@ -147,11 +158,49 @@ enum Relations {
             failures.append("ring \(number)'s wire cuts through its eye")
         }
 
+        let hole = pose.bar.worldPoint(SIMD3(Dimensions.Bar.holeX(number), 0, 0))
+        let up = pose.bar.worldDirection(SIMD3(0, 1, 0))
         let beadTop = simd_dot(rod.worldPoint(SIMD3(0, Dimensions.Rod.beadCenterY, 0)) - hole, up) + Dimensions.Rod.beadRadius
-        if beadTop > -Bar.thickness / 2 {
+        if beadTop > -Dimensions.Bar.thickness / 2 {
             failures.append("bead \(number) is not below the bar")
         }
         return failures
+    }
+
+    /// How much room rod `number`'s shaft has in its own hole: the least distance from the shaft's surface to the
+    /// bar's material round the hole, through the bar's thickness and at any tilt. Negative where the shaft cuts
+    /// into the bar; nil where it does not reach from above the bar to below it.
+    ///
+    /// The bar round the hole is taken as a sheet one thickness deep that goes on for ever, with sharp-edged
+    /// rims, which is never less material than the bar has. The shaft is straight, so it is inside the sheet only
+    /// between the two places where its axis crosses the faces, and fits only if both are inside the hole.
+    /// Between them, its axis is furthest from the hole's axis at one of those places, because a point running
+    /// along one straight line is nearest another at one place and gets steadily further away either side of it;
+    /// so the nearest the shaft comes to the hole's wall is at a face. Outside the sheet, the nearest material is the rim of the hole, or a face beyond
+    /// the rim, which the shaft can only reach by passing nearer the rim. So the room is the distance from the
+    /// shaft to the nearer of the two rims, less the shaft's radius, and the shaft may touch the hole.
+    static func holeRoom(_ number: Int, in pose: ToyPose) -> Double? {
+        typealias Bar = Dimensions.Bar
+        let shaft = pose.rod(number).shaft
+        let hole = pose.bar.worldPoint(SIMD3(Bar.holeX(number), 0, 0))
+        let up = pose.bar.worldDirection(SIMD3(0, 1, 0))
+        var room = Double.infinity
+        for face in [-Bar.thickness / 2, Bar.thickness / 2] {
+            let startHeight = simd_dot(shaft.start - hole, up) - face
+            let endHeight = simd_dot(shaft.end - hole, up) - face
+            guard startHeight > 0, endHeight < 0 else { return nil }
+            let point = shaft.start + (shaft.end - shaft.start) * (startHeight / (startHeight - endHeight))
+            let offAxis = simd_length((point - hole) - simd_dot(point - hole, up) * up)
+            if offAxis >= Bar.holeRadius {
+                // The axis goes through the bar's material, or past its edge: through the sheet outside the hole.
+                room = min(room, -(offAxis - Bar.holeRadius) - Dimensions.Rod.wireRadius)
+                continue
+            }
+            let rim = Circle(center: hole + face * up, normal: up, radius: Bar.holeRadius)
+            let (onShaft, onRim) = Gaps.nearest(.segment(shaft), .circle(rim))
+            room = min(room, simd_distance(onShaft, onRim) - Dimensions.Rod.wireRadius)
+        }
+        return room
     }
 
     static func isClose(_ a: PartPose, _ b: PartPose, tolerance: Double = 1e-9) -> Bool {

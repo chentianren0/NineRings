@@ -21,7 +21,8 @@ public enum Approaches {
     /// The distance from a point of the curve to the core is a function of the curve's parameter alone, because
     /// the nearest point of the core follows from the point. The search samples that function at `samples`
     /// parameters. Wherever its slope turns from falling to rising, it closes in on the minimum between the two
-    /// samples. A sample that is itself within reach is a place too: that is how a curve running alongside the
+    /// samples; where a sample has no slope at all, it looks for a minimum on that side of it by the distance
+    /// itself, since a flat sample can sit just before or after a dip. A sample that is itself within reach is a place too: that is how a curve running alongside the
     /// core, as a ring lying flat on the bar does, gets a spread of places instead of a single one, and how the
     /// end of an open curve is found. A minimum stands in for the samples on either side of it.
     ///
@@ -63,20 +64,34 @@ public enum Approaches {
             let here = closesTheCurve ? first : measure(at: parameter)
 
             var minimumStandsIn = false
-            if previous.slope < 0 && here.slope >= 0 {
-                let minimum = measure(at: root(
+            var minimum: Approach?
+            if previous.slope < 0 && here.slope > 0 {
+                minimum = measure(at: root(
                     of: { measure(at: $0).slope },
                     from: parameter - step, previous.slope,
                     to: parameter, here.slope
                 )).approach
-                if minimum.distance < reach {
-                    if previousIsKept {
-                        approaches.removeLast()
-                        if approaches.count == firstIndex { firstIsKept = false }
-                    }
-                    approaches.append(minimum)
-                    minimumStandsIn = true
+            } else if previous.slope <= 0 && here.slope >= 0 {
+                // A sample with no slope need not be a minimum: it can be a flat top, or a flat stretch, with the
+                // distance still falling beside it and turning up again before the next sample. The slope then
+                // never shows falling-then-rising across a pair of samples, so the minimum is searched for by
+                // the distance itself over the interval. It counts only if it is below both samples: along a
+                // stretch that is flat throughout, the samples stay the places.
+                let lowest = measure(at: smallest(
+                    of: { measure(at: $0).approach.distance },
+                    from: parameter - step, to: parameter
+                )).approach
+                if lowest.distance < min(previous.approach.distance, here.approach.distance) - 1e-12 {
+                    minimum = lowest
                 }
+            }
+            if let minimum, minimum.distance < reach {
+                if previousIsKept {
+                    approaches.removeLast()
+                    if approaches.count == firstIndex { firstIsKept = false }
+                }
+                approaches.append(minimum)
+                minimumStandsIn = true
             }
 
             if closesTheCurve {
@@ -123,6 +138,28 @@ public enum Approaches {
             }
         }
         return upper
+    }
+
+    /// Where a function that falls and then rises between two parameters is least: a golden-section search. A
+    /// function that only rises, or only falls, comes out at the end where it is least.
+    private static func smallest(of function: (Double) -> Double, from lower: Double, to upper: Double) -> Double {
+        let ratio = (5.0.squareRoot() - 1) / 2
+        var lower = lower, upper = upper
+        var a = upper - ratio * (upper - lower), b = lower + ratio * (upper - lower)
+        var valueA = function(a), valueB = function(b)
+        for _ in 0..<100 where upper - lower > 1e-13 {
+            if valueA < valueB {
+                upper = b; b = a; valueB = valueA
+                a = upper - ratio * (upper - lower); valueA = function(a)
+            } else {
+                lower = a; a = b; valueA = valueB
+                b = lower + ratio * (upper - lower); valueB = function(b)
+            }
+        }
+        let valueLower = function(lower), valueUpper = function(upper)
+        if valueLower <= min(valueA, valueB, valueUpper) { return lower }
+        if valueUpper <= min(valueA, valueB) { return upper }
+        return valueA < valueB ? a : b
     }
 
     /// The nearest points of two straight pieces. There is only ever one such place worth reporting.
