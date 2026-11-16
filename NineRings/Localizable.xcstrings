@@ -1,14 +1,23 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "All nine rings are on the sword. Tap a ring to move it.": {
-      "comment": "Status at the start, with every ring on."
+    "%@, %@": {
+      "comment": "Spoken value of the slider that runs through the move: how far through it is, then the name of the stage there."
+    },
+    "All nine rings are on the sword. Click a numbered marker to move its ring.": {
+      "comment": "Status at the start, with every ring on, on the Mac. The markers are the row of numbered discs, one for each ring."
+    },
+    "All nine rings are on the sword. Tap a numbered marker to move its ring.": {
+      "comment": "Status at the start, with every ring on. The markers are the row of numbered discs, one for each ring."
     },
     "All rings are off. The puzzle is solved.": {
       "comment": "Status when every ring is off the sword."
     },
     "Asks to move this ring.": {
       "comment": "Spoken hint on a ring marker."
+    },
+    "Click a numbered marker to move its ring.": {
+      "comment": "Status when nothing is moving, on the Mac. The markers are the row of numbered discs, one for each ring."
     },
     "Full": {
       "comment": "Playing speed: moves play at their normal pace."
@@ -34,7 +43,7 @@
     "Off, can move": {
       "comment": "Spoken value of a ring marker."
     },
-    "Off, can move, but the move is not written yet": {
+    "Off, can move, but the move is not in the app yet": {
       "comment": "Spoken value of a ring marker."
     },
     "On, %@": {
@@ -43,7 +52,7 @@
     "On, can move": {
       "comment": "Spoken value of a ring marker."
     },
-    "On, can move, but the move is not written yet": {
+    "On, can move, but the move is not in the app yet": {
       "comment": "Spoken value of a ring marker."
     },
     "Pause": {
@@ -85,13 +94,13 @@
     "Ring %lld": {
       "comment": "Spoken name of a ring marker. The variable is the ring's number."
     },
-    "Ring %lld can come off now, but that move is not written yet.": {
+    "Ring %lld can come off now, but that move is not in the app yet.": {
       "comment": "Status after tapping a ring whose move is allowed but not yet in the app. The variable is the ring's number."
     },
-    "Ring %lld can go on now, but that move is not written yet.": {
+    "Ring %lld can go on now, but that move is not in the app yet.": {
       "comment": "Status after tapping a ring whose move is allowed but not yet in the app. The variable is the ring's number."
     },
-    "Ring %lld can’t move while ring %lld is off: ring %lld’s rod runs through ring %lld, and it is out of the slot, so ring %lld can’t pass through the slot.": {
+    "Ring %lld can’t move while ring %lld is off: ring %lld’s rod runs through ring %lld, and that rod is out of the slot, so ring %lld can’t pass through the slot.": {
       "comment": "Why a ring cannot move. The first, fourth and fifth variables are the ring tapped; the second and third the ring just before it, which is off. A ring's rod is the wire that holds it; the slot is the gap between the sword's two rails."
     },
     "Ring %lld can’t move while ring %lld is on: ring %lld’s rod stands in the slot between ring %lld and the tip.": {
@@ -121,17 +130,17 @@
     "Solve": {
       "comment": "Button that plays the shortest way to every ring off."
     },
-    "Solving stopped: the next move, ring %lld coming off, is not written yet.": {
+    "Solving stopped: the next move, ring %lld coming off, is not in the app yet.": {
       "comment": "Status when solving reaches a move the app cannot show yet. The variable is the ring's number."
     },
-    "Solving stopped: the next move, ring %lld going on, is not written yet.": {
+    "Solving stopped: the next move, ring %lld going on, is not in the app yet.": {
       "comment": "Status when solving reaches a move the app cannot show yet. The variable is the ring's number."
     },
     "Speed": {
       "comment": "Menu that chooses how fast moves play."
     },
-    "Tap a ring to move it.": {
-      "comment": "Status when nothing is moving."
+    "Tap a numbered marker to move its ring.": {
+      "comment": "Status when nothing is moving. The markers are the row of numbered discs, one for each ring."
     },
     "Tip": {
       "comment": "Camera place: the toy seen from the sword's tip."
