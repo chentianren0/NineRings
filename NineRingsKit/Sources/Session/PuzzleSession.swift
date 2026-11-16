@@ -273,6 +273,10 @@ public struct PuzzleSession: Sendable, Equatable {
         progress = min(max(newProgress, 0), 1)
         if progress >= 1 { settle(made: true) }
         if progress <= 0 { settle(made: false) }
+        // During a solve's last move the queue is already empty. Dragged away from playing, that move is all that
+        // is left of the solve, and play or a tap now decides what comes next: solving is over, so Solve is
+        // offered again.
+        if queue.isEmpty { isSolving = false }
     }
 
     /// Moves playing on by `distance`, a fraction of a whole move. When the move ends, the state changes and the
