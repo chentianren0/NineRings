@@ -17,11 +17,10 @@ public struct MoveMotion: Sendable {
     /// How long the move takes at full speed, in seconds.
     public static let duration = 3.0
 
-    /// The motion of `move`. Every legal move is written: ring 1's, and the second ring on the sword's, which is one
-    /// move for rings 2 to 9 (``PairMoveOff``). Each comes off from any state the rule allows, whatever the rings
-    /// behind are, and goes back on along the same path. The initializer stays failable so that a move can be left
-    /// unwritten again without changing its callers.
-    public init?(_ move: Move) {
+    /// The motion of `move`: ring 1's, or the second ring on the sword's, which is one move for rings 2 to 9
+    /// (``PairMoveOff``). Each comes off from any state the rule allows, whatever the rings behind are, and goes back on
+    /// along the same path.
+    public init(_ move: Move) {
         self.move = move
     }
 
@@ -44,9 +43,9 @@ public struct MoveMotion: Sendable {
     public var stages: [Stage] {
         let comingOff = move.ring == 1 ? RingOneOff.stages : PairMoveOff.stages(ring: move.ring)
         if move.takesOff { return comingOff }
-        let names = move.ring == 1 ? Self.ringOneNamesGoingOn : Self.pairNamesGoingOn(ring: move.ring)
-        return zip(comingOff.reversed(), names).map { stage, name in
-            Stage(name: name, start: 1 - stage.end, end: 1 - stage.start)
+        let keys = move.ring == 1 ? Self.ringOneKeysGoingOn : Self.pairKeysGoingOn
+        return zip(comingOff.reversed(), keys).map { stage, key in
+            Stage(key: key, ring: key.contains("%lld") ? move.ring : nil, start: 1 - stage.end, end: 1 - stage.start)
         }
     }
 
@@ -57,13 +56,13 @@ public struct MoveMotion: Sendable {
     }
 
     /// Going on, the stages of coming off are passed through backwards, under names that say what happens.
-    private static let ringOneNamesGoingOn = [
+    private static let ringOneKeysGoingOn = [
         "Lift", "Up through the slot", "Turn", "Out past the tip", "Over the tip", "Lean",
     ]
 
-    private static func pairNamesGoingOn(ring: Int) -> [String] {
-        ["Sword moves away", "Ring \(ring) lifts", "Up through the slot", "Ring \(ring) over the tip", "Sword comes back"]
-    }
+    private static let pairKeysGoingOn = [
+        "Sword moves away", "Ring %lld lifts", "Up through the slot", "Ring %lld over the tip", "Sword comes back",
+    ]
 
     private func offProgress(_ progress: Double) -> Double {
         let clamped = min(max(progress, 0), 1)

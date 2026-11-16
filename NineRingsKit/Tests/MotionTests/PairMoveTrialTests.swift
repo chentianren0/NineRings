@@ -13,13 +13,6 @@ import simd
 @Suite struct PairMoveTrialTests {
     static let environment = ProcessInfo.processInfo.environment
 
-    /// A state written ring 1 first, `1` for on.
-    static func state(_ text: some StringProtocol) -> PuzzleState {
-        var bits: UInt16 = 0
-        for (index, character) in text.enumerated() where character == "1" { bits |= 1 << index }
-        return PuzzleState(bits: bits)
-    }
-
     @Test(.enabled(if: environment["NINE_RINGS_PAIR"] != nil))
     func sweepThePairMove() throws {
         var keys = PairMoveOff.keys
@@ -28,7 +21,7 @@ import simd
         }
         let cases = (Self.environment["NINE_RINGS_CASES"] ?? "2:111111111,3:011111111").split(separator: ",").map { item in
             let parts = item.split(separator: ":")
-            return (Int(parts[0])!, Self.state(parts[1]))
+            return (Int(parts[0])!, state(String(parts[1])))
         }
         let samples = Int(Self.environment["NINE_RINGS_SAMPLES"] ?? "1000") ?? 1000
         for (ring, from) in cases {

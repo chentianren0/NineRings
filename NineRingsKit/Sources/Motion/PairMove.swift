@@ -75,11 +75,11 @@ struct PairMoveOff: Sendable {
     /// The stages, as spans of the path's own parameter.
     static func stagesAlongThePath(ring: Int) -> [Stage] {
         [
-            Stage(name: "Sword moves away", start: 0, end: 0.28),
-            Stage(name: "Ring \(ring) over the tip", start: 0.28, end: 0.4542),
-            Stage(name: "Down through the slot", start: 0.4542, end: 0.759),
-            Stage(name: "Ring \(ring) hangs", start: 0.759, end: 0.82),
-            Stage(name: "Sword comes back", start: 0.82, end: 1),
+            Stage(key: "Sword moves away", start: 0, end: 0.28),
+            Stage(key: "Ring %lld over the tip", ring: ring, start: 0.28, end: 0.4542),
+            Stage(key: "Down through the slot", start: 0.4542, end: 0.759),
+            Stage(key: "Ring %lld hangs", ring: ring, start: 0.759, end: 0.82),
+            Stage(key: "Sword comes back", start: 0.82, end: 1),
         ]
     }
 

@@ -86,24 +86,19 @@ private struct RingMarker: View {
         }
     }
 
-    /// A short bar for a ring that can move now: solid when its move is written, an outline while it is not.
+    /// A short bar for a ring that can move now.
     private var movable: some View {
         Capsule()
-            .strokeBorder(marker.canMove ? AnyShapeStyle(.tint) : AnyShapeStyle(.clear), lineWidth: 1)
-            .background(marker.canMove && marker.isWritten ? AnyShapeStyle(.tint) : AnyShapeStyle(.clear), in: .capsule)
+            .fill(marker.canMove ? AnyShapeStyle(.tint) : AnyShapeStyle(.clear))
             .frame(width: discSize * 0.8, height: 4)
     }
 
     private var value: LocalizedStringResource {
         switch (marker.isOn, marker.block) {
         case (true, nil):
-            marker.isWritten
-                ? LocalizedStringResource("On, can move", comment: "Spoken value of a ring marker.")
-                : LocalizedStringResource("On, can move, but the move is not in the app yet", comment: "Spoken value of a ring marker.")
+            LocalizedStringResource("On, can move", comment: "Spoken value of a ring marker.")
         case (false, nil):
-            marker.isWritten
-                ? LocalizedStringResource("Off, can move", comment: "Spoken value of a ring marker.")
-                : LocalizedStringResource("Off, can move, but the move is not in the app yet", comment: "Spoken value of a ring marker.")
+            LocalizedStringResource("Off, can move", comment: "Spoken value of a ring marker.")
         case (true, let block?):
             LocalizedStringResource("On, \(Sentences.shortReason(block))", comment: "Spoken value of a ring marker that is on and cannot move. The variable says why.")
         case (false, let block?):

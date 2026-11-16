@@ -64,8 +64,8 @@ private final class FrameDriver {
         // The pose depends on the move, the progress and the state alone, so it is drawn again only when one of
         // them changes.
         let key = player.poseKey
-        if key != drawn, let pose = player.pose {
-            scene.apply(pose)
+        if key != drawn {
+            scene.apply(player.pose)
             drawn = key
         }
         if rig.revision != drawnCamera {

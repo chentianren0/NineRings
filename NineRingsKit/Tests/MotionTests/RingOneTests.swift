@@ -16,7 +16,7 @@ let ringOneOn = ringOneOff.reversed
 @Suite struct RestTests {
     @Test(arguments: [PuzzleState.allOn, PuzzleState.allOn.moving(1)])
     func restsClearAndReadsAsItsState(_ state: PuzzleState) throws {
-        let pose = try #require(RestPoses.pose(for: state))
+        let pose = RestPoses.pose(for: state)
         let gap = try #require(Gaps.smallest(in: pose.shapes))
         print("rest \(state): smallest gap \(gap)")
         #expect(gap.distance >= smallestAllowedGap, "\(gap)")
@@ -38,7 +38,7 @@ let ringOneOn = ringOneOff.reversed
     }
 
     @Test func everyBeadOfARingThatIsOnRestsAHairUnderTheBar() throws {
-        let pose = try #require(RestPoses.pose(for: .allOn))
+        let pose = RestPoses.pose(for: .allOn)
         let barBottom = Layout.bar.position.y - Dimensions.Bar.thickness / 2
         for ring in PuzzleState.rings {
             let beadTop = pose.rod(ring).worldPoint(SIMD3(0, Dimensions.Rod.beadCenterY, 0)).y + Dimensions.Rod.beadRadius
@@ -47,7 +47,7 @@ let ringOneOn = ringOneOff.reversed
     }
 
     @Test func ringOneOffHangsOnTheTipSideOfRingTwosLowerArc() throws {
-        let pose = try #require(RestPoses.pose(for: PuzzleState.allOn.moving(1)))
+        let pose = RestPoses.pose(for: PuzzleState.allOn.moving(1))
         let ringOne = pose.ring(1).circle
         let ringTwo = pose.ring(2).circle
         // Every point of ring 1 lies on the tip side of ring 2's plane.
@@ -60,17 +60,12 @@ let ringOneOn = ringOneOff.reversed
         #expect(eyeTop < Dimensions.Sword.railHeight - Dimensions.Sword.wireRadius)
         print("ring 1 off: its rod has slid \(Layout.eyeHeightOn - Layout.eyeHeightHanging) mm down")
     }
-
-    @Test func everyStateHasARestPose() {
-        #expect(RestPoses.pose(for: .allOff) != nil)
-        #expect(RestPoses.pose(for: PuzzleState("001111111")!) != nil)
-    }
 }
 
 @Suite struct RingOneMoveTests {
     @Test(arguments: [ringOneOff, ringOneOn])
     func nothingPassesThroughAnythingAndNothingJumps(_ move: Move) throws {
-        let motion = try #require(MoveMotion(move))
+        let motion = MoveMotion(move)
         let sweep = Sweep(motion)
         let smallest = sweep.smallestGap
         let step = sweep.largestStep
@@ -90,16 +85,16 @@ let ringOneOn = ringOneOff.reversed
 
     @Test(arguments: [ringOneOff, ringOneOn])
     func theEndsAreTheRestPoses(_ move: Move) throws {
-        let motion = try #require(MoveMotion(move))
-        let before = try #require(RestPoses.pose(for: move.from))
-        let after = try #require(RestPoses.pose(for: move.to))
+        let motion = MoveMotion(move)
+        let before = RestPoses.pose(for: move.from)
+        let after = RestPoses.pose(for: move.to)
         #expect(Relations.isClose(motion.pose(at: 0), before))
         #expect(Relations.isClose(motion.pose(at: 1), after))
     }
 
     @Test func goingOnIsComingOffBackwards() throws {
-        let off = try #require(MoveMotion(ringOneOff))
-        let on = try #require(MoveMotion(ringOneOn))
+        let off = MoveMotion(ringOneOff)
+        let on = MoveMotion(ringOneOn)
         for index in 0...200 {
             let progress = Double(index) / 200
             #expect(Relations.isClose(off.pose(at: progress), on.pose(at: 1 - progress), tolerance: 1e-9))
@@ -109,7 +104,7 @@ let ringOneOn = ringOneOff.reversed
     /// A ring can leave the rails only by passing out over the tip end: the two places where the sword goes
     /// through it close in on each other round the tip and meet at its end.
     @Test func ringOneLeavesTheRailsOnlyOverTheTipEnd() throws {
-        let motion = try #require(MoveMotion(ringOneOff))
+        let motion = MoveMotion(ringOneOff)
         let samples = 4000
         var previous: (on: Bool, crossings: [SIMD3<Double>])?
         var changes = 0
@@ -131,7 +126,7 @@ let ringOneOn = ringOneOff.reversed
     }
 
     @Test func theStagesComeInOrderAndEachDoesWhatItsNameSays() throws {
-        let motion = try #require(MoveMotion(ringOneOff))
+        let motion = MoveMotion(ringOneOff)
         let stages = motion.stages
         #expect(stages.map(\.name) == ["Flatten", "Over the tip", "Back over the slot", "Turn", "Down through the slot", "Hang"])
         #expect(stages.first?.start == 0 && stages.last?.end == 1)
@@ -175,15 +170,9 @@ let ringOneOn = ringOneOff.reversed
     }
 
     @Test func goingOnNamesTheStagesForWhatHappens() throws {
-        let motion = try #require(MoveMotion(ringOneOn))
+        let motion = MoveMotion(ringOneOn)
         #expect(motion.stages.map(\.name) == ["Lift", "Up through the slot", "Turn", "Out past the tip", "Over the tip", "Lean"])
         #expect(motion.stage(at: 0).name == "Lift")
         #expect(motion.stage(at: 1).name == "Lean")
-    }
-
-    @Test func everyLegalMoveHasAMotion() {
-        #expect(MoveMotion(Move(ring: 3, from: PuzzleState("011111111")!)!) != nil)
-        #expect(MoveMotion(Move(ring: 1, from: PuzzleState("101111111")!)!) != nil)
-        #expect(Move(ring: 3, from: .allOn) == nil)
     }
 }

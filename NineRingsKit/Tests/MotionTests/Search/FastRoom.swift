@@ -33,9 +33,8 @@ struct FastRoom: Sendable {
     var mayBeOff: Set<Int>
     /// Gaps above this are reported as this.
     var cap: Double = 1.5
-    /// A bead rests a hair under the bar by design (0.25 mm), which a search should not try to widen. Today's tuners
-    /// leave the bar out for that reason; here only the bead and the bar are left out, and only while the bead is
-    /// no nearer the bar than it rests.
+    /// A bead rests a hair under the bar by design (0.25 mm), which a search should not try to widen: only the bead
+    /// and the bar are left out, and only while the bead is no nearer the bar than it rests.
     var ignoreRestingBead = true
     /// Whether, when the sword slides, its gaps to the rings and rods that stay still count. They are part of the
     /// checker's room, but in a search for a pose they can hide differences: the rings that stay on keep about

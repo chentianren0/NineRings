@@ -69,7 +69,7 @@ private func probeLowered(_ pose: ToyPose, by depth: Double, from first: Int, st
 
     /// The move as written passes, so that each probe below differs from a passing move by its fault alone.
     @Test func theWrittenMovePasses() throws {
-        let verdict = ProbeSweepVerdict(Sweep(try #require(MoveMotion(probePairMove)), samples: Sweep.samples / 4))
+        let verdict = ProbeSweepVerdict(Sweep(MoveMotion(probePairMove), samples: Sweep.samples / 4))
         print("pair probe as written: \(verdict)")
         #expect(!verdict.gapCaught && verdict.failure == nil)
     }
@@ -86,7 +86,7 @@ private func probeLowered(_ pose: ToyPose, by depth: Double, from first: Int, st
     /// The sword goes straight down out of ring 2 between one sample and the next, through its wire: only the rule
     /// that a ring leaves the rails over the tip end sees it.
     @Test func theSwordJumpsDownOutOfTheRingInFrontBetweenTwoSamples() {
-        let rest = RestPoses.pose(for: probePairMove.from)!
+        let rest = RestPoses.pose(for: probePairMove.from)
         let sweep = Sweep(probePairMove, samples: 1) { progress in
             probeLowered(rest, by: 30 * progress, from: 3, state: probePairMove.from)
         }
@@ -105,7 +105,7 @@ private func probeLowered(_ pose: ToyPose, by depth: Double, from first: Int, st
     /// The sword lowered until its rails are in the bar, every ring on as it rests: the gap between the sword and the
     /// bar is measured like any other.
     @Test func theSwordLoweredIntoTheBar() {
-        var pose = RestPoses.pose(for: .allOn)!
+        var pose = RestPoses.pose(for: .allOn)
         pose.swordHeight = probeBarTop - Dimensions.Sword.railHeight + Dimensions.Sword.wireRadius - 0.5
         let truth = ProbeBrute.gap(.sword, .bar, in: pose, steps: 500)
         let verdict = ProbeVerdict(pose, .sword, .bar)
@@ -133,7 +133,7 @@ private func probeLowered(_ pose: ToyPose, by depth: Double, from first: Int, st
     @Test func aRingBehindDoesNotGoDownWithTheSword() {
         let move = probePairMove
         let path = probePairPath { _ in }
-        let rest = RestPoses.pose(for: move.from)!
+        let rest = RestPoses.pose(for: move.from)
         _ = expectCaught("ring 5 stays up", move) { progress in
             var pose = path(progress)
             pose.rings[4] = rest.ring(5)
@@ -148,9 +148,9 @@ private func probeLowered(_ pose: ToyPose, by depth: Double, from first: Int, st
     /// moves. Only the rule that a ring off before and after the move stays off the rails sees it.
     @Test func aRingInFrontThatIsOffGetsOnAndOffAgainDuringTheMove() throws {
         let move = probePairMove
-        let ringOneOn = try #require(MoveMotion(Move(ring: 1, from: move.from)!))
-        let ringOneOff = try #require(MoveMotion(Move(ring: 1, from: move.from.moving(1))!))
-        let pair = try #require(MoveMotion(move))
+        let ringOneOn = MoveMotion(Move(ring: 1, from: move.from)!)
+        let ringOneOff = MoveMotion(Move(ring: 1, from: move.from.moving(1))!)
+        let pair = MoveMotion(move)
         // A fifth of the move each for ring 1 on and off. Only the relations are asked about: the steps are larger
         // than the step rule allows at this sampling, and smaller than it at five times as many samples.
         let pose: (Double) -> ToyPose = { progress in
@@ -167,7 +167,7 @@ private func probeLowered(_ pose: ToyPose, by depth: Double, from first: Int, st
         #expect(zip(fine, fine.dropFirst()).map { Relations.largestStep(from: $0, to: $1).distance }.max()! <= largestAllowedStep)
         print("pair probe ring 1 on and off in front: ring 1 round the rails at \(roundOne.filter { $0 }.count) of \(roundOne.count) samples; \(verdict)")
         #expect(roundOne.contains(true), "the probe does not build the fault it means to")
-        #expect(Relations.isClose(pose(0), RestPoses.pose(for: move.from)!) && Relations.isClose(pose(1), RestPoses.pose(for: move.to)!))
+        #expect(Relations.isClose(pose(0), RestPoses.pose(for: move.from)) && Relations.isClose(pose(1), RestPoses.pose(for: move.to)))
         #expect(verdict.failure?.failures.contains("ring 1 has got onto the rails") == true, "\(verdict)")
     }
 
@@ -175,9 +175,9 @@ private func probeLowered(_ pose: ToyPose, by depth: Double, from first: Int, st
     /// (its move is legal while ring 1 is on) before ring 1 comes off.
     @Test func aRingBehindThatIsOffGetsOnAndOffAgainDuringTheMove() throws {
         let move = Move(ring: 1, from: state("101111111"))!
-        let ringTwoOn = try #require(MoveMotion(Move(ring: 2, from: move.from)!))
-        let ringTwoOff = try #require(MoveMotion(Move(ring: 2, from: move.from.moving(2))!))
-        let ringOne = try #require(MoveMotion(move))
+        let ringTwoOn = MoveMotion(Move(ring: 2, from: move.from)!)
+        let ringTwoOff = MoveMotion(Move(ring: 2, from: move.from.moving(2))!)
+        let ringOne = MoveMotion(move)
         let pose: (Double) -> ToyPose = { progress in
             switch progress {
             case ..<0.3: ringTwoOn.pose(at: progress / 0.3)

@@ -5,10 +5,10 @@ import Puzzle
 import Toy
 import simd
 
-/// The two written moves as `KeyedMove`s, ring 1's drop and the second ring's, with the numbers today's tuners leave
+/// The two written moves as `KeyedMove`s, ring 1's drop and the second ring's, with the numbers the tuner leaves
 /// free, and the full check a path must pass.
 extension KeyedMove {
-    /// Ring 1's drop, as `TuneTests` tunes it: the tip, tilt, swing and eye curves from path parameter 0.55 on.
+    /// Ring 1's drop as the tuner searches it: the tip, tilt, swing and eye curves from path parameter 0.55 on.
     static let ringOne = KeyedMove(
         channels: [
             Channel(name: "tip", freeProgress: [false, true, true, true], freeValue: [false, true, true, false], valueStep: 8),
@@ -42,7 +42,7 @@ extension KeyedMove {
         "eye": [(0.56, Layout.eyeHeightOn), (0.6583, -3.653), (0.8198, -6.088), (0.9549, Layout.eyeHeightHanging)],
     ]
 
-    /// The hand guess that `TuneTests` starts from, as committed with it.
+    /// A hand guess at ring 1's drop, the one its first search started from.
     static let ringOneHandGuess: Keys = [
         "tip": [(0.55, 0), (0.62, 25), (0.72, 90), (0.92, 180 - RingOneOff.leanHangingDegrees)],
         "tilt": [(0.57, 0), (0.66, 40), (0.72, 65), (1, 90)],

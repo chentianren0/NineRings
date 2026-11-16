@@ -35,14 +35,8 @@ public enum RestPoses {
         state.isOn(ring) ? on(ring) : hanging(ring)
     }
 
-    /// Whether the rest of `state` is written. Each ring rests by its own state alone, so every state's is.
-    public static func isWritten(_ state: PuzzleState) -> Bool {
-        true
-    }
-
-    /// The toy at rest in `state`, or nil when that rest has not been written yet.
-    public static func pose(for state: PuzzleState) -> ToyPose? {
-        guard isWritten(state) else { return nil }
+    /// The toy at rest in `state`.
+    public static func pose(for state: PuzzleState) -> ToyPose {
         let held = PuzzleState.rings.map { resting($0, in: state) }
         return pose(holding: held, swordSlide: Layout.swordHome)
     }
