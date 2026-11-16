@@ -5,8 +5,9 @@ import Toy
 /// A puzzle being played: the state, the moves made, the move on the slider and how far through it the toy is,
 /// and the rings asked to move next.
 ///
-/// It holds no clock and no text. Whoever drives it calls `advance(by:)` with how much of a move's progress
-/// time has covered, and turns `status` and `markers` into words and pictures.
+/// It holds no clock and no text. Whoever drives it calls `advance(by:)` with how many seconds of the move's own time
+/// have passed, at the speed it plays, and turns `status` and `markers` into words and pictures. Dragging the slider
+/// goes by the move's progress, which the poses are a function of.
 ///
 /// The rules it keeps:
 /// - Tapping a ring asks to move it. A legal move plays; the state changes when it ends. A move the rule forbids
@@ -272,17 +273,28 @@ public struct PuzzleSession: Sendable, Equatable {
         if queue.isEmpty { isSolving = false }
     }
 
-    /// Moves playing on by `distance`, a fraction of a whole move. When the move ends, the state changes and the
-    /// next ring in the queue begins; what is left of `distance` is not carried into it.
-    public mutating func advance(by distance: Double) {
-        guard isPlaying, current != nil, distance > 0 else { return }
+    /// Moves playing on by `seconds` of the move's own time at full speed (see ``MoveTiming``); whoever drives the
+    /// session applies the playing speed. When the move ends, the state changes and the next ring in the queue begins;
+    /// what is left of `seconds` is not carried into it.
+    public mutating func advance(by seconds: Double) {
+        guard isPlaying, let motion, seconds > 0 else { return }
+        let timing = motion.timing
+        let now = timing.time(atProgress: progress)
         switch direction {
         case .forward:
-            progress = min(progress + distance, 1)
-            if progress >= 1 { end(made: true) }
+            if now + seconds >= timing.duration {
+                progress = 1
+                end(made: true)
+            } else {
+                progress = timing.progress(atTime: now + seconds)
+            }
         case .backward:
-            progress = max(progress - distance, 0)
-            if progress <= 0 { end(made: false) }
+            if now - seconds <= 0 {
+                progress = 0
+                end(made: false)
+            } else {
+                progress = timing.progress(atTime: now - seconds)
+            }
         }
     }
 
