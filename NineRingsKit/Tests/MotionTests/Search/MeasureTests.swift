@@ -6,7 +6,7 @@ import Testing
 import Toy
 import simd
 
-/// Times the pieces of today's search tools, to see where a tuner's time goes. Run with
+/// Times the pieces of the search tools, to see where a tuner's time goes. Run with
 /// `NINE_RINGS_MEASURE=1`, optimized. It prints one line per piece.
 @Suite struct MeasureTests {
     /// Seconds per call of `work`, over at least `minimum` seconds.
@@ -71,8 +71,8 @@ import simd
         }
 
         let ringOne = RingOneOff.written
-        _ = Self.time("ring 1 tuner's score of one path (161 points)", minimum: 3) {
-            sink += TuneTests.score(TuneTests.Drop.initial)
+        _ = Self.time("ring 1 drop tuner's score of one path (161 points)", minimum: 3) {
+            sink += KeyedMove.ringOne.score(KeyedMove.ringOneHandGuess, samples: 160).least
         }
         _ = Self.time("pose of ring 1's move") { sink += ringOne.pose(at: 0.7).swordSlide }
         let fast2 = FastRoom(moving: Array(3...9), swordMoves: true, mayBeOff: [1, 2, 3])
@@ -81,7 +81,7 @@ import simd
         let fast1 = FastRoom(moving: [1], swordMoves: false, mayBeOff: [1])
         let poseOne = ringOne.pose(at: 0.7)
         _ = Self.time("checker gap, moving parts, ring 1's drop") {
-            sink += Gaps.smallest(in: poseOne.shapes.filter { $0.name != .bar }, involving: TuneTests.moving)!.distance
+            sink += Gaps.smallest(in: poseOne.shapes.filter { $0.name != .bar }, involving: SearchToolTests.ringOneMoving)!.distance
         }
         _ = Self.time("fast room: gap, ring 1's drop") { sink += fast1.smallestGap(poseOne).0 }
         _ = Self.time("fast room: relations, ring 1's drop") { sink += Double(fast1.failures(poseOne).count) }

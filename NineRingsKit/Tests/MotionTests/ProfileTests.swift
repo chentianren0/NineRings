@@ -12,7 +12,7 @@ private var profiledMove: Move {
 @Suite struct ProfileTests {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["NINE_RINGS_PROFILE"] != nil))
     func profile() throws {
-        let motion = try #require(MoveMotion(profiledMove))
+        let motion = MoveMotion(profiledMove)
         let sweep = Sweep(motion, samples: 400)
         for (index, gap) in sweep.gaps.enumerated() where index % 2 == 0 {
             let flag = gap.distance < smallestAllowedGap ? "  <<<" : ""
@@ -25,7 +25,7 @@ extension ProfileTests {
     /// Prints, for each fiftieth of the move, the fastest any point moves, in millimetres per second at full speed.
     @Test(.enabled(if: ProcessInfo.processInfo.environment["NINE_RINGS_PROFILE"] != nil))
     func speeds() throws {
-        let motion = try #require(MoveMotion(profiledMove))
+        let motion = MoveMotion(profiledMove)
         let samples = 4000
         let poses = (0...samples).map { motion.pose(at: Double($0) / Double(samples)) }
         let steps = zip(poses, poses.dropFirst()).map { Relations.largestStep(from: $0, to: $1) }

@@ -3,7 +3,7 @@ import Foundation
 import Testing
 
 /// The tuner on the two written moves, to prove that it finds a move we know. Run optimized with
-/// `NINE_RINGS_SEARCH=1` (ring 1's drop from the hand guess `TuneTests` starts from) or `NINE_RINGS_SEARCH=2`
+/// `NINE_RINGS_SEARCH=1` (ring 1's drop from a hand guess) or `NINE_RINGS_SEARCH=2`
 /// (the second ring's drop, for ring 2, from its keys rounded as a first guess would be). `NINE_RINGS_SECONDS` sets the time budget,
 /// `NINE_RINGS_SEED` the seed, `NINE_RINGS_FROM` keys to start from instead, and `NINE_RINGS_SHAKE=scale` shakes
 /// the written keys by that many steps to make the start. Each run ends with the checker's full tests of the

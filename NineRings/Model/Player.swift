@@ -89,8 +89,8 @@ final class Player {
         PoseKey(move: session.current, progress: session.progress, state: session.state)
     }
 
-    /// The toy as it is now, or nil when it is in a state whose rest is not written.
-    var pose: ToyPose? { session.pose }
+    /// The toy as it is now.
+    var pose: ToyPose { session.pose }
 
     /// The name of the stage the slider is in, as written for making the move; empty before the first move.
     var stageName: String {

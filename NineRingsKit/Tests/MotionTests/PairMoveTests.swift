@@ -34,7 +34,7 @@ let pairMoveCases: [Move] = [
 
     @Test(arguments: bothWays)
     func nothingPassesThroughAnythingAndNothingJumps(_ move: Move) throws {
-        let motion = try #require(MoveMotion(move))
+        let motion = MoveMotion(move)
         let sweep = Sweep(motion)
         let smallest = sweep.smallestGap
         let step = sweep.largestStep
@@ -63,10 +63,10 @@ let pairMoveCases: [Move] = [
 
     @Test(arguments: pairMoveCases)
     func theEndsAreTheRestPosesAndGoingOnIsComingOffBackwards(_ off: Move) throws {
-        let comingOff = try #require(MoveMotion(off))
-        let goingOn = try #require(MoveMotion(off.reversed))
-        #expect(Relations.isClose(comingOff.pose(at: 0), try #require(RestPoses.pose(for: off.from))))
-        #expect(Relations.isClose(comingOff.pose(at: 1), try #require(RestPoses.pose(for: off.to))))
+        let comingOff = MoveMotion(off)
+        let goingOn = MoveMotion(off.reversed)
+        #expect(Relations.isClose(comingOff.pose(at: 0), RestPoses.pose(for: off.from)))
+        #expect(Relations.isClose(comingOff.pose(at: 1), RestPoses.pose(for: off.to)))
         for index in 0...200 {
             let progress = Double(index) / 200
             #expect(Relations.isClose(comingOff.pose(at: progress), goingOn.pose(at: 1 - progress)))
@@ -78,8 +78,8 @@ let pairMoveCases: [Move] = [
     /// sword, by exactly its height. The bar never moves.
     @Test(arguments: pairMoveCases.filter { $0.ring >= 2 })
     func theRingsInFrontKeepStillAndTheRingsBehindRideWithTheSword(_ off: Move) throws {
-        let motion = try #require(MoveMotion(off))
-        let rest = try #require(RestPoses.pose(for: off.from))
+        let motion = MoveMotion(off)
+        let rest = RestPoses.pose(for: off.from)
         var lowest = 0.0
         for index in 0...4000 {
             let pose = motion.pose(at: Double(index) / 4000)
@@ -100,9 +100,9 @@ let pairMoveCases: [Move] = [
     /// Ring 1's move is the same whatever is behind it: every other ring and rod keeps exactly still.
     @Test func ringOneComesOffWhateverIsBehindIt() throws {
         let off = try #require(Move(ring: 1, from: state("101111111")))
-        let motion = try #require(MoveMotion(off))
-        let rest = try #require(RestPoses.pose(for: off.from))
-        let allOn = try #require(MoveMotion(Move(ring: 1, from: .allOn)!))
+        let motion = MoveMotion(off)
+        let rest = RestPoses.pose(for: off.from)
+        let allOn = MoveMotion(Move(ring: 1, from: .allOn)!)
         for index in 0...4000 {
             let progress = Double(index) / 4000
             let pose = motion.pose(at: progress)
@@ -117,9 +117,9 @@ let pairMoveCases: [Move] = [
     /// The same move for every ring: ring k's path is ring 2's, one hole further along for each ring after ring 2,
     /// moving ring, sword and all.
     @Test func theMoveIsTheSameForEveryRingOneHoleFurtherAlong() throws {
-        let two = try #require(MoveMotion(Move(ring: 2, from: .allOn)!))
+        let two = MoveMotion(Move(ring: 2, from: .allOn)!)
         for ring in 3...9 {
-            let motion = try #require(MoveMotion(Move(ring: ring, from: PairMoveOff.firstPlace(ring))!))
+            let motion = MoveMotion(Move(ring: ring, from: PairMoveOff.firstPlace(ring))!)
             let shift = SIMD3(Dimensions.Bar.holePitch * Double(ring - 2), 0, 0)
             // The pacing differs by how far the sword slides from home, so compare along the path's own parameter.
             for index in 1..<400 {
@@ -140,7 +140,7 @@ let pairMoveCases: [Move] = [
     /// over the tip end, while the sword is out of ring k−1.
     @Test(arguments: pairMoveCases.filter { $0.ring >= 2 })
     func theSwordLeavesTheRingInFrontOnceAndTheRingLeavesWhileItIsOut(_ off: Move) throws {
-        let motion = try #require(MoveMotion(off))
+        let motion = MoveMotion(off)
         let samples = (0...4000).map { Double($0) / 4000 }
         let poses = samples.map(motion.pose(at:))
         func changes(_ ring: Int) -> [Double] {
@@ -157,7 +157,7 @@ let pairMoveCases: [Move] = [
 
     @Test(arguments: [2, 3, 9])
     func theStagesComeInOrderAndEachDoesWhatItsNameSays(_ ring: Int) throws {
-        let motion = try #require(MoveMotion(Move(ring: ring, from: PairMoveOff.firstPlace(ring))!))
+        let motion = MoveMotion(Move(ring: ring, from: PairMoveOff.firstPlace(ring))!)
         let stages = motion.stages
         #expect(stages.map(\.name) == ["Sword moves away", "Ring \(ring) over the tip", "Down through the slot", "Ring \(ring) hangs", "Sword comes back"])
         #expect(stages.first?.start == 0 && stages.last?.end == 1)
@@ -199,14 +199,14 @@ let pairMoveCases: [Move] = [
     }
 
     @Test func goingOnNamesTheStagesForWhatHappens() throws {
-        let motion = try #require(MoveMotion(Move(ring: 4, from: state("001011111"))!))
+        let motion = MoveMotion(Move(ring: 4, from: state("001011111"))!)
         #expect(motion.stages.map(\.name) == ["Sword moves away", "Ring 4 lifts", "Up through the slot", "Ring 4 over the tip", "Sword comes back"])
     }
 
     @Test func theWrittenMovesAreOneForEachRingWhereItFirstComesOff() {
         #expect(MoveMotion.written.map(\.ring) == Array(1...9))
         #expect(MoveMotion.written.map(\.from) == [.allOn, .allOn] + (3...9).map { PairMoveOff.firstPlace($0) })
-        #expect(MoveMotion.written.allSatisfy { $0.takesOff && MoveMotion($0) != nil && MoveMotion($0.reversed) != nil })
+        #expect(MoveMotion.written.allSatisfy { $0.takesOff })
         #expect(PairMoveOff.firstPlace(3) == state("011111111") && PairMoveOff.firstPlace(9) == state("000000011"))
     }
 }

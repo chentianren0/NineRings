@@ -53,7 +53,7 @@ struct Pacing: Sendable {
     /// Stages given as spans of the path's parameter, as spans of the move's progress.
     func stages(_ alongThePath: [Stage]) -> [Stage] {
         alongThePath.map { stage in
-            Stage(name: stage.name, start: progress(atPathParameter: stage.start), end: progress(atPathParameter: stage.end))
+            stage.spanning(from: progress(atPathParameter: stage.start), to: progress(atPathParameter: stage.end))
         }
     }
 

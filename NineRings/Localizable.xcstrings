@@ -43,16 +43,10 @@
     "Off, can move": {
       "comment": "Spoken value of a ring marker."
     },
-    "Off, can move, but the move is not in the app yet": {
-      "comment": "Spoken value of a ring marker."
-    },
     "On, %@": {
       "comment": "Spoken value of a ring marker that is on and cannot move. The variable says why."
     },
     "On, can move": {
-      "comment": "Spoken value of a ring marker."
-    },
-    "On, can move, but the move is not in the app yet": {
       "comment": "Spoken value of a ring marker."
     },
     "Pause": {
@@ -94,12 +88,6 @@
     "Ring %lld": {
       "comment": "Spoken name of a ring marker. The variable is the ring's number."
     },
-    "Ring %lld can come off now, but that move is not in the app yet.": {
-      "comment": "Status after tapping a ring whose move is allowed but not yet in the app. The variable is the ring's number."
-    },
-    "Ring %lld can go on now, but that move is not in the app yet.": {
-      "comment": "Status after tapping a ring whose move is allowed but not yet in the app. The variable is the ring's number."
-    },
     "Ring %lld can’t move while ring %lld is off: ring %lld’s rod runs through ring %lld, and that rod is out of the slot, so ring %lld can’t pass through the slot.": {
       "comment": "Why a ring cannot move. The first, fourth and fifth variables are the ring tapped; the second and third the ring just before it, which is off. A ring's rod is the wire that holds it; the slot is the gap between the sword's two rails."
     },
@@ -129,12 +117,6 @@
     },
     "Solve": {
       "comment": "Button that plays the shortest way to every ring off."
-    },
-    "Solving stopped: the next move, ring %lld coming off, is not in the app yet.": {
-      "comment": "Status when solving reaches a move the app cannot show yet. The variable is the ring's number."
-    },
-    "Solving stopped: the next move, ring %lld going on, is not in the app yet.": {
-      "comment": "Status when solving reaches a move the app cannot show yet. The variable is the ring's number."
     },
     "Speed": {
       "comment": "Menu that chooses how fast moves play."

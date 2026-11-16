@@ -5,7 +5,7 @@ import Testing
 
 /// Many random sequences of requests, each checked after every step against what must always hold, whatever
 /// the order: the state is the start plus the moves made, each move made is legal from where it was made, the
-/// progress is between 0 and 1, and nothing plays without a written move on the slider.
+/// progress is between 0 and 1, and nothing plays without a move on the slider.
 @Suite struct PuzzleSessionSequenceTests {
     /// A small, fixed random source, so that a failing sequence can be run again.
     private struct SplitMix: RandomNumberGenerator {
@@ -19,9 +19,10 @@ import Testing
         }
     }
 
-    /// Where a sequence begins: every ring on, or at a written move, or its way back, at some progress.
+    /// Where a sequence begins: every ring on, or at a move of the written moves menu, or its way back, at some
+    /// progress.
     private func start(_ random: inout SplitMix) -> (PuzzleSession, String) {
-        let moves = MoveMotion.written.flatMap { [$0, $0.reversed] }.filter { MoveMotion($0) != nil }
+        let moves = MoveMotion.written.flatMap { [$0, $0.reversed] }
         guard !moves.isEmpty, Int.random(in: 0..<3, using: &random) > 0 else { return (PuzzleSession(), "init()") }
         let move = moves.randomElement(using: &random)!
         let progress = [0, 1, 0.5, Double.random(in: 0...1, using: &random)].randomElement(using: &random)!
@@ -40,12 +41,7 @@ import Testing
         if name == "undo()" && before.canUndo == (session == before) {
             return name + " [undo was \(before.canUndo ? "" : "not ")offered, and it \(session == before ? "did nothing" : "did something")]"
         }
-        // Solve may meet a first move that is not written; then it plays nothing and says so, as it did before.
-        let stoppedAtOnce: Bool = {
-            guard case .notWritten(_, whileSolving: true) = session.note else { return false }
-            return !session.isPlaying
-        }()
-        if name == "solve()" && before.canSolve == (session == before) && !(before.canSolve && stoppedAtOnce) {
+        if name == "solve()" && before.canSolve == (session == before) {
             return name + " [solve was \(before.canSolve ? "" : "not ")offered, and it \(session == before ? "did nothing" : "did something")]"
         }
         return name
@@ -96,8 +92,7 @@ import Testing
         }
         if session.state != state { problems.append("state is not the start plus the moves made") }
         if !(0...1).contains(session.progress) { problems.append("progress \(session.progress)") }
-        if session.isPlaying && session.motion == nil { problems.append("playing without a written move on the slider") }
-        if session.pose == nil { problems.append("no pose") }
+        if session.isPlaying && session.motion == nil { problems.append("playing without a move on the slider") }
         if let current = session.current {
             if session.progress >= 1 && session.made.last != current { problems.append("at the slider's right end the move is not made") }
             if session.progress <= 0 && session.state != current.from { problems.append("at the slider's left end the move is made") }

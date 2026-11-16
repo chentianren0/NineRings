@@ -134,8 +134,8 @@ enum ProbeBrute {
 
 // MARK: - Building faulty poses
 
-let probeAllOn = RestPoses.pose(for: .allOn)!
-let probeRingOneOff = RestPoses.pose(for: PuzzleState.allOn.moving(1))!
+let probeAllOn = RestPoses.pose(for: .allOn)
+let probeRingOneOff = RestPoses.pose(for: PuzzleState.allOn.moving(1))
 
 extension ToyPose {
     func probeHolding(_ number: Int, _ held: HeldRing) -> ToyPose {
@@ -407,7 +407,7 @@ let probeBarTop = Layout.bar.position.y + Dimensions.Bar.thickness / 2
 
     /// The rod rule through ring 1's move: rod 1 tilts as ring 1 goes down, and must still fit its hole.
     @Test func rodOneFitsItsHoleThroughRingOnesMove() throws {
-        let motion = try #require(MoveMotion(ringOneOff))
+        let motion = MoveMotion(ringOneOff)
         var least = (clearance: Double.infinity, progress: 0.0, tilt: 0.0)
         var steepest = 0.0
         for index in 0...4000 {
@@ -428,7 +428,7 @@ let probeBarTop = Layout.bar.position.y + Dimensions.Bar.thickness / 2
 
 @Suite struct CheckerStepProbes {
     @Test func aJumpOfOneMillimetreAtOneSampleIsCaught() throws {
-        let motion = try #require(MoveMotion(ringOneOff))
+        let motion = MoveMotion(ringOneOff)
         var poses = (0...Sweep.samples).map { motion.pose(at: Double($0) / Double(Sweep.samples)) }
         let jump = Vector(0, 0, 1)
         poses[2000].rings[0].position += jump

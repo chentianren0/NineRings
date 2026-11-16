@@ -154,7 +154,7 @@ private func checkerDistance(_ a: ShapeCore, _ b: ShapeCore) -> Double {
 
     /// The same comparison on every near pair of ring 1's move, at 400 samples each way.
     @Test func theNearestPointsSearchAgreesWithBruteForceThroughRingOnesMove() throws {
-        let motion = try #require(MoveMotion(ringOneOff))
+        let motion = MoveMotion(ringOneOff)
         let poses = (0...400).map { motion.pose(at: Double($0) / 400) }
         let errors = Sweep.inParallel(poses.count) { [poses] index in
             let shapes = poses[index].shapes
@@ -313,7 +313,7 @@ private func checkerDistance(_ a: ShapeCore, _ b: ShapeCore) -> Double {
         }
 
         // And through ring 1's move, sample by sample.
-        let motion = try #require(MoveMotion(ringOneOff))
+        let motion = MoveMotion(ringOneOff)
         let poses = (0...Sweep.samples).map { motion.pose(at: Double($0) / Double(Sweep.samples)) }
         var largestMoved = 0.0
         var exceeded = 0
@@ -333,7 +333,7 @@ private func checkerDistance(_ a: ShapeCore, _ b: ShapeCore) -> Double {
     /// Between two samples the parts are not checked. Ten times finer sampling of everything that moves in
     /// ring 1's move shows how much smaller the gap gets between the checked samples.
     @Test func theGapBetweenSamplesThroughRingOnesMove() throws {
-        let motion = try #require(MoveMotion(ringOneOff))
+        let motion = MoveMotion(ringOneOff)
         let moving: Set<PartName> = [.ring(1), .eye(1), .shaft(1), .bead(1), .sword]
         let fine = 40_000
         let gaps = Sweep.inParallel(fine + 1) { index in

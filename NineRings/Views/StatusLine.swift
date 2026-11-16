@@ -15,7 +15,6 @@ struct StatusLine: View {
             ZStack(alignment: .topLeading) {
                 Text(verbatim: "\n").hidden().accessibilityHidden(true)
                 Text(Sentences.status(status))
-                    .foregroundStyle(isQuiet ? .secondary : .primary)
                     .contentTransition(.opacity)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -39,18 +38,11 @@ struct StatusLine: View {
         return false
     }
 
-    /// A move not written yet is a passing gap in the app, not something the person did wrong: it is said quietly.
-    private var isQuiet: Bool {
-        if case .note(.notWritten) = status { return true }
-        return false
-    }
-
     private var symbol: String {
         switch status {
         case .playing: "play.fill"
         case .paused: "pause.fill"
         case .note(.blocked): "hand.raised.fill"
-        case .note(.notWritten): "pencil.line"
         case .resting: "hand.tap"
         }
     }
@@ -77,15 +69,6 @@ enum Sentences {
                 : LocalizedStringResource("Paused: ring \(move.ring) going on — \(stage)", comment: "Status while a ring's move is stopped part way. The first variable is the ring's number, the second the name of the stage.")
         case .note(.blocked(let ring, let block)):
             return blocked(ring, by: block)
-        case .note(.notWritten(let move, let whileSolving)):
-            if whileSolving {
-                return move.takesOff
-                    ? LocalizedStringResource("Solving stopped: the next move, ring \(move.ring) coming off, is not in the app yet.", comment: "Status when solving reaches a move the app cannot show yet. The variable is the ring's number.")
-                    : LocalizedStringResource("Solving stopped: the next move, ring \(move.ring) going on, is not in the app yet.", comment: "Status when solving reaches a move the app cannot show yet. The variable is the ring's number.")
-            }
-            return move.takesOff
-                ? LocalizedStringResource("Ring \(move.ring) can come off now, but that move is not in the app yet.", comment: "Status after tapping a ring whose move is allowed but not yet in the app. The variable is the ring's number.")
-                : LocalizedStringResource("Ring \(move.ring) can go on now, but that move is not in the app yet.", comment: "Status after tapping a ring whose move is allowed but not yet in the app. The variable is the ring's number.")
         case .resting(let state):
             if state == .allOff {
                 return LocalizedStringResource("All rings are off. The puzzle is solved.", comment: "Status when every ring is off the sword.")
@@ -130,8 +113,11 @@ enum Sentences {
         }
     }
 
-    /// The stage's name, translated when the String Catalog has it; the motion code writes it in English.
+    /// The stage's name, translated when the stage names' String Catalog has it, with the ring's number filled in
+    /// where it holds one. The motion code keys it in English.
     static func stageName(_ stage: Stage) -> String {
-        String(localized: String.LocalizationValue(stage.name), table: "Stages")
+        let name = String(localized: String.LocalizationValue(stage.key), table: "Stages")
+        guard let ring = stage.ring else { return name }
+        return String.localizedStringWithFormat(name, ring)
     }
 }

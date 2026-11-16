@@ -97,290 +97,38 @@
         }
       }
     },
-    "Ring 2 hangs": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
+    "Ring %lld hangs": {
+      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line. The variable is the ring's number.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ring 2 hangs"
+            "value": "Ring %lld hangs"
           }
         }
       }
     },
-    "Ring 2 lifts": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
+    "Ring %lld lifts": {
+      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line. The variable is the ring's number.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ring 2 lifts"
+            "value": "Ring %lld lifts"
           }
         }
       }
     },
-    "Ring 2 over the tip": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
+    "Ring %lld over the tip": {
+      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line. The variable is the ring's number.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ring 2 over the tip"
-          }
-        }
-      }
-    },
-    "Ring 3 hangs": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 3 hangs"
-          }
-        }
-      }
-    },
-    "Ring 3 lifts": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 3 lifts"
-          }
-        }
-      }
-    },
-    "Ring 3 over the tip": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 3 over the tip"
-          }
-        }
-      }
-    },
-    "Ring 4 hangs": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 4 hangs"
-          }
-        }
-      }
-    },
-    "Ring 4 lifts": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 4 lifts"
-          }
-        }
-      }
-    },
-    "Ring 4 over the tip": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 4 over the tip"
-          }
-        }
-      }
-    },
-    "Ring 5 hangs": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 5 hangs"
-          }
-        }
-      }
-    },
-    "Ring 5 lifts": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 5 lifts"
-          }
-        }
-      }
-    },
-    "Ring 5 over the tip": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 5 over the tip"
-          }
-        }
-      }
-    },
-    "Ring 6 hangs": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 6 hangs"
-          }
-        }
-      }
-    },
-    "Ring 6 lifts": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 6 lifts"
-          }
-        }
-      }
-    },
-    "Ring 6 over the tip": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 6 over the tip"
-          }
-        }
-      }
-    },
-    "Ring 7 hangs": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 7 hangs"
-          }
-        }
-      }
-    },
-    "Ring 7 lifts": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 7 lifts"
-          }
-        }
-      }
-    },
-    "Ring 7 over the tip": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 7 over the tip"
-          }
-        }
-      }
-    },
-    "Ring 8 hangs": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 8 hangs"
-          }
-        }
-      }
-    },
-    "Ring 8 lifts": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 8 lifts"
-          }
-        }
-      }
-    },
-    "Ring 8 over the tip": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 8 over the tip"
-          }
-        }
-      }
-    },
-    "Ring 9 hangs": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 9 hangs"
-          }
-        }
-      }
-    },
-    "Ring 9 lifts": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 9 lifts"
-          }
-        }
-      }
-    },
-    "Ring 9 over the tip": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 9 over the tip"
+            "value": "Ring %lld over the tip"
           }
         }
       }

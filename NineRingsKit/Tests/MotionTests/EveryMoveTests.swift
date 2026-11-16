@@ -37,7 +37,7 @@ import simd
         let directions = Self.moves.flatMap { [$0, $0.reversed] }
         let problems = Sweep.inParallel(directions.count) { index -> String? in
             let move = directions[index]
-            guard let motion = MoveMotion(move), let rest = RestPoses.pose(for: move.from) else { return "\(move): not written" }
+            let motion = MoveMotion(move), rest = RestPoses.pose(for: move.from)
             let free: Set<Int> = move.ring == 1 ? [1] : [move.ring - 1, move.ring]
             for sample in 0...800 {
                 let pose = motion.pose(at: Double(sample) / 800)
@@ -83,11 +83,11 @@ import simd
         let clock = DispatchTime.now().uptimeNanoseconds
         for off in mine {
             for move in [off, off.reversed] {
-                let motion = try #require(MoveMotion(move))
+                let motion = MoveMotion(move)
                 let sweep = Sweep(motion)
                 let gap = sweep.smallestGap, step = sweep.largestStep
                 let failure = sweep.firstRelationFailure
-                let before = try #require(RestPoses.pose(for: move.from)), after = try #require(RestPoses.pose(for: move.to))
+                let before = RestPoses.pose(for: move.from), after = RestPoses.pose(for: move.to)
                 let ends = Relations.isClose(motion.pose(at: 0), before) && Relations.isClose(motion.pose(at: 1), after)
                 let label = "ring \(move.ring) \(move.takesOff ? "off" : "on") from \(move.from)"
                 let passes = gap.gap.distance >= smallestAllowedGap && step.distance <= largestAllowedStep && failure == nil && ends
