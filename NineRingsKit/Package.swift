@@ -9,6 +9,7 @@ let package = Package(
         .library(name: "Toy", targets: ["Toy"]),
         .library(name: "Motion", targets: ["Motion"]),
         .library(name: "Geometry", targets: ["Geometry"]),
+        .library(name: "Session", targets: ["Session"]),
     ],
     targets: [
         .target(
@@ -29,8 +30,14 @@ let package = Package(
             name: "Geometry",
             swiftSettings: [.strictMemorySafety()]
         ),
+        .target(
+            name: "Session",
+            dependencies: ["Puzzle", "Toy", "Motion"],
+            swiftSettings: [.strictMemorySafety()]
+        ),
         .testTarget(name: "PuzzleTests", dependencies: ["Puzzle"]),
         .testTarget(name: "GeometryTests", dependencies: ["Geometry"]),
         .testTarget(name: "MotionTests", dependencies: ["Motion", "Toy", "Puzzle", "Geometry"]),
+        .testTarget(name: "SessionTests", dependencies: ["Session", "Motion", "Puzzle"]),
     ]
 )
