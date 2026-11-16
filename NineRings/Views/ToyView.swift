@@ -58,7 +58,7 @@ private final class FrameDriver {
     }
 
     func step(by seconds: TimeInterval) {
-        player.advance(by: seconds)
+        player.update()
         rig.advance(by: seconds)
         // The pose depends on the progress alone, so it is drawn again only when the progress changes.
         if player.progress != drawnProgress {

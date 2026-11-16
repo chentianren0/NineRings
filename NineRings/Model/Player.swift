@@ -41,10 +41,20 @@ final class Player {
 
     /// How far through the move, from 0 to 1. Whoever sets it keeps it in that range.
     var progress: Double
-    var speed: PlaybackSpeed = .full
+    var speed: PlaybackSpeed = .full {
+        // Playing goes on from where it is, at the new speed.
+        didSet { if isPlaying { anchorPlay() } }
+    }
     private(set) var isPlaying = false
     /// Whether playing runs toward progress 1, taking the ring off; otherwise toward 0, putting it on.
     private(set) var playsForward = true
+    /// Where and when playing last began or changed speed: the progress while playing is measured from here by
+    /// the clock, so it keeps pace however often the window is drawn.
+    @ObservationIgnored private var playAnchor: (progress: Double, time: ContinuousClock.Instant)?
+    #if DEBUG
+    /// When playing last began, to report how long a play-through took.
+    @ObservationIgnored private var playStarted: ContinuousClock.Instant?
+    #endif
 
     init(progress: Double = 0) {
         guard let off = Move(ring: 1, from: .allOn), let motion = MoveMotion(off), let reverse = MoveMotion(off.reversed) else {
@@ -83,26 +93,41 @@ final class Player {
         }
         playsForward = willPlayForward
         isPlaying = true
+        anchorPlay()
+        #if DEBUG
+        playStarted = .now
+        #endif
     }
 
     /// Plays toward one end.
     func play(forward: Bool) {
         playsForward = forward
         isPlaying = forward ? progress < 1 : progress > 0
+        anchorPlay()
+    }
+
+    private func anchorPlay() {
+        playAnchor = (progress, .now)
     }
 
     func pause() {
         isPlaying = false
     }
 
-    /// Moves the progress on by one frame of playing. A long gap between frames, as when the window was hidden,
-    /// is not made up for.
-    func advance(by seconds: Double) {
-        guard isPlaying else { return }
-        let step = min(seconds, 1.0 / 20) * speed.factor / MoveMotion.duration
-        progress = min(max(progress + (playsForward ? step : -step), 0), 1)
+    /// Moves the progress on to where playing has reached by now. Called once a frame.
+    func update() {
+        guard isPlaying, let playAnchor else { return }
+        let elapsed = ContinuousClock.now - playAnchor.time
+        let seconds = Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18
+        let distance = seconds * speed.factor / MoveMotion.duration
+        progress = min(max(playAnchor.progress + (playsForward ? distance : -distance), 0), 1)
         if progress <= 0 || progress >= 1 {
             isPlaying = false
+            #if DEBUG
+            if let playStarted {
+                print("player: played to progress \(progress) at \(speed.title.lowercased()) speed in \(ContinuousClock.now - playStarted)")
+            }
+            #endif
         }
     }
 }
