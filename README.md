@@ -41,6 +41,10 @@ With the nominal sizes, a few things are not free choices, and the checker found
 - So ring 1 cannot drop straight through the slot. Its eye goes down into the slot first; the ring tips over toward the tip, rolls nearly flat and swings from side to side, so that it slips through the slot at a slant, partly over one rail and partly under the other; and only when it hangs across the sword does the eye sink below the rails and the rod leave the slot.
 - Ring 1's eye sits 32 mm from the tip's end with the sword at home: any further and rod 9 would meet the rails where they close; any nearer and the slot in front of ring 1 would be too short for the drop.
 
+### Ring 3: blocked under the present rules
+
+Ring 3's move (from ring 1 off) is not written yet: no path has been found that the checker passes, and the scans say why. Ring 2 has to step aside, as ring 1 does for ring 2, but ring 1 hangs from it with rod 1 through it, and ring 1 cannot get from the side of ring 2 it hangs on to the other: the two rings are the same size, so ring 1 cannot pass through ring 2's hole, and going round its rim would link them. So when ring 2 swings up out of the way, ring 1 ends up lying on top of it, and rod 1 has to reach above ring 2. Rod 1's bead rests under the bar, so its eye can rise no higher than the eye of a ring that is on. That stops ring 2 at about 80° from upright, still drooping toward the tip, and there ring 3 cannot lift far enough for the tip to pass out of it with 0.2 mm to spare: the best attempt comes within 0.08 mm of eye 2. `RingThreeOff` holds that attempt, and `HangingChain` the rule that carries a hanging ring, or a chain of them, along with the ring it hangs from.
+
 ## Layout
 
 - `NineRingsKit/`: a Swift package with everything that does not depend on the interface.
@@ -69,7 +73,7 @@ The package's tests sample each written move at 4000 progress values in each dir
 
 A pose takes well under a microsecond to compute in an optimized build.
 
-Four tests are tools rather than checks, and run only when asked: `NINE_RINGS_PROFILE=1` (or `=2` for ring 2) prints the smallest gap and the fastest-moving part through the move; `NINE_RINGS_EXPLORE=1` maps where ring 1 can be with its eye at each height and searches that map for a way down; `NINE_RINGS_TUNE=1` searches the key values of the drop for the path with the most room. `NINE_RINGS_TUNE2=1` does the same for every key of ring 2's move. The key values in `RingOneOff` and `RingTwoOff` came from these searches, and are written there as plain numbers.
+Several tests are tools rather than checks, and run only when asked: `NINE_RINGS_PROFILE=1` (or `=2` for ring 2) prints the smallest gap and the fastest-moving part through the move; `NINE_RINGS_EXPLORE=1` maps where ring 1 can be with its eye at each height and searches that map for a way down; `NINE_RINGS_TUNE=1` searches the key values of the drop for the path with the most room. `NINE_RINGS_TUNE2=1` does the same for every key of ring 2's move. The key values in `RingOneOff` and `RingTwoOff` came from these searches, and are written there as plain numbers. For ring 3, `NINE_RINGS_TUNE3=1` (or `NINE_RINGS_REPORT3=1` to print the room along the path) tunes `RingThreeOff`; `NINE_RINGS_ASIDE=1` scans where ring 2 could step aside to, carrying ring 1, while ring 3 lifts over the tip; and `NINE_RINGS_REACH=1` scans whether rod 1 could reach through ring 2 at all there, whatever ring 1 does (with `NINE_RINGS_FRONT=1`, keeping its eye on the side of ring 2 that ring 1 hangs on).
 
 ## Building and testing
 
