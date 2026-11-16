@@ -2,6 +2,7 @@
 import CoreImage
 import Foundation
 import Metal
+import Motion
 import RealityKit
 import Toy
 
@@ -10,8 +11,9 @@ import Toy
 /// Launch the debug app with, for example,
 /// `-capture-frames 16 -capture-views side,top,tip -capture-sheet -capture-dir scratch/captures`.
 ///
-/// - `-capture-frames 16`: that many frames evenly across ring 1's move, from every ring on (progress 0) to ring 1
+/// - `-capture-frames 16`: that many frames evenly across the move, from every ring on (progress 0) to its ring
 ///   off (progress 1). Or `-capture-progress 0,0.25,0.5` for frames at given progress values.
+/// - `-capture-move 2`: ring 2's move rather than ring 1's.
 /// - `-capture-views side,top,tip`: the app's camera presets, or a yaw and a pitch in degrees, as `30:20`.
 /// - `-capture-sheet`: also lays the frames of each view out on one contact sheet, labelled with their progress
 ///   and stage.
@@ -19,11 +21,12 @@ import Toy
 ///   cube of `size` millimetres around a point in the toy's frame instead of the whole move.
 ///
 /// Each frame is posed exactly as the slider poses the app: the app's own player is set to the progress, and the
-/// scene draws the pose the player gives. Frames are named `ring1-p<progress>-<view>-<appearance>.png`, and
-/// sheets `sheet-<view>-<appearance>.png`.
+/// scene draws the pose the player gives. Frames are named `ring<n>-p<progress>-<view>-<appearance>.png`, and
+/// sheets `ring<n>-sheet-<view>-<appearance>.png`.
 @MainActor
 enum Capture {
     struct Request {
+        var move: Move
         var progress: [Double]
         var views: [View]
         var focus: (center: SIMD3<Float>, size: Float)?
@@ -38,15 +41,16 @@ enum Capture {
     static func run(_ request: Request) async {
         do {
             try FileManager.default.createDirectory(at: request.directory, withIntermediateDirectories: true)
-            let player = Player()
-            let framing = ContentView.framing(of: player)
+            let player = Player(move: request.move)
+            let framing = ContentView.framing
+            let ring = request.move.ring
             let renderer = try await Renderer(size: request.size, appearance: request.appearance, floor: framing.lower.y - 6)
             for view in request.views {
                 var frames: [ContactSheet.Frame] = []
                 for progress in request.progress {
                     // The same path as the slider: set the player's progress, draw the pose it gives.
                     player.progress = progress
-                    let name = "ring1-p\(format(progress))-\(view.name)-\(request.appearance.rawValue).png"
+                    let name = "ring\(ring)-p\(format(progress))-\(view.name)-\(request.appearance.rawValue).png"
                     let url = request.directory.appending(path: name)
                     let box = request.focus.map { ToyBounds(center: $0.center, size: $0.size) } ?? framing
                     let image = try await renderer.render(player.pose, view: view, framing: box, to: url)
@@ -54,8 +58,8 @@ enum Capture {
                     frames.append(ContactSheet.Frame(image: image, caption: "\(format(progress))  \(player.stageName)"))
                 }
                 if request.sheet {
-                    let url = request.directory.appending(path: "sheet-\(view.name)-\(request.appearance.rawValue).png")
-                    try ContactSheet.write(frames, title: "Ring 1 coming off, seen from the \(view.title)", appearance: request.appearance, to: url)
+                    let url = request.directory.appending(path: "ring\(ring)-sheet-\(view.name)-\(request.appearance.rawValue).png")
+                    try ContactSheet.write(frames, title: "Ring \(ring) coming off, seen from the \(view.title)", appearance: request.appearance, to: url)
                     print("capture: wrote \(url.path)")
                 }
             }
@@ -90,8 +94,10 @@ enum Capture {
         let dimensions = (value("-capture-size") ?? "1600x1000").split(separator: "x").compactMap { Double($0) }
         let size = dimensions.count == 2 ? CGSize(width: dimensions[0], height: dimensions[1]) : CGSize(width: 1600, height: 1000)
         let appearance = value("-capture-appearance").flatMap(Backdrop.Appearance.init(rawValue:)) ?? .light
+        let ring = value("-capture-move").flatMap { Int($0) } ?? 1
+        guard let move = Player.moves.first(where: { $0.ring == ring }) else { return nil }
         return Request(
-            progress: progress, views: views, focus: focus, sheet: arguments.contains("-capture-sheet"),
+            move: move, progress: progress, views: views, focus: focus, sheet: arguments.contains("-capture-sheet"),
             directory: directory, size: size, appearance: appearance
         )
     }

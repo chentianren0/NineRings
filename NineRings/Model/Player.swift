@@ -26,18 +26,21 @@ enum PlaybackSpeed: String, CaseIterable, Identifiable {
     }
 }
 
-/// The move being shown and how far along it is: the slider and the play button drive it, and the 3D view
-/// draws the pose it gives.
+/// The move being shown and how far along it is: the picker chooses the move, the slider and the play button
+/// drive it, and the 3D view draws the pose it gives.
 ///
 /// The pose is a pure function of the move and the progress, so nothing here depends on time except playing,
 /// which only moves the progress on.
 @MainActor
 @Observable
 final class Player {
-    /// Ring 1 coming off every ring on. Progress 0 is every ring on, progress 1 is ring 1 off.
-    let motion: MoveMotion
+    /// The moves that can be shown: each written move, coming off every ring on.
+    static let moves = MoveMotion.written
+
+    /// The move shown, coming off every ring on. Progress 0 is every ring on, progress 1 is its ring off.
+    private(set) var motion: MoveMotion
     /// The same move going the other way, for naming its stages when it plays backwards.
-    let reverse: MoveMotion
+    private(set) var reverse: MoveMotion
 
     /// How far through the move, from 0 to 1. Whoever sets it keeps it in that range.
     var progress: Double
@@ -56,13 +59,28 @@ final class Player {
     @ObservationIgnored private var playStarted: ContinuousClock.Instant?
     #endif
 
-    init(progress: Double = 0) {
-        guard let off = Move(ring: 1, from: .allOn), let motion = MoveMotion(off), let reverse = MoveMotion(off.reversed) else {
-            preconditionFailure("ring 1's move is written")
-        }
-        self.motion = motion
-        self.reverse = reverse
+    init(move: Move? = nil, progress: Double = 0) {
+        (motion, reverse) = Self.motions(of: move ?? Self.moves[0])
         self.progress = min(max(progress, 0), 1)
+    }
+
+    private static func motions(of move: Move) -> (MoveMotion, MoveMotion) {
+        guard let motion = MoveMotion(move), let reverse = MoveMotion(move.reversed) else {
+            preconditionFailure("only written moves are shown")
+        }
+        return (motion, reverse)
+    }
+
+    /// The move shown. Choosing another one stops playing and starts it from the beginning.
+    var move: Move {
+        get { motion.move }
+        set {
+            guard newValue != motion.move else { return }
+            isPlaying = false
+            (motion, reverse) = Self.motions(of: newValue)
+            progress = 0
+            playsForward = true
+        }
     }
 
     /// The toy as it is now.
@@ -76,7 +94,7 @@ final class Player {
     /// What pressing play will do from here.
     var nextAction: String {
         if isPlaying { return "Pause" }
-        return willPlayForward ? "Take ring 1 off" : "Put ring 1 on"
+        return willPlayForward ? "Take ring \(move.ring) off" : "Put ring \(move.ring) on"
     }
 
     private var willPlayForward: Bool {

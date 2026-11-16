@@ -37,16 +37,18 @@ private func numbers(_ pose: ToyPose) -> [Double] {
         return largest
     }
 
-    @Test func positionAndVelocityAreContinuous() throws {
-        let motion = try #require(MoveMotion(ringOneOff))
+    @Test(arguments: MoveMotion.written)
+    func positionAndVelocityAreContinuous(_ move: Move) throws {
+        let motion = try #require(MoveMotion(move))
         let coarse = largestBend(motion, step: 1e-3)
         let fine = largestBend(motion, step: 1e-4)
-        print("smoothness: largest bend \(coarse) at a step of 1e-3, \(fine) at 1e-4 (mm per progress squared)")
+        print("smoothness, ring \(move.ring): largest bend \(coarse) at a step of 1e-3, \(fine) at 1e-4 (mm per progress squared)")
         #expect(fine < 1.5 * coarse)
     }
 
-    @Test func theMoveStartsAndEndsAtRest() throws {
-        let motion = try #require(MoveMotion(ringOneOff))
+    @Test(arguments: MoveMotion.written)
+    func theMoveStartsAndEndsAtRest(_ move: Move) throws {
+        let motion = try #require(MoveMotion(move))
         for end in [0.0, 1.0] {
             let here = numbers(motion.pose(at: end))
             let near = numbers(motion.pose(at: end == 0 ? 1e-6 : 1 - 1e-6))
@@ -56,19 +58,21 @@ private func numbers(_ pose: ToyPose) -> [Double] {
     }
 
     /// Where several parts move at once, the motion should not come to a halt at a stage boundary.
-    @Test func theMotionDoesNotStopBetweenStages() throws {
-        let motion = try #require(MoveMotion(ringOneOff))
+    @Test(arguments: MoveMotion.written)
+    func theMotionDoesNotStopBetweenStages(_ move: Move) throws {
+        let motion = try #require(MoveMotion(move))
         for stage in motion.stages.dropFirst() {
             let here = numbers(motion.pose(at: stage.start))
             let near = numbers(motion.pose(at: stage.start + 1e-4))
             let speed = zip(here, near).map { abs($0 - $1) / 1e-4 }.max() ?? 0
-            print("speed at the start of \(stage.name): \(speed) mm per progress")
+            print("ring \(move.ring): speed at the start of \(stage.name): \(speed) mm per progress")
             #expect(speed > 10, "the motion stops at the start of \(stage.name)")
         }
     }
 
-    @Test func aPoseTakesFarLessThanAMillisecond() throws {
-        let motion = try #require(MoveMotion(ringOneOff))
+    @Test(arguments: MoveMotion.written)
+    func aPoseTakesFarLessThanAMillisecond(_ move: Move) throws {
+        let motion = try #require(MoveMotion(move))
         let count = 20_000
         var checksum = 0.0
         let clock = ContinuousClock()
@@ -78,7 +82,7 @@ private func numbers(_ pose: ToyPose) -> [Double] {
             }
         }
         let microseconds = Double(elapsed.components.attoseconds) / 1e12 / Double(count) + Double(elapsed.components.seconds) * 1e6 / Double(count)
-        print("timing: one pose takes \(String(format: "%.2f", microseconds)) µs (checksum \(checksum))")
+        print("timing, ring \(move.ring): one pose takes \(String(format: "%.2f", microseconds)) µs (checksum \(checksum))")
         #expect(microseconds < 1000)
     }
 }

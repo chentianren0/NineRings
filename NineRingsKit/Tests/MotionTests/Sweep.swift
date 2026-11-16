@@ -40,10 +40,15 @@ struct Sweep {
         return (steps[index].distance, steps[index].part, progress[index])
     }
 
+    /// The rings that may be off the rails during the move: ring 1, which steps aside for ring 2, and every ring up
+    /// to the one that moves.
+    var mayBeOff: Set<Int> { Set(1...motion.move.ring) }
+
     /// The first progress, if any, at which a relation fails, with what failed.
     var firstRelationFailure: (progress: Double, failures: [String])? {
         let poses = poses
-        let failures = Sweep.inParallel(poses.count) { Relations.failures(in: poses[$0]) }
+        let mayBeOff = mayBeOff
+        let failures = Sweep.inParallel(poses.count) { Relations.failures(in: poses[$0], mayBeOff: mayBeOff) }
         guard let index = failures.firstIndex(where: { !$0.isEmpty }) else { return nil }
         return (progress[index], failures[index])
     }
