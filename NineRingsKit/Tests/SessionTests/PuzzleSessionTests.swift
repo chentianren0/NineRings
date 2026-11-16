@@ -6,6 +6,9 @@ import Toy
 import simd
 
 @Suite struct PuzzleSessionTests {
+    /// How long ring 1's move and ring 2's take at full speed; both go evenly, so a fraction of it is that fraction of
+    /// the move.
+    private let aMove = MoveTiming.baseDuration
     private let ringOneOff = PuzzleState.allOn.moving(1)
     private let ringTwoOff = PuzzleState.allOn.moving(2)
 
@@ -13,7 +16,8 @@ import simd
     private func playOut(_ session: inout PuzzleSession) {
         var steps = 0
         while session.isPlaying {
-            session.advance(by: 1)
+            // Longer than any move takes, so that each step ends the move in hand.
+            session.advance(by: 10)
             steps += 1
             precondition(steps < 1000, "playing never stopped")
         }
@@ -52,7 +56,7 @@ import simd
         #expect(session.isPlaying)
         #expect(session.current == Move(ring: 1, from: .allOn))
         #expect(session.markers[0].isMoving)
-        session.advance(by: 0.5)
+        session.advance(by: 0.5 * aMove)
         #expect(session.progress == 0.5)
         #expect(session.state == .allOn, "the state changes only when the move ends")
         #expect(session.moveCount == 0)
@@ -62,7 +66,7 @@ import simd
         } else {
             Issue.record("expected a playing status, got \(session.status)")
         }
-        session.advance(by: 0.6)
+        session.advance(by: 0.6 * aMove)
         #expect(session.progress == 1)
         #expect(!session.isPlaying)
         #expect(session.state == ringOneOff)
@@ -130,11 +134,11 @@ import simd
     @Test func aTapWhileAMovePlaysWaitsItsTurn() {
         var session = PuzzleSession()
         session.tap(1)
-        session.advance(by: 0.3)
+        session.advance(by: 0.3 * aMove)
         session.tap(1)
         #expect(session.queue == [1])
         #expect(session.current == Move(ring: 1, from: .allOn), "the move in hand goes on")
-        session.advance(by: 1)
+        session.advance(by: aMove)
         #expect(session.state == ringOneOff)
         #expect(session.current == Move(ring: 1, from: ringOneOff), "then the waiting ring begins")
         #expect(session.isPlaying)
@@ -168,7 +172,7 @@ import simd
     @Test func aTapWhilePausedPartWayCarriesOn() {
         var session = PuzzleSession()
         session.tap(2)
-        session.advance(by: 0.4)
+        session.advance(by: 0.4 * aMove)
         session.togglePlay()
         #expect(!session.isPlaying)
         if case .paused(let move, _, false) = session.status {
@@ -188,13 +192,13 @@ import simd
     @Test func pauseAndPlayCarryOn() {
         var session = PuzzleSession()
         session.tap(1)
-        session.advance(by: 0.25)
+        session.advance(by: 0.25 * aMove)
         session.togglePlay()
-        session.advance(by: 0.5)
+        session.advance(by: 0.5 * aMove)
         #expect(session.progress == 0.25, "nothing moves while paused")
         #expect(session.canPlay)
         session.togglePlay()
-        session.advance(by: 0.5)
+        session.advance(by: 0.5 * aMove)
         #expect(session.progress == 0.75)
     }
 
@@ -210,7 +214,7 @@ import simd
     @Test func scrubbingToEitherEndMakesOrUnmakesTheMove() {
         var session = PuzzleSession()
         session.tap(1)
-        session.advance(by: 0.5)
+        session.advance(by: 0.5 * aMove)
         session.scrub(to: 0.2)
         #expect(!session.isPlaying)
         #expect(session.state == .allOn)
@@ -246,7 +250,7 @@ import simd
         session.undo()
         #expect(session.isPlaying)
         #expect(session.direction == .backward)
-        session.advance(by: 0.3)
+        session.advance(by: 0.3 * aMove)
         #expect(abs(session.progress - 0.7) < 1e-12)
         #expect(session.state == ringOneOff, "the state changes back only when the move has run back")
         if case .playing(let move, let stage, let undoing) = session.status {
@@ -285,9 +289,9 @@ import simd
     @Test func undoPartWayTurnsTheMoveBack() {
         var session = PuzzleSession()
         session.tap(2)
-        session.advance(by: 0.4)
+        session.advance(by: 0.4 * aMove)
         session.undo()
-        session.advance(by: 0.1)
+        session.advance(by: 0.1 * aMove)
         #expect(abs(session.progress - 0.3) < 1e-12)
         playOut(&session)
         #expect(session.state == .allOn)
@@ -328,11 +332,10 @@ import simd
         #expect(session.note == nil)
     }
 
-    /// Solve played the whole way, as the app plays it, a fiftieth of a move a frame, from every ring on to every ring
-    /// off, and then every move undone back to every ring on: every one of the 341 moves of the shortest way, and the
-    /// toy never jumps. Where one move hands over to the next, the last pose of the one is the first of the other,
-    /// the rest of the state between them; and from one frame to the next no part moves further than a fiftieth of
-    /// a move can carry it.
+    /// Solve played the whole way, as the app plays it, 60 ms a frame, from every ring on to every ring off, and then
+    /// every move undone back to every ring on: every one of the 341 moves of the shortest way, and the toy never
+    /// jumps. Where one move hands over to the next, the last pose of the one is the first of the other, the rest of
+    /// the state between them; and from one frame to the next no part moves further than 60 ms can carry it.
     @Test func solvingToTheEndAndUndoingEveryMovePlaysWithoutAJump() throws {
         func isClose(_ a: ToyPose, _ b: ToyPose) -> Bool {
             zip(a.rings + a.rods + [a.bar], b.rings + b.rods + [b.bar]).allSatisfy {
@@ -350,7 +353,7 @@ import simd
             var playing = session.current
             while session.isPlaying {
                 let before = session
-                session.advance(by: 1.0 / 50)
+                session.advance(by: 0.06)
                 let pose = session.pose
                 if session.current != playing, let old = before.motion, let new = session.motion {
                     // The frame that ends one move and begins the next shows the next at its start.
@@ -379,10 +382,27 @@ import simd
         #expect(largest < 20)
     }
 
+    /// The session plays by time: ring 9's move, played a frame at a time, takes its own length, and ring 2's three
+    /// seconds.
+    @Test(arguments: [1, 8])
+    func theSessionPlaysAMoveInItsOwnTime(_ index: Int) {
+        let move = MoveMotion.written[index]
+        var session = PuzzleSession(at: move, progress: 0)
+        session.togglePlay()
+        var elapsed = 0.0
+        let frame = 1.0 / 120
+        while session.isPlaying && session.current == move {
+            session.advance(by: frame)
+            elapsed += frame
+        }
+        #expect(session.state == move.to)
+        #expect(abs(elapsed - MoveMotion(move).duration) <= frame + 1e-9, "ring \(move.ring): played in \(elapsed) s")
+    }
+
     @Test func solveStartsAfterTheMoveInHand() {
         var session = PuzzleSession()
         session.tap(2)
-        session.advance(by: 0.5)
+        session.advance(by: 0.5 * aMove)
         session.solve()
         #expect(session.current?.ring == 2, "the move in hand goes on")
         #expect(session.queue == ringTwoOff.moves(to: .allOff))

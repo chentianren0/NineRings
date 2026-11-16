@@ -14,8 +14,15 @@ import Toy
 public struct MoveMotion: Sendable {
     public let move: Move
 
+    /// How long the move takes at full speed and where it is at each moment (see ``MoveTiming``). The poses go by
+    /// progress; the timing only says when the move reaches each progress.
+    public var timing: MoveTiming {
+        let comingOff = move.ring == 1 ? MoveTiming.evenly(MoveTiming.baseDuration) : MoveTiming.pair(ring: move.ring)
+        return move.takesOff ? comingOff : comingOff.reversed
+    }
+
     /// How long the move takes at full speed, in seconds.
-    public static let duration = 3.0
+    public var duration: Double { timing.duration }
 
     /// The motion of `move`: ring 1's, or the second ring on the sword's, which is one move for rings 2 to 9
     /// (``PairMoveOff``). Each comes off from any state the rule allows, whatever the rings behind are, and goes back on
@@ -47,6 +54,13 @@ public struct MoveMotion: Sendable {
         return zip(comingOff.reversed(), keys).map { stage, key in
             Stage(key: key, ring: key.contains("%lld") ? move.ring : nil, start: 1 - stage.end, end: 1 - stage.start)
         }
+    }
+
+    /// The stages in the order the move goes through them, each with its span in seconds from the move's start, at
+    /// full speed.
+    public var timedStages: [Stage] {
+        let timing = timing
+        return stages.map { $0.spanning(from: timing.time(atProgress: $0.start), to: timing.time(atProgress: $0.end)) }
     }
 
     /// The stage at `progress`; at a boundary, the one that begins there.
