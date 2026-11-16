@@ -55,11 +55,12 @@ enum Relations {
     static let tipEnd = Dimensions.Sword.railOffset / 2
 
     /// A ring leaves the rails, or joins them, only over the tip end. Whether a ring goes round the rails can
-    /// change only where an end of the sword's centreline passes through the ring's disc, or where the sword's
-    /// wire passes through the ring's wire, which the gaps forbid; the centreline has two ends, the tip's end and
-    /// the end of the neck. So between two poses one after the other, a ring may stop or start going round the
-    /// rails only if, in the pose where it does go round them, the sword goes through it nowhere but near the
-    /// tip's end. Each failure is a sentence.
+    /// change only where an end of a side of the sword's centreline passes through the ring's disc, or where the
+    /// sword's wire passes through the ring's wire, which the gaps forbid. A side has two ends: the tip's end,
+    /// where the two sides meet, and the end of its grip loop, which lies against the side's own wire, so that no
+    /// ring can pass over it without its wire meeting the sword's. So between two poses one after the other, a
+    /// ring may stop or start going round the rails only if, in the pose where it does go round them, the sword
+    /// goes through it nowhere but near the tip's end. Each failure is a sentence.
     static func railChangeFailures(from before: ToyPose, to after: ToyPose) -> [String] {
         var failures: [String] = []
         for ring in 1...9 {

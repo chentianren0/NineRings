@@ -47,6 +47,9 @@
         }, {
           "product-name": "Toy",
           "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "product-name": "Session",
+          "build-phase": { "build-phase": "frameworks" },
         },
       ],
       "build-settings": {

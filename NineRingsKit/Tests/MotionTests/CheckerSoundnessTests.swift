@@ -471,28 +471,29 @@ let probeBarTop = Layout.bar.position.y + Dimensions.Bar.thickness / 2
         #expect(step.distance > largestAllowedStep)
     }
 
-    /// The sword's centreline stops at the end of the neck; the grip that closes it is left out. A ring round the
-    /// neck can slide off that end without touching anything, so the relation that a ring leaves the rails only over
-    /// the tip end, which the sweep checks for every ring from each sample to the next, must catch it.
-    @Test func aRingSlidingOffTheEndOfTheNeck() {
-        var leaves = false
-        var wasRound = true
+    /// The sword's centreline runs on past the end of the neck round the grip loops, whose ends lie against the
+    /// wire. A ring round the neck that slides off its end runs into a grip loop, and the gap rule must catch it
+    /// there, before the ring's going round the rails changes anywhere.
+    @Test func aRingSlidingOffTheEndOfTheNeckRunsIntoTheGrip() {
+        var caught: Double?
+        var railFault: Double?
         var smallest = Double.infinity
-        var failures: [String] = []
         var previous: ToyPose?
         for index in 0...500 {
             let x = 200 + Double(index) * 0.1
             let pose = probeAllOn.probeReplacing(ring: 1, with: PartPose(position: Vector(x, probeRailHeight, 0), orientation: probeAcross))
-            smallest = min(smallest, ProbeVerdict(pose, .ring(1), .sword).pairGap)
-            failures += Relations.failures(in: pose).filter { $0.contains("rail") }
-            if let previous { failures += Relations.railChangeFailures(from: previous, to: pose) }
-            let round = Relations.isRoundTheRails(1, in: pose)
-            if wasRound && !round { leaves = true }
-            wasRound = round
+            let gap = ProbeVerdict(pose, .ring(1), .sword).pairGap
+            smallest = min(smallest, gap)
+            if caught == nil && gap < smallestAllowedGap { caught = x }
+            let failures = Relations.failures(in: pose).filter { $0.contains("rail") }
+                + (previous.map { Relations.railChangeFailures(from: $0, to: pose) } ?? [])
+            if railFault == nil && !failures.isEmpty { railFault = x }
             previous = pose
         }
-        print("probe off the neck's end: ring 1 leaves the rails \(leaves), smallest gap to the sword \(smallest), sword relations \(failures)")
-        #expect(leaves && smallest > 5)
-        #expect(failures == ["ring 1 leaves the rails away from the tip end"])
+        print("probe off the neck's end: the gap rule catches ring 1 at x = \(caught.map { String(format: "%.1f", $0) } ?? "never"), a sword relation fails at x = \(railFault.map { String(format: "%.1f", $0) } ?? "never"), smallest gap to the sword \(String(format: "%.3f", smallest))")
+        #expect(smallest < 0)
+        // Caught before the ring could reach the end of either grip loop.
+        #expect(caught.map { $0 < SwordShape.centerline(side: 1).last!.x - Dimensions.Ring.wireRadius } == true)
+        #expect(railFault.map { $0 > caught ?? .infinity } ?? true)
     }
 }
