@@ -13,7 +13,7 @@ import Toy
 ///
 /// - `-capture-frames 16`: that many frames evenly across the move, from every ring on (progress 0) to its ring
 ///   off (progress 1). Or `-capture-progress 0,0.25,0.5` for frames at given progress values.
-/// - `-capture-move 3`: ring 3's move in the written moves menu rather than ring 1's; any ring from 1 to 9.
+/// - `-capture-move 3`: ring 3's move from where it first comes off, rather than ring 1's; any ring from 1 to 9.
 /// - `-capture-views side,top,tip`: the app's camera presets, or a yaw and a pitch in degrees, as `30:20`.
 /// - `-capture-sheet`: also lays the frames of each view out on one contact sheet, labelled with their progress
 ///   and stage.
@@ -42,7 +42,7 @@ enum Capture {
         do {
             try FileManager.default.createDirectory(at: request.directory, withIntermediateDirectories: true)
             let player = Player(move: request.move)
-            let framing = ContentView.framing
+            let framing = Framing.wholeToy
             let ring = request.move.ring
             let prefix = "ring\(ring)"
             let renderer = try await Renderer(size: request.size, appearance: request.appearance, floor: framing.lower.y - 6)

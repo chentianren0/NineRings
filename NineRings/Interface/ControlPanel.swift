@@ -60,6 +60,12 @@ struct ControlPanel: View {
         .padding(Self.padding)
         .frame(maxWidth: .infinity)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        .onChange(of: refusal) { _, refusal in
+            // A refusal comes after a tap with nothing moving, so say it aloud to someone who cannot see it.
+            if let refusal {
+                AccessibilityNotification.Announcement(String(localized: refusal)).post()
+            }
+        }
     }
 
     private var rings: some View {
@@ -131,7 +137,7 @@ struct ControlPanel: View {
             Menu {
                 Picker(selection: $player.speed) {
                     ForEach(PlaybackSpeed.allCases) { speed in
-                        Text(speed.title).tag(speed)
+                        Text("\(speed.factor, format: .number)×", comment: "A playing speed: how many times the normal pace, such as 0.5× or 2×.").tag(speed)
                     }
                 } label: {
                     Text("Speed", comment: "Menu of the speeds moves play at.")

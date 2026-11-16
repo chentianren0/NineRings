@@ -5,25 +5,20 @@ import Puzzle
 import Session
 import Toy
 
-/// How fast moves play.
+/// How fast moves play: slower, to follow a move, or faster, to watch many.
 enum PlaybackSpeed: String, CaseIterable, Identifiable {
-    case full, half, quarter
+    case quarter, half, normal, double, quadruple
 
     var id: Self { self }
 
-    var title: LocalizedStringResource {
-        switch self {
-        case .full: LocalizedStringResource("Full", comment: "Playing speed: moves play at their normal pace.")
-        case .half: LocalizedStringResource("Half", comment: "Playing speed: moves play at half their normal pace.")
-        case .quarter: LocalizedStringResource("Quarter", comment: "Playing speed: moves play at a quarter of their normal pace.")
-        }
-    }
-
+    /// How many times the normal pace.
     var factor: Double {
         switch self {
-        case .full: 1
-        case .half: 0.5
         case .quarter: 0.25
+        case .half: 0.5
+        case .normal: 1
+        case .double: 2
+        case .quadruple: 4
         }
     }
 }
@@ -36,9 +31,8 @@ enum PlaybackSpeed: String, CaseIterable, Identifiable {
 @MainActor
 @Observable
 final class Player {
-    /// The moves of the written moves menu: each ring coming off where it first does on the way from every ring on to
-    /// every ring off. Each goes back on along the same path. Every other move is written too, and plays when its ring
-    /// is tapped.
+    /// Each ring's move from where it first comes off on the way from every ring on to every ring off: where `-move N`
+    /// and the capture mode start. Every move plays when its ring is tapped.
     static let moves = MoveMotion.written
 
     @ObservationIgnored private var session: PuzzleSession
@@ -57,11 +51,10 @@ final class Player {
     private(set) var status: PuzzleSession.Status = .resting(.allOn)
     /// The stages of the move on the slider; empty before the first move.
     private(set) var stages: [Stage] = []
-    private(set) var moveCount = 0
     private(set) var canPlay = false
     private(set) var canUndo = false
     private(set) var canSolve = false
-    var speed: PlaybackSpeed = .full
+    var speed: PlaybackSpeed = .normal
 
     /// When playing was last moved on, so that the next step covers exactly the time since.
     @ObservationIgnored private var lastStep: ContinuousClock.Instant?
@@ -160,7 +153,6 @@ final class Player {
         markers = session.markers
         status = session.status
         stages = session.stages
-        moveCount = session.moveCount
         canPlay = session.canPlay
         canUndo = session.canUndo
         canSolve = session.canSolve

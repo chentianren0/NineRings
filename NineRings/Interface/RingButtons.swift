@@ -57,6 +57,7 @@ private struct RingButton: View {
         .help(Text("Move ring \(marker.ring)", comment: "Tooltip on a ring button. The variable is the ring's number."))
         .accessibilityLabel(Text("Ring \(marker.ring)", comment: "Spoken name of a ring button. The variable is the ring's number."))
         .accessibilityValue(spokenValue)
+        .accessibilityHint(marker.block.map { Text(Sentences.shortReason($0)) } ?? Text(verbatim: ""))
     }
 
     private var outline: AnyShapeStyle {

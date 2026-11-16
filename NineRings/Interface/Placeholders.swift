@@ -32,7 +32,7 @@ struct SettingsPlaceholder: View {
                 Image(systemName: "gear")
             }
         } description: {
-            Text(verbatim: "Sound, haptics, music and About come here in a later step.")
+            Text(verbatim: "Sound, haptics and About come here in a later step.")
         }
         .navigationTitle(Text(verbatim: "Settings"))
         #if os(iOS)

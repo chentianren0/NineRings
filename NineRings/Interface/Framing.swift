@@ -16,10 +16,20 @@ enum Framing {
             Move(ring: 3, from: PuzzleState(bits: 0b1_1111_1110)),
             Move(ring: 3, from: PuzzleState(bits: 0b110)),
         ].compactMap { $0 }
-        let poses = moves.compactMap(MoveMotion.init).flatMap { motion in
+        let poses = moves.map(MoveMotion.init).flatMap { motion in
             (0...40).map { motion.pose(at: Double($0) / 40) }
         }
         return ToyBounds.rings(poses)
+    }()
+
+    /// The box around the whole toy, the sword drawn back included, over the moves of the first three rings, each from
+    /// where it first comes off, and ring 3's with every ring behind it off. The capture mode frames its pictures on it.
+    static let wholeToy: ToyBounds = {
+        let moves = Array(Player.moves.prefix(3)) + [Move(ring: 3, from: PuzzleState(bits: 0b110))].compactMap { $0 }
+        let poses = moves.map(MoveMotion.init).flatMap { motion in
+            (0...40).map { motion.pose(at: Double($0) / 40) }
+        }
+        return ToyBounds(poses)
     }()
 
     /// The shadow's height, just under the lowest the toy goes.
