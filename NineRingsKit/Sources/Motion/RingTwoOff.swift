@@ -6,6 +6,9 @@ import simd
 /// The written path of ring 2 coming off while every other ring is on: ring 1 steps aside, ring 2 comes off over
 /// the tip and goes down through the slot round rod 1, and ring 1 goes back on.
 ///
+/// The app no longer plays it: ring 2 comes off as the second ring on the sword does (``PairMoveOff``), the same way
+/// as rings 3 to 9. It is kept, with its tests, as the first way that was written and checked.
+///
 /// Three things move, each by curves of the path's own parameter (see ``RingTurns``):
 ///
 /// - Ring 1 stands up on its eye and turns to stand along the sword, then turns back and lies down again. Its eye
@@ -107,6 +110,11 @@ struct RingTwoOff: Sendable {
 
     /// The stages as spans of the move's progress.
     static let stages: [Stage] = pacing.stages(stagesAlongThePath)
+
+    /// Going on, the stages of coming off are passed through backwards, under names that say what happens.
+    static let namesGoingOn = [
+        "Ring 1 steps aside", "Ring 2 lifts", "Up through the slot", "Ring 2 over the tip", "Ring 1 back on",
+    ]
 
     /// The toy a fraction `progress` of the way through the move.
     static func pose(atProgress progress: Double) -> ToyPose {

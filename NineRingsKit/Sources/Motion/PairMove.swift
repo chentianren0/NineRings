@@ -30,8 +30,10 @@ import simd
 struct PairMoveOff: Sendable {
     /// The ring that comes off.
     let ring: Int
-    /// The state before the move: ring k and ring k−1 on, the rings in front of ring k−1 off.
-    let from: PuzzleState
+    /// The state before the move: ring k and ring k−1 on, the rings in front of ring k−1 off, any rings behind.
+    var from: PuzzleState {
+        willSet { precondition(newValue.canMove(ring) && newValue.isOn(ring), "ring \(ring) comes off from \(newValue)") }
+    }
 
     var turns: RingTurns
     /// How far ring k's eye is moved toward the grip from above its hole.
@@ -129,20 +131,43 @@ struct PairMoveOff: Sendable {
 }
 
 extension PairMoveOff {
-    /// The path with its pacing (see ``Pacing``): the toy a fraction of the way through the move, coming off.
+    /// Where ring k first comes off on the way from every ring on to every ring off: ring k−1 on, every ring in front
+    /// of it off, and every ring behind it on.
+    static func firstPlace(_ ring: Int) -> PuzzleState {
+        PuzzleState(bits: UInt16(0x1FF) & ~UInt16((1 << max(ring - 2, 0)) - 1))
+    }
+
+    /// The path for each ring from 2 to 9, from its first place, with its pacing (see ``Pacing``). The pacing goes by
+    /// how far the parts travel, and the rings behind all travel with the sword, on or off, while the rings in front
+    /// keep still: so it is the same for every state, and differs between rings only by how far the sword slides.
+    static let paced: [Paced] = (2...9).map { Paced(PairMoveOff(ring: $0, from: firstPlace($0))) }
+
+    /// The toy a fraction `progress` of the way through ring `ring` coming off from `state`.
+    static func pose(ring: Int, from state: PuzzleState, atProgress progress: Double) -> ToyPose {
+        var path = paced[ring - 2].path
+        path.from = state
+        return path.pose(at: paced[ring - 2].pacing.pathParameter(atProgress: min(max(progress, 0), 1)))
+    }
+
+    /// The stages of ring `ring` coming off, as spans of the move's progress.
+    static func stages(ring: Int) -> [Stage] {
+        paced[ring - 2].stages
+    }
+
+    /// The path with its pacing: the toy a fraction of the way through the move, coming off.
     struct Paced: Sendable {
         let path: PairMoveOff
         let pacing: Pacing
+        let stages: [Stage]
 
         init(_ path: PairMoveOff) {
             self.path = path
             pacing = Pacing(path.pose(at:))
+            stages = pacing.stages(PairMoveOff.stagesAlongThePath(ring: path.ring))
         }
 
         func pose(atProgress progress: Double) -> ToyPose {
             path.pose(at: pacing.pathParameter(atProgress: min(max(progress, 0), 1)))
         }
-
-        var stages: [Stage] { pacing.stages(PairMoveOff.stagesAlongThePath(ring: path.ring)) }
     }
 }

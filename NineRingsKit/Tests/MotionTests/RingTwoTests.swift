@@ -1,5 +1,5 @@
 import Foundation
-import Motion
+@testable import Motion
 import Puzzle
 import Testing
 import Toy
@@ -8,6 +8,33 @@ import simd
 let ringTwoOff = Move(ring: 2, from: .allOn)!
 let ringTwoOn = ringTwoOff.reversed
 let ringTwoOffState = PuzzleState.allOn.moving(2)
+
+/// Ring 2's first written way, with ring 1 stepping aside (``RingTwoOff``), played as `MoveMotion` plays a move: the
+/// app now plays the second ring's move for ring 2 instead, and these tests keep checking this way.
+struct RingTwoPlayback {
+    let move: Move
+
+    init(_ move: Move) {
+        precondition(move.ring == 2 && (move.from == .allOn || move.to == .allOn), "ring 2's first way starts from every ring on")
+        self.move = move
+    }
+
+    func pose(at progress: Double) -> ToyPose {
+        let clamped = min(max(progress, 0), 1)
+        return RingTwoOff.pose(atProgress: move.takesOff ? clamped : 1 - clamped)
+    }
+
+    var stages: [Stage] {
+        if move.takesOff { return RingTwoOff.stages }
+        return zip(RingTwoOff.stages.reversed(), RingTwoOff.namesGoingOn).map { stage, name in
+            Stage(name: name, start: 1 - stage.end, end: 1 - stage.start)
+        }
+    }
+
+    func stage(at progress: Double) -> Stage {
+        stages.last { $0.start <= progress } ?? stages[0]
+    }
+}
 
 @Suite struct RingTwoRestTests {
     @Test func ringTwoOffRestsClearAndReadsAsItsState() throws {
@@ -50,8 +77,8 @@ let ringTwoOffState = PuzzleState.allOn.moving(2)
 @Suite struct RingTwoMoveTests {
     @Test(arguments: [ringTwoOff, ringTwoOn])
     func nothingPassesThroughAnythingAndNothingJumps(_ move: Move) throws {
-        let motion = try #require(MoveMotion(move))
-        let sweep = Sweep(motion)
+        let motion = RingTwoPlayback(move)
+        let sweep = Sweep(move, pose: motion.pose(at:))
         let smallest = sweep.smallestGap
         let step = sweep.largestStep
         let direction = move.takesOff ? "off" : "on"
@@ -77,7 +104,7 @@ let ringTwoOffState = PuzzleState.allOn.moving(2)
 
     @Test(arguments: [ringTwoOff, ringTwoOn])
     func theEndsAreTheRestPoses(_ move: Move) throws {
-        let motion = try #require(MoveMotion(move))
+        let motion = RingTwoPlayback(move)
         let before = try #require(RestPoses.pose(for: move.from))
         let after = try #require(RestPoses.pose(for: move.to))
         #expect(Relations.isClose(motion.pose(at: 0), before))
@@ -85,8 +112,8 @@ let ringTwoOffState = PuzzleState.allOn.moving(2)
     }
 
     @Test func goingOnIsComingOffBackwards() throws {
-        let off = try #require(MoveMotion(ringTwoOff))
-        let on = try #require(MoveMotion(ringTwoOn))
+        let off = RingTwoPlayback(ringTwoOff)
+        let on = RingTwoPlayback(ringTwoOn)
         for index in 0...200 {
             let progress = Double(index) / 200
             #expect(Relations.isClose(off.pose(at: progress), on.pose(at: 1 - progress), tolerance: 1e-9))
@@ -95,7 +122,7 @@ let ringTwoOffState = PuzzleState.allOn.moving(2)
 
     /// Rings 3 to 9 and their rods, and the bar, stay exactly where they rest.
     @Test func everyOtherPartStaysExactlyStill() throws {
-        let motion = try #require(MoveMotion(ringTwoOff))
+        let motion = RingTwoPlayback(ringTwoOff)
         let rest = try #require(RestPoses.pose(for: .allOn))
         for index in 0...4000 {
             let pose = motion.pose(at: Double(index) / 4000)
@@ -113,7 +140,7 @@ let ringTwoOffState = PuzzleState.allOn.moving(2)
     /// joins, the sword goes through it only near the tip's end. Ring 1 leaves and comes back once; ring 2 leaves
     /// once, after ring 1 has left and before it comes back.
     @Test func ringsOneAndTwoLeaveAndJoinTheRailsOnlyOverTheTipEnd() throws {
-        let motion = try #require(MoveMotion(ringTwoOff))
+        let motion = RingTwoPlayback(ringTwoOff)
         let samples = 4000
         var changes: [Int: [Double]] = [1: [], 2: []]
         for ring in [1, 2] {
@@ -142,7 +169,7 @@ let ringTwoOffState = PuzzleState.allOn.moving(2)
     }
 
     @Test func theStagesComeInOrderAndEachDoesWhatItsNameSays() throws {
-        let motion = try #require(MoveMotion(ringTwoOff))
+        let motion = RingTwoPlayback(ringTwoOff)
         let stages = motion.stages
         #expect(stages.map(\.name) == ["Ring 1 steps aside", "Ring 2 over the tip", "Down through the slot", "Ring 2 hangs", "Ring 1 back on"])
         #expect(stages.first?.start == 0 && stages.last?.end == 1)
@@ -187,14 +214,10 @@ let ringTwoOffState = PuzzleState.allOn.moving(2)
     }
 
     @Test func goingOnNamesTheStagesForWhatHappens() throws {
-        let motion = try #require(MoveMotion(ringTwoOn))
+        let motion = RingTwoPlayback(ringTwoOn)
         #expect(motion.stages.map(\.name) == ["Ring 1 steps aside", "Ring 2 lifts", "Up through the slot", "Ring 2 over the tip", "Ring 1 back on"])
         #expect(motion.stage(at: 0).name == "Ring 1 steps aside")
         #expect(motion.stage(at: 1).name == "Ring 1 back on")
     }
 
-    @Test func theWrittenMovesAreRingOneAndRingTwo() {
-        #expect(MoveMotion.written == [ringOneOff, ringTwoOff])
-        #expect(MoveMotion.written.allSatisfy { MoveMotion($0) != nil && MoveMotion($0.reversed) != nil })
-    }
 }
