@@ -88,14 +88,16 @@ import simd
             }
             print(String(format: "%6.1f s  from %@: best so far %.3f at %@", elapsed(), "\(initial)", best.value,
                          best.q.map { String(format: "%.2f", $0) }.joined(separator: ", ")))
+            fflush(stdout)
         }
         let goal = best.q.indices.map { min(max(best.q[$0], space.lower[$0]), space.upper[$0]) }
         print("best pose: \(space.room.room(space.pose(goal)))")
+        fflush(stdout)
         guard best.value > 0 else { return }
 
         // A way to it from the rest pose.
-        let needs = [0.4, 0.3, 0.25, 0.2, 0.1, 0.0].filter { $0 < min(best.value, space.clearance(start)) }
-        if let plan = Planner.plan(space, from: start, to: goal, needs: needs, step: 0.5, nodes: 40000, seed: Tuner.seed) {
+        let needs = [0.3, 0.2, 0.0].filter { $0 < min(best.value, space.clearance(start)) }
+        if let plan = Planner.plan(space, from: start, to: goal, needs: needs, step: 0.5, nodes: 20000, seconds: 60, seed: Tuner.seed) {
             for q in plan.path { print(q.map { String(format: "%8.2f", $0) }.joined() + String(format: "   room %.3f", space.clearance(q))) }
             print(String(format: "%6.1f s in all", elapsed()))
         }

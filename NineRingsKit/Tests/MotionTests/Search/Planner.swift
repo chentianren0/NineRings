@@ -70,20 +70,21 @@ enum Planner {
     /// Tries each room in `needs`, largest first, until a path is found.
     static func plan(
         _ space: ConfigSpace, from start: [Double], to goal: [Double], needs: [Double],
-        step: Double = 0.5, nodes: Int = 20000, seed: UInt64 = 1, log: (String) -> Void = { print($0); fflush(stdout) }
+        step: Double = 0.5, nodes: Int = 20000, seconds: Double = .infinity, seed: UInt64 = 1, log: (String) -> Void = { print($0); fflush(stdout) }
     ) -> Result? {
         let clock = DispatchTime.now().uptimeNanoseconds
         func elapsed() -> Double { Double(DispatchTime.now().uptimeNanoseconds - clock) / 1e9 }
         log(String(format: "room at the start %.3f, at the goal %.3f", space.clearance(start), space.clearance(goal)))
         for need in needs {
             var random = SeededRandom(seed: seed)
-            if let (path, count) = connect(space, start, goal, need: need, step: step, nodes: nodes, random: &random) {
+            let deadline = DispatchTime.now().uptimeNanoseconds + UInt64(min(seconds, 1e6) * 1e9)
+            if let (path, count) = connect(space, start, goal, need: need, step: step, nodes: nodes, deadline: deadline, random: &random) {
                 log(String(format: "%6.1f s  path with room %.2f found: %d points, %d nodes", elapsed(), need, path.count, count))
                 let short = shortcut(space, path, need: need, tries: 300, random: &random)
                 log(String(format: "%6.1f s  shortened to %d points", elapsed(), short.count))
                 return Result(path: short, need: need, nodes: count, seconds: elapsed())
             }
-            log(String(format: "%6.1f s  no path with room %.2f in %d nodes", elapsed(), need, nodes))
+            log(String(format: "%6.1f s  no path with room %.2f in %d nodes or %.0f s", elapsed(), need, nodes, seconds))
         }
         return nil
     }
@@ -128,12 +129,12 @@ enum Planner {
 
     private static func connect(
         _ space: ConfigSpace, _ start: [Double], _ goal: [Double], need: Double, step: Double, nodes: Int,
-        random: inout SeededRandom
+        deadline: UInt64, random: inout SeededRandom
     ) -> ([[Double]], Int)? {
         var a = Tree(points: [start], parents: [-1])
         var b = Tree(points: [goal], parents: [-1])
         var aIsStart = true
-        while a.points.count + b.points.count < nodes {
+        while a.points.count + b.points.count < nodes && DispatchTime.now().uptimeNanoseconds < deadline {
             let sample = (0..<space.dimension).map { space.lower[$0] + random.uniform() * (space.upper[$0] - space.lower[$0]) }
             if case .trapped = extend(&a, toward: sample, space, need: need, step: step) {} else {
                 let newIndex = a.points.count - 1

@@ -121,6 +121,24 @@ The app is built with pointer authentication. `NineRings.xcodeproj/project.xcwor
 
 To open the app where ring 2's move begins, with that move on the slider, launch it with `-move 2`; to open it part way through the move, with `-start-progress 0.5`. Space plays or pauses, ⌘Z undoes, the keys 1 to 9 tap the rings, and ⌘1, ⌘2 and ⌘3 show the toy from the side, from above and from the tip.
 
+## Writing a new kind of move with the search tools
+
+`NineRingsKit/Tests/MotionTests/Search` holds tools for finding a move's key values. They change nothing in the app or in the written motion: a session uses them, then writes the keys they print into the move's path as plain numbers, and the checker judges that path as it judges every other.
+
+- `FastRoom` measures one pose as the checker does, the smallest gap and the relations, but only for the pairs that can change in a move, and skips any pair whose cheap lower bound is already too far apart to matter. A test holds it to the checker's numbers on every run.
+- `Tuner` searches a move's free key values for the path with the most room, with CMA-ES: a population of candidates drawn round a middle that moves toward the best, whose spread learns which numbers to change together.
+- `Planner` finds a way between two poses of the moving parts that keeps a given room, with RRT-Connect, in the very numbers the move's curves write (for a drop: tip, tilt, swing and eye height). `CurveFit` turns the way it finds into curve keys.
+- `FullCheck` runs the checker's own tests on a path given as keys: 4000 samples paced as the app paces them.
+
+To write a new kind of move:
+
+1. Describe the moving parts as a `ConfigSpace`: which numbers, their ranges, and a pose for each point, built with the same rules as the move will use (`RingTurns`, the rod rule, a hanging chain). Its `FastRoom` names the rings that move, whether the sword slides, and which rings may leave the rails.
+2. Plan between the stages' poses with `Planner.plan`, a leg at a time if a stage needs a waypoint, asking for the most room first (0.4 mm, then less). If no room at all gives a path, the move cannot be made under the present rules, and the planner's failing room and the tightest pairs say where.
+3. Fit the path with `CurveFit.keys` and describe its keys as a `KeyedMove`: which places and values are free. Then run `Tuner.run`; it prints each better path as it finds it and ends with keys as Swift source.
+4. Write those keys into the move's path, and let the package's tests judge it.
+
+`NINE_RINGS_PLAN=1` runs all of this for ring 1's drop from its two ends; `NINE_RINGS_SEARCH=1` (or `2`) runs the tuner on ring 1's drop (ring 2's move) from a first guess; `NINE_RINGS_TRIAL=1` tries the place where ring 2 steps aside, carrying ring 1, while ring 3 lifts over the tip, with `NINE_RINGS_BAR_RAISE` holding the bar higher in that test only; `NINE_RINGS_MEASURE=1` times the pieces. The seed is `NINE_RINGS_SEED`, or the copy's number on GitHub, and `NINE_RINGS_KEYS_OUT` (on GitHub, `tool-output/`) receives the best keys as they improve.
+
 ## Checks on GitHub
 
 A pull request that touches the package, the app or the project runs the package's tests and builds the app for the Mac and for iPhone and iPad (`.github/workflows/checks.yml`), on the Xcode the project is developed with. The same checks run again on `main` after each merge, because two pull requests that each pass alone can still fail together. They can also be started by hand from the Actions tab.
