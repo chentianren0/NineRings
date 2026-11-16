@@ -148,7 +148,7 @@ final class Player {
         // One frame's step is capped, so that after a pause in the frames, such as time in the background, the move
         // carries on from where it was rather than jumping to its end.
         let seconds = min(Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18, 0.1)
-        session.advance(by: seconds * speed.factor / MoveMotion.duration)
+        session.advance(by: seconds * speed.factor)
         publish()
     }
 

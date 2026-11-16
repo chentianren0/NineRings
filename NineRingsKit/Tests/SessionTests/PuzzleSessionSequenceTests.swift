@@ -127,17 +127,19 @@ import Testing
 
     /// Play runs the move on the slider forward, as its button says, even after an undo was paused part way.
     @Test func playAfterAPausedUndoRunsForward() {
+        // Ring 1's move takes three seconds at full speed.
+        let aMove = MoveTiming.baseDuration
         var session = PuzzleSession()
         session.tap(1)
-        session.advance(by: 1)
+        session.advance(by: aMove)
         session.undo()
-        session.advance(by: 0.3)
+        session.advance(by: 0.3 * aMove)
         session.togglePlay()
         #expect(!session.isPlaying)
         session.togglePlay()
         #expect(session.isPlaying)
         #expect(session.direction == .forward)
-        session.advance(by: 1)
+        session.advance(by: aMove)
         #expect(session.progress == 1)
         #expect(session.state == PuzzleState.allOn.moving(1))
     }
