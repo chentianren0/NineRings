@@ -1,0 +1,171 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "All nine rings are on the sword. Tap a ring to move it.": {
+      "comment": "Status at the start, with every ring on."
+    },
+    "All rings are off. The puzzle is solved.": {
+      "comment": "Status when every ring is off the sword."
+    },
+    "Asks to move this ring.": {
+      "comment": "Spoken hint on a ring marker."
+    },
+    "Full": {
+      "comment": "Playing speed: moves play at their normal pace."
+    },
+    "Half": {
+      "comment": "Playing speed: moves play at half their normal pace."
+    },
+    "Move ring %lld (%lld)": {
+      "comment": "Tooltip on a ring marker. Both variables are the ring's number; the second is the key that moves it."
+    },
+    "Moves: %lld": {
+      "comment": "How many moves have been made since the start. The variable is the count."
+    },
+    "Nine Rings": {
+      "comment": "The window's title."
+    },
+    "No move yet": {
+      "comment": "Under the slider, before any move has been played."
+    },
+    "Off, %@": {
+      "comment": "Spoken value of a ring marker that is off and cannot move. The variable says why."
+    },
+    "Off, can move": {
+      "comment": "Spoken value of a ring marker."
+    },
+    "Off, can move, but the move is not written yet": {
+      "comment": "Spoken value of a ring marker."
+    },
+    "On, %@": {
+      "comment": "Spoken value of a ring marker that is on and cannot move. The variable says why."
+    },
+    "On, can move": {
+      "comment": "Spoken value of a ring marker."
+    },
+    "On, can move, but the move is not written yet": {
+      "comment": "Spoken value of a ring marker."
+    },
+    "Pause": {
+      "comment": "Button that stops the move playing."
+    },
+    "Paused: ring %lld coming off — %@": {
+      "comment": "Status while a ring's move is stopped part way. The first variable is the ring's number, the second the name of the stage."
+    },
+    "Paused: ring %lld going on — %@": {
+      "comment": "Status while a ring's move is stopped part way. The first variable is the ring's number, the second the name of the stage."
+    },
+    "Play": {
+      "comment": "Button that plays the move on the slider forward."
+    },
+    "Play the last move backwards (⌘Z)": {
+      "comment": "Tooltip on the undo button."
+    },
+    "Play the move forward, or pause it (Space)": {
+      "comment": "Tooltip on the play button."
+    },
+    "Play the shortest way to every ring off": {
+      "comment": "Tooltip on the solve button."
+    },
+    "Playing speed": {
+      "comment": "Tooltip on the speed menu."
+    },
+    "Progress": {
+      "comment": "Spoken name of the slider that runs through the move."
+    },
+    "Put every ring back on": {
+      "comment": "Tooltip on the reset button."
+    },
+    "Quarter": {
+      "comment": "Playing speed: moves play at a quarter of their normal pace."
+    },
+    "Reset": {
+      "comment": "Button that returns every ring to on."
+    },
+    "Ring %lld": {
+      "comment": "Spoken name of a ring marker. The variable is the ring's number."
+    },
+    "Ring %lld can come off now, but that move is not written yet.": {
+      "comment": "Status after tapping a ring whose move is allowed but not yet in the app. The variable is the ring's number."
+    },
+    "Ring %lld can go on now, but that move is not written yet.": {
+      "comment": "Status after tapping a ring whose move is allowed but not yet in the app. The variable is the ring's number."
+    },
+    "Ring %lld can’t move while ring %lld is off: ring %lld’s rod runs through ring %lld, and it is out of the slot, so ring %lld can’t pass through the slot.": {
+      "comment": "Why a ring cannot move. The first, fourth and fifth variables are the ring tapped; the second and third the ring just before it, which is off. A ring's rod is the wire that holds it; the slot is the gap between the sword's two rails."
+    },
+    "Ring %lld can’t move while ring %lld is on: ring %lld’s rod stands in the slot between ring %lld and the tip.": {
+      "comment": "Why a ring cannot move. The first and fourth variables are the ring tapped; the second and third the earlier ring that is on. A ring's rod is the wire that holds it; the slot is the gap between the sword's two rails; the tip is the sword's rounded end."
+    },
+    "Ring %lld comes off": {
+      "comment": "Menu item that sets the toy where this ring's written move begins and plays it. The variable is the ring's number."
+    },
+    "Ring %lld comes off — %@": {
+      "comment": "Status while a ring comes off. The first variable is the ring's number, the second the name of the stage the move is in."
+    },
+    "Ring %lld goes on — %@": {
+      "comment": "Status while a ring goes on. The first variable is the ring's number, the second the name of the stage the move is in."
+    },
+    "Rings": {
+      "comment": "Spoken name of the strip of nine ring markers."
+    },
+    "Set the toy where a written move begins, and play it": {
+      "comment": "Tooltip on the written moves menu."
+    },
+    "Side": {
+      "comment": "Camera place: the toy seen from the side."
+    },
+    "Solve": {
+      "comment": "Button that plays the shortest way to every ring off."
+    },
+    "Solving stopped: the next move, ring %lld coming off, is not written yet.": {
+      "comment": "Status when solving reaches a move the app cannot show yet. The variable is the ring's number."
+    },
+    "Solving stopped: the next move, ring %lld going on, is not written yet.": {
+      "comment": "Status when solving reaches a move the app cannot show yet. The variable is the ring's number."
+    },
+    "Speed": {
+      "comment": "Menu that chooses how fast moves play."
+    },
+    "Tap a ring to move it.": {
+      "comment": "Status when nothing is moving."
+    },
+    "Tip": {
+      "comment": "Camera place: the toy seen from the sword's tip."
+    },
+    "Top": {
+      "comment": "Camera place: the toy seen from above."
+    },
+    "Undo": {
+      "comment": "Button that plays the last move backwards."
+    },
+    "Undoing: ring %lld comes back off — %@": {
+      "comment": "Status while undoing a move that put a ring on. The first variable is the ring's number, the second the name of the stage the move is in."
+    },
+    "Undoing: ring %lld goes back on — %@": {
+      "comment": "Status while undoing a move that took a ring off. The first variable is the ring's number, the second the name of the stage the move is in."
+    },
+    "View": {
+      "comment": "Menu of the camera's places."
+    },
+    "View from the side": {
+      "comment": "Tooltip on a camera place."
+    },
+    "View from the tip": {
+      "comment": "Tooltip on a camera place."
+    },
+    "View from the top": {
+      "comment": "Tooltip on a camera place."
+    },
+    "Written Moves": {
+      "comment": "Menu of the moves the app can already show."
+    },
+    "can’t move while ring %lld is off": {
+      "comment": "Part of a ring marker's spoken value. The variable is the ring just before, which is off."
+    },
+    "can’t move while ring %lld is on": {
+      "comment": "Part of a ring marker's spoken value. The variable is the earlier ring that is on."
+    }
+  },
+  "version": "1.0"
+}

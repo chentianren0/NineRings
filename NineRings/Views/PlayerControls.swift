@@ -1,69 +1,117 @@
 import Motion
 import SwiftUI
 
-/// The controls for the move: play or pause, the speed, the stage the move is in, and a scrubber with the
-/// stages marked and named.
+/// Everything under or beside the toy: the line that says what is happening, the ring markers, the slider with
+/// the stages of the move playing or played last, and the buttons.
 ///
-/// Everything here follows the width it is given: the top row stacks when it is narrow, and the stage names
-/// give way to stage numbers when they no longer fit their stretches of the scrubber.
+/// It follows the width it is given, never the device: the buttons lose their titles, then wrap onto a second
+/// row, as the width shrinks, and the stage names give way to stage numbers.
 struct PlayerControls: View {
     @Bindable var player: Player
+    /// Covers the toy, returns every ring to on, and uncovers it.
+    let reset: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 16) {
-                    playButton
-                    stageTitle
-                    Spacer(minLength: 0)
-                    speedPicker
-                }
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 12) {
-                        playButton
-                        Spacer(minLength: 0)
-                        speedPicker
-                    }
-                    stageTitle
-                }
+        VStack(alignment: .leading, spacing: 12) {
+            StatusLine(status: player.status)
+            RingStrip(markers: player.markers) { ring in
+                player.tap(ring)
             }
-            StageScrubber(progress: $player.progress, stages: player.motion.stages) {
+            .frame(maxWidth: .infinity)
+            StageScrubber(progress: $player.progress, stages: player.stages) {
                 player.pause()
             }
+            .disabled(!player.hasMove)
+            .opacity(player.hasMove ? 1 : 0.4)
+            ControlButtons(player: player, reset: reset)
         }
-        .padding(14)
-        .background(.regularMaterial, in: .rect(cornerRadius: 16))
+    }
+}
+
+/// Play or pause, the speed, undo, reset and solve, and the count of moves made.
+private struct ControlButtons: View {
+    @Bindable var player: Player
+    let reset: () -> Void
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 14) {
+                buttons
+                Spacer(minLength: 0)
+                count
+            }
+            HStack(spacing: 10) {
+                buttons
+                    .labelStyle(.iconOnly)
+                Spacer(minLength: 0)
+                count
+            }
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 10) {
+                    buttons
+                        .labelStyle(.iconOnly)
+                }
+                count
+            }
+        }
+        .buttonStyle(.bordered)
     }
 
-    private var playButton: some View {
+    @ViewBuilder
+    private var buttons: some View {
         Button {
             player.togglePlay()
         } label: {
-            Label(player.nextAction, systemImage: player.isPlaying ? "pause.fill" : "play.fill")
-                .frame(minWidth: 150, alignment: .leading)
+            if player.isPlaying {
+                Label { Text("Pause", comment: "Button that stops the move playing.") } icon: { Image(systemName: "pause.fill") }
+            } else {
+                Label { Text("Play", comment: "Button that plays the move on the slider forward.") } icon: { Image(systemName: "play.fill") }
+            }
         }
         .keyboardShortcut(.space, modifiers: [])
-        .help("Play the move, or pause it (Space)")
-        .fixedSize()
-    }
+        .disabled(!player.isPlaying && !player.canPlay)
+        .help(Text("Play the move forward, or pause it (Space)", comment: "Tooltip on the play button."))
 
-    private var stageTitle: some View {
-        Text(player.stageName)
-            .font(.headline)
-            .contentTransition(.opacity)
-            .lineLimit(1)
-    }
-
-    private var speedPicker: some View {
-        Picker("Speed", selection: $player.speed) {
+        Picker(selection: $player.speed) {
             ForEach(PlaybackSpeed.allCases) { speed in
                 Text(speed.title).tag(speed)
             }
+        } label: {
+            Label { Text("Speed", comment: "Menu that chooses how fast moves play.") } icon: { Image(systemName: "gauge.with.dots.needle.33percent") }
         }
-        .pickerStyle(.segmented)
-        .labelsHidden()
+        .pickerStyle(.menu)
         .fixedSize()
-        .help("Playing speed")
+        .help(Text("Playing speed", comment: "Tooltip on the speed menu."))
+
+        Button {
+            player.undo()
+        } label: {
+            Label { Text("Undo", comment: "Button that plays the last move backwards.") } icon: { Image(systemName: "arrow.uturn.backward") }
+        }
+        .keyboardShortcut("z", modifiers: .command)
+        .disabled(!player.canUndo)
+        .help(Text("Play the last move backwards (⌘Z)", comment: "Tooltip on the undo button."))
+
+        Button(action: reset) {
+            Label { Text("Reset", comment: "Button that returns every ring to on.") } icon: { Image(systemName: "arrow.counterclockwise") }
+        }
+        .disabled(player.moveCount == 0 && !player.hasMove)
+        .help(Text("Put every ring back on", comment: "Tooltip on the reset button."))
+
+        Button {
+            player.solve()
+        } label: {
+            Label { Text("Solve", comment: "Button that plays the shortest way to every ring off.") } icon: { Image(systemName: "flag.checkered") }
+        }
+        .disabled(!player.canSolve)
+        .help(Text("Play the shortest way to every ring off", comment: "Tooltip on the solve button."))
+    }
+
+    private var count: some View {
+        Text("Moves: \(player.moveCount)", comment: "How many moves have been made since the start. The variable is the count.")
+            .monospacedDigit()
+            .foregroundStyle(.secondary)
+            .fixedSize()
     }
 }
 
@@ -83,29 +131,41 @@ struct StageScrubber: View {
     var body: some View {
         VStack(spacing: 6) {
             track
-            ViewThatFits(in: .horizontal) {
-                StageLabels(spans: spans) {
-                    ForEach(stages, id: \.name) { stage in
-                        Text(stage.name)
-                    }
-                }
-                StageLabels(spans: spans) {
-                    ForEach(Array(stages.enumerated()), id: \.offset) { index, _ in
-                        Text("\(index + 1)")
-                    }
-                }
+            if stages.isEmpty {
+                // Holds the labels' place, so that the controls keep their height when the first move begins.
+                Text("No move yet", comment: "Under the slider, before any move has been played.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            } else {
+                labels
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
         }
         // The thumb's middle travels the whole width; the thumb itself may overhang the ends.
         .padding(.horizontal, Self.thumbRadius)
         .accessibilityRepresentation {
             Slider(value: $progress, in: 0...1) {
-                Text("Progress")
+                Text("Progress", comment: "Spoken name of the slider that runs through the move.")
             }
         }
+    }
+
+    private var labels: some View {
+        ViewThatFits(in: .horizontal) {
+            StageLabels(spans: spans) {
+                ForEach(stages, id: \.name) { stage in
+                    Text(Sentences.stageName(stage))
+                }
+            }
+            StageLabels(spans: spans) {
+                ForEach(Array(stages.enumerated()), id: \.offset) { index, _ in
+                    Text(index + 1, format: .number)
+                }
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
     }
 
     private var spans: [ClosedRange<Double>] {
@@ -113,27 +173,33 @@ struct StageScrubber: View {
     }
 
     private var track: some View {
-        ZStack(alignment: .leading) {
-            Capsule()
-                .fill(.quaternary)
-                .frame(height: 6)
-            Capsule()
-                .fill(.tint)
-                .frame(width: max(0, width * progress), height: 6)
-            ForEach(stages.dropFirst(), id: \.name) { stage in
-                Rectangle()
-                    .fill(.secondary)
-                    .frame(width: 1.5, height: 16)
-                    .offset(x: width * stage.start - 0.75)
+        // The track's size comes from this flexible base alone. What is drawn on it is placed from the measured
+        // width, and if it set the size too, the width could never shrink below the last one measured.
+        Color.clear
+            .frame(maxWidth: .infinity)
+            .frame(height: 2 * Self.thumbRadius)
+            .overlay(alignment: .leading) {
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(.quaternary)
+                        .frame(height: 6)
+                    Capsule()
+                        .fill(.tint)
+                        .frame(width: max(0, width * progress), height: 6)
+                    ForEach(stages.dropFirst(), id: \.name) { stage in
+                        Rectangle()
+                            .fill(.secondary)
+                            .frame(width: 1.5, height: 16)
+                            .offset(x: width * stage.start - 0.75)
+                    }
+                    Circle()
+                        .fill(.background)
+                        .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
+                        .overlay(Circle().strokeBorder(.tint, lineWidth: 2))
+                        .frame(width: 2 * Self.thumbRadius, height: 2 * Self.thumbRadius)
+                        .offset(x: width * progress - Self.thumbRadius)
+                }
             }
-            Circle()
-                .fill(.background)
-                .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
-                .overlay(Circle().strokeBorder(.tint, lineWidth: 2))
-                .frame(width: 2 * Self.thumbRadius, height: 2 * Self.thumbRadius)
-                .offset(x: width * progress - Self.thumbRadius)
-        }
-        .frame(height: 2 * Self.thumbRadius)
         .contentShape(.rect)
         .onGeometryChange(for: CGFloat.self, of: \.size.width) { width = $0 }
         .gesture(

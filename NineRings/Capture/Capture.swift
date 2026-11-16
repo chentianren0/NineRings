@@ -53,7 +53,8 @@ enum Capture {
                     let name = "ring\(ring)-p\(format(progress))-\(view.name)-\(request.appearance.rawValue).png"
                     let url = request.directory.appending(path: name)
                     let box = request.focus.map { ToyBounds(center: $0.center, size: $0.size) } ?? framing
-                    let image = try await renderer.render(player.pose, view: view, framing: box, to: url)
+                    guard let pose = player.pose else { continue }
+                    let image = try await renderer.render(pose, view: view, framing: box, to: url)
                     print("capture: wrote \(url.path)")
                     frames.append(ContactSheet.Frame(image: image, caption: "\(format(progress))  \(player.stageName)"))
                 }
