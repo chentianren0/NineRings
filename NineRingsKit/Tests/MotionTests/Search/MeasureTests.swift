@@ -26,27 +26,26 @@ import simd
 
     @Test(.enabled(if: ProcessInfo.processInfo.environment["NINE_RINGS_MEASURE"] != nil))
     func measure() {
-        let ringTwo = RingTwoOff.written
+        let pair = PairMoveOff(ring: 3, from: SearchToolTests.pairFrom)
         let parameter = 0.6
-        let pose = ringTwo.pose(at: parameter)
+        let pose = pair.pose(at: parameter)
         let shapes = pose.shapes
         print("shapes in a pose: \(shapes.count), of them sword pieces: \(shapes.filter { $0.name == .sword }.count)")
         var sink = 0.0
-        _ = Self.time("pose of ring 2's move") { sink += ringTwo.pose(at: parameter).swordSlide }
-        _ = Self.time("all shapes of a pose") { sink += Double(ringTwo.pose(at: parameter).shapes.count) }
+        _ = Self.time("pose of ring 3's pair move") { sink += pair.pose(at: parameter).swordSlide }
+        _ = Self.time("all shapes of a pose") { sink += Double(pair.pose(at: parameter).shapes.count) }
         _ = Self.time("smallest gap, every pair (checker)") { sink += Gaps.smallest(in: shapes)!.distance }
-        let moving = RingTwoTuneTests.moving
+        let moving = SearchToolTests.pairMoving
         let withoutBar = shapes.filter { $0.name != .bar }
-        _ = Self.time("smallest gap, pairs with a moving part (ring 2 tuner)") {
+        _ = Self.time("smallest gap, pairs with a moving part (checker)") {
             sink += Gaps.smallest(in: withoutBar, involving: moving)!.distance
         }
-        _ = Self.time("relations, every one (checker)") { sink += Double(Relations.failures(in: pose, mayBeOff: [1, 2]).count) }
-        _ = Self.time("ring 2 tuner's room at one point") { sink += RingTwoTuneTests.room(ringTwo, at: parameter) }
-        let score = Self.time("ring 2 tuner's score of one path (301 points)", minimum: 3) {
-            sink += RingTwoTuneTests.score(RingTwoOff.keys)
+        _ = Self.time("relations, every one (checker)") { sink += Double(Relations.failures(in: pose, mayBeOff: [1, 2, 3]).count) }
+        let drop = KeyedMove.pairDrop
+        _ = Self.time("pair drop tuner's score of one path (151 points)", minimum: 3) {
+            sink += drop.score(PairMoveOff.keys, samples: 150).least
         }
-        let items = RingTwoTuneTests.free(RingTwoOff.keys).count
-        print("ring 2 tuner: \(items) free numbers, so \(2 * items + 12) scores a round, \(String(format: "%.1f", Double(2 * items + 12) * score)) s a round")
+        print("pair drop tuner: \(drop.dimension) free numbers")
 
         // The pairs the checker looks at, and how many it measures after the bounding spheres.
         var pairs = 0, measured = 0
@@ -76,9 +75,9 @@ import simd
             sink += TuneTests.score(TuneTests.Drop.initial)
         }
         _ = Self.time("pose of ring 1's move") { sink += ringOne.pose(at: 0.7).swordSlide }
-        let fast2 = FastRoom(moving: [1, 2], swordMoves: true, mayBeOff: [1, 2])
-        _ = Self.time("fast room: gap, ring 2's move") { sink += fast2.smallestGap(pose).0 }
-        _ = Self.time("fast room: relations, ring 2's move") { sink += Double(fast2.failures(pose).count) }
+        let fast2 = FastRoom(moving: Array(3...9), swordMoves: true, mayBeOff: [1, 2, 3])
+        _ = Self.time("fast room: gap, ring 3's pair move") { sink += fast2.smallestGap(pose).0 }
+        _ = Self.time("fast room: relations, ring 3's pair move") { sink += Double(fast2.failures(pose).count) }
         let fast1 = FastRoom(moving: [1], swordMoves: false, mayBeOff: [1])
         let poseOne = ringOne.pose(at: 0.7)
         _ = Self.time("checker gap, moving parts, ring 1's drop") {
@@ -92,7 +91,7 @@ import simd
         _ = Self.time("relation: eye 2 linked with ring 1, exact") { sink += FastRoom.areLinked(poseOne.rod(2).eye, poseOne.ring(1).circle) ? 1 : 0 }
         _ = Self.time("relation: eye 2 linked with ring 1, checker") { sink += Relations.areLinked(poseOne.rod(2).eye, poseOne.ring(1).circle) ? 1 : 0 }
         _ = Self.time("relation: rail change between two poses") { sink += Double(Relations.railChangeFailures(from: poseOne, to: poseOne).count) }
-        let shaken = SearchToolTests.ringTwoPoses(count: 48)
+        let shaken = SearchToolTests.pairPoses(count: 48)
         let failing = shaken.filter { !fast2.failures($0).isEmpty }.count
         let tight = shaken.filter { fast2.smallestGap($0).0 < 0.2 }.count
         print("shaken poses: \(failing) of 48 with a relation failing, \(tight) with a gap under 0.2 mm")

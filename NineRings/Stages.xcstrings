@@ -97,30 +97,6 @@
         }
       }
     },
-    "Ring 1 back on": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 1 back on"
-          }
-        }
-      }
-    },
-    "Ring 1 steps aside": {
-      "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 1 steps aside"
-          }
-        }
-      }
-    },
     "Ring 2 hangs": {
       "comment": "The name of a stage of a ring's move, shown under the slider and in the status line.",
       "extractionState": "manual",

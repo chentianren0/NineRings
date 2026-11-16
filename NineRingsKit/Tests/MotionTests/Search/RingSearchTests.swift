@@ -2,9 +2,9 @@ import Foundation
 @testable import Motion
 import Testing
 
-/// The new tuner on the two written moves, to prove it against today's tuners. Run optimized with
+/// The tuner on the two written moves, to prove that it finds a move we know. Run optimized with
 /// `NINE_RINGS_SEARCH=1` (ring 1's drop from the hand guess `TuneTests` starts from) or `NINE_RINGS_SEARCH=2`
-/// (ring 2's move from its keys rounded as a first guess would be). `NINE_RINGS_SECONDS` sets the time budget,
+/// (the second ring's drop, for ring 2, from its keys rounded as a first guess would be). `NINE_RINGS_SECONDS` sets the time budget,
 /// `NINE_RINGS_SEED` the seed, `NINE_RINGS_FROM` keys to start from instead, and `NINE_RINGS_SHAKE=scale` shakes
 /// the written keys by that many steps to make the start. Each run ends with the checker's full tests of the
 /// path it found, and prints its keys.
@@ -14,10 +14,10 @@ import Testing
     @Test(.enabled(if: environment["NINE_RINGS_SEARCH"] != nil))
     func search() {
         let ring = Int(Self.environment["NINE_RINGS_SEARCH"]!) ?? 1
-        let move = ring == 1 ? KeyedMove.ringOne : KeyedMove.ringTwo
-        let written = ring == 1 ? KeyedMove.ringOneWritten : RingTwoOff.keys
+        let move = ring == 1 ? KeyedMove.ringOne : KeyedMove.pairDrop
+        let written = ring == 1 ? KeyedMove.ringOneWritten : PairMoveOff.keys
         let seed = Tuner.seed
-        var start = ring == 1 ? KeyedMove.ringOneHandGuess : KeyedMove.ringTwoRounded
+        var start = ring == 1 ? KeyedMove.ringOneHandGuess : KeyedMove.pairRounded
         if let scale = Self.environment["NINE_RINGS_SHAKE"].flatMap(Double.init) {
             start = move.shaken(written, scale: scale, seed: seed)
         }

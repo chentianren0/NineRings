@@ -5,8 +5,8 @@ import Puzzle
 import Toy
 import simd
 
-/// The two written moves as `KeyedMove`s, with the numbers today's tuners leave free, and the full check a path
-/// must pass.
+/// The two written moves as `KeyedMove`s, ring 1's drop and the second ring's, with the numbers today's tuners leave
+/// free, and the full check a path must pass.
 extension KeyedMove {
     /// Ring 1's drop, as `TuneTests` tunes it: the tip, tilt, swing and eye curves from path parameter 0.55 on.
     static let ringOne = KeyedMove(
@@ -50,34 +50,38 @@ extension KeyedMove {
         "eye": [(0.56, Layout.eyeHeightOn), (0.64, -4), (0.80, -6.5), (0.95, Layout.eyeHeightHanging)],
     ]
 
-    /// Ring 2's whole move, as `RingTwoTuneTests` tunes it: every key's place and value free but the ends'.
-    static let ringTwo: KeyedMove = {
-        let channels = RingTwoTuneTests.names.map { name -> Channel in
-            let count = RingTwoOff.keys[name]!.count
-            let fixedEnds = name == "ring1.lid" || name == "sword"
-            return Channel(
-                name: name,
-                freeProgress: (0..<count).map { !(fixedEnds && ($0 == 0 || $0 == count - 1)) },
-                freeValue: (0..<count).map { $0 != 0 && $0 != count - 1 },
-                valueStep: ["ring2.eye", "sword"].contains(name) ? 0.8 : 6
-            )
-        }
-        return KeyedMove(
-            channels: channels,
-            span: 0...1,
-            room: FastRoom(moving: [1, 2], swordMoves: true, mayBeOff: [1, 2]),
+    /// The second ring's drop, as `PairMoveTuneTests` tunes it, for ring 2 coming off every ring on: every key of the
+    /// ring's tip, tilt and swing and of its eye's move back that lies inside the drop may move, and the values of
+    /// those between a curve's first and last key, which hold the two rest poses, may change. The drop is the same
+    /// relative to the sword for every ring, so ring 2's room stands for all of them.
+    static let pairDrop: KeyedMove = {
+        let base = PairMoveOff.keys
+        let free: [(name: String, step: Double)] = [("ring.back", 0.4), ("ring.swing", 3), ("ring.tilt", 3), ("ring.tip", 3)]
+        var move = KeyedMove(
+            channels: free.map { name, step in
+                let count = base[name]!.count
+                let progress = base[name]!.map { $0.0 > 0.455 && $0.0 < 0.815 }
+                let value = base[name]!.indices.map { index in progress[index] && index != 0 && index != count - 1 }
+                return Channel(name: name, freeProgress: progress, freeValue: value, valueStep: step)
+            },
+            span: 0.45...0.82,
+            room: FastRoom(moving: [2], swordMoves: true, mayBeOff: [1, 2]),
+            bounds: ["ring.back": 0...4.5],
             path: { keys in
-                let path = RingTwoOff(keys: keys)
+                let path = PairMoveOff(ring: 2, from: .allOn, keys: keys)
                 return { path.pose(at: $0) }
             }
         )
+        // Keys well apart, so that no curve changes abruptly: the eye's move back above all.
+        move.spacing = 0.035
+        return move
     }()
 
-    /// Ring 2's keys with every free number rounded as a person writing a first guess from the stages would
-    /// write it: places to 0.05, angles to 10°, lengths to a millimetre.
-    static var ringTwoRounded: Keys {
-        var keys = RingTwoOff.keys
-        for channel in ringTwo.channels {
+    /// The second ring's drop keys with every free number rounded as a person writing a first guess would write
+    /// it: places to 0.05, angles to 10°, lengths to a millimetre.
+    static var pairRounded: Keys {
+        var keys = PairMoveOff.keys
+        for channel in pairDrop.channels {
             keys[channel.name] = keys[channel.name]!.enumerated().map { index, key in
                 let place = channel.freeProgress[index] ? (key.0 * 20).rounded() / 20 : key.0
                 let unit = channel.valueStep < 1 ? 1.0 : 10.0

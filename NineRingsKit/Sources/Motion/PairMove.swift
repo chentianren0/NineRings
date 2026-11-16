@@ -16,8 +16,8 @@ import simd
 ///   goes down, taking with it ring k and every ring behind it, as one stiff piece with their rods, which slide down
 ///   through the bar. Going down, its tip leaves ring k−1, which is now off the rails without having moved, while
 ///   rod k−1 still stands in the slot in front of the tip.
-/// - Ring k comes off below ring k−1, relative to the sword, as ring 2 does in ``RingTwoOff``: it swings up over the
-///   tip until it lies nearly flat, then goes down through the slot round rod k−1 and comes to hang.
+/// - Ring k comes off below ring k−1, relative to the sword: it swings up over the tip until it lies nearly flat,
+///   then goes down through the slot round rod k−1 and comes to hang.
 /// - For the drop the sword slides forward under ring k−1, but only as far as the rod of the ring in front of ring
 ///   k−1 allows: that rod hangs down through the bar 30 mm in front of ring k's eye. Ring k's eye moves back toward
 ///   the grip by a few millimetres, its rod leaning in its hole, so that the slot in front of the eye is as long as
@@ -45,9 +45,9 @@ struct PairMoveOff: Sendable {
     static let tipHanging = 180 - RingTurns.leanHangingDegrees
 
     /// The keys as written, for ring 2, each curve's keys as (path parameter, value) pairs, angles in degrees and
-    /// lengths in millimetres. The ring's swing up over the tip and its eye's height are ``RingTwoOff``'s, mapped onto
-    /// this path; the drop's keys and the eye's move back were found by a search for the path with the most room (see
-    /// `PairMoveTuneTests`), and the sword's were written by hand.
+    /// lengths in millimetres. The ring's swing up over the tip and its eye's height are those of the first way ring 2
+    /// was written, with ring 1 standing aside, mapped onto this path; the drop's keys and the eye's move back were found
+    /// by a search for the path with the most room (see `PairMoveTuneTests`), and the sword's were written by hand.
     static let keys: [String: [(Double, Double)]] = [
         "ring.tip": [(0.28, tipOn), (0.4263, 93.718), (0.6407, 81.455), (0.7991, tipHanging)],
         "ring.tilt": [(0.5221, 90), (0.6071, 64.182), (0.82, 90)],

@@ -10,8 +10,7 @@ import Toy
 /// A ring going on follows the very path of that ring coming off, run backwards.
 ///
 /// The toy has two moves: ring 1's (``RingOneOff``), and the second ring on the sword's (``PairMoveOff``), the same for
-/// rings 2 to 9, one hole further along for each. ``RingTwoOff``, ring 2 with ring 1 stepping aside, is kept beside
-/// them with its tests, but the app plays the second ring's move for ring 2 as for the others.
+/// rings 2 to 9, one hole further along for each.
 public struct MoveMotion: Sendable {
     public let move: Move
 

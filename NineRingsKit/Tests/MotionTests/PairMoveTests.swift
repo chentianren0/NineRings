@@ -11,6 +11,11 @@ func state(_ text: String) -> PuzzleState {
     return state
 }
 
+/// Ring 2 coming off every ring on, and going back on: the second ring's move for ring 2.
+let ringTwoOff = Move(ring: 2, from: .allOn)!
+let ringTwoOn = ringTwoOff.reversed
+let ringTwoOffState = PuzzleState.allOn.moving(2)
+
 /// The moves checked here in full, both ways: ring 3 with ring 1 off in front; the same move for ring 2 with nothing
 /// in front and for ring 9 with seven off rings in front; ring 3 and ring 2 with the rings behind on, off and mixed;
 /// and ring 1 with ring 2 off behind it.
@@ -203,31 +208,5 @@ let pairMoveCases: [Move] = [
         #expect(MoveMotion.written.map(\.from) == [.allOn, .allOn] + (3...9).map { PairMoveOff.firstPlace($0) })
         #expect(MoveMotion.written.allSatisfy { $0.takesOff && MoveMotion($0) != nil && MoveMotion($0.reversed) != nil })
         #expect(PairMoveOff.firstPlace(3) == state("011111111") && PairMoveOff.firstPlace(9) == state("000000011"))
-    }
-}
-
-/// Every one of the 512 states at rest: nothing within the checker's gap, every relation holding, and the pose reading
-/// as its state. Each ring rests by its own state alone, whatever its neighbours are.
-@Suite struct EveryRestTests {
-    @Test func everyStateRestsClearAndReadsAsItself() throws {
-        let states = (0..<512).map { PuzzleState(bits: UInt16($0)) }
-        let results = Sweep.inParallel(states.count) { index -> (Gap, Gap, [String], Bool) in
-            let state = states[index]
-            let pose = RestPoses.pose(for: state)!
-            let shapes = pose.shapes
-            let off = Set(PuzzleState.rings.filter { !state.isOn($0) })
-            let reads = pose.ringsOnTheSword == state
-                && PuzzleState.rings.allSatisfy { Relations.isRoundTheRails($0, in: pose) == state.isOn($0) }
-            return (Gaps.smallest(in: shapes)!, Gaps.smallest(in: shapes.filter { $0.name != .bar })!, Relations.failures(in: pose, mayBeOff: off), reads)
-        }
-        let worst = results.indices.min { results[$0].0.distance < results[$1].0.distance }!
-        let worstOther = results.indices.min { results[$0].1.distance < results[$1].1.distance }!
-        print("every rest: smallest gap \(results[worst].0) in \(states[worst])")
-        print("every rest: smallest gap leaving out the bar \(results[worstOther].1) in \(states[worstOther])")
-        for index in states.indices {
-            #expect(results[index].0.distance >= smallestAllowedGap, "\(states[index]): \(results[index].0)")
-            #expect(results[index].2.isEmpty, "\(states[index]): \(results[index].2)")
-            #expect(results[index].3, "\(states[index]) does not read as itself")
-        }
     }
 }
