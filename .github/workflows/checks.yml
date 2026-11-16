@@ -2,9 +2,19 @@ name: Checks
 
 # The package's tests, and a build of the app for the Mac and for iPhone and iPad.
 # They run on the Xcode that the project is developed with, so a result here means the same as one at home.
+# They run on every pull request, and again on main after each merge: two pull requests that each pass alone
+# can still fail together, and only a run on main checks them together.
 
 on:
   pull_request:
+    paths:
+      - "NineRingsKit/**"
+      - "NineRings/**"
+      - "NineRings.xcodeproj/**"
+      - ".github/workflows/checks.yml"
+  push:
+    branches:
+      - main
     paths:
       - "NineRingsKit/**"
       - "NineRings/**"

@@ -123,7 +123,7 @@ To open the app where ring 2's move begins, with that move on the slider, launch
 
 ## Checks on GitHub
 
-A pull request that touches the package, the app or the project runs the package's tests and builds the app for the Mac and for iPhone and iPad (`.github/workflows/checks.yml`), on the Xcode the project is developed with. It can also be started by hand from the Actions tab.
+A pull request that touches the package, the app or the project runs the package's tests and builds the app for the Mac and for iPhone and iPad (`.github/workflows/checks.yml`), on the Xcode the project is developed with. The same checks run again on `main` after each merge, because two pull requests that each pass alone can still fail together. They can also be started by hand from the Actions tab.
 
 ## Seeing the app
 
