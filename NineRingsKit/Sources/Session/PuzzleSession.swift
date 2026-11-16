@@ -214,7 +214,8 @@ public struct PuzzleSession: Sendable, Equatable {
         if progress >= 1 {
             playNext()
         } else {
-            if progress <= 0 { direction = .forward }
+            // Forward even when an undo was paused part way: play makes the move, undo unmakes it.
+            direction = .forward
             isPlaying = true
         }
     }

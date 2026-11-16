@@ -4,7 +4,7 @@ import Testing
 @testable import Session
 
 /// The checks are written so that they stay true as more moves are written: where a test needs a move that is
-/// not written yet, it looks for one, and says so when there is none left.
+/// not written yet, it looks for one, and is skipped, saying so, when there is none left.
 @Suite struct PuzzleSessionTests {
     private let ringOneOff = PuzzleState.allOn.moving(1)
     private let ringTwoOff = PuzzleState.allOn.moving(2)
@@ -129,7 +129,8 @@ import Testing
         #expect(session.markers.allSatisfy { !$0.isBlocking && !$0.isRefused })
     }
 
-    @Test func aLegalMoveThatIsNotWrittenDoesNotPlay() throws {
+    @Test(.enabled(if: UnwrittenMove.nearest() != nil, "every move reachable from every ring on is written"))
+    func aLegalMoveThatIsNotWrittenDoesNotPlay() throws {
         let found = try #require(UnwrittenMove.nearest(), "every move reachable from every ring on is written")
         var session = PuzzleSession()
         for ring in found.path {
