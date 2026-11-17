@@ -1,6 +1,6 @@
 name: Checks
 
-# The package's tests, and a build of the app for the Mac and for iPhone and iPad.
+# The package's tests, the store tools' tests, and a build of the app for the Mac and for iPhone and iPad.
 # They run on the Xcode that the project is developed with, so a result here means the same as one at home.
 # They run on every pull request, and again on main after each merge: two pull requests that each pass alone
 # can still fail together, and only a run on main checks them together.
@@ -11,6 +11,7 @@ on:
       - "NineRingsKit/**"
       - "NineRings/**"
       - "NineRings.xcodeproj/**"
+      - "StoreTools/**"
       - ".github/workflows/checks.yml"
   push:
     branches:
@@ -19,6 +20,7 @@ on:
       - "NineRingsKit/**"
       - "NineRings/**"
       - "NineRings.xcodeproj/**"
+      - "StoreTools/**"
       - ".github/workflows/checks.yml"
   workflow_dispatch:
 
@@ -42,6 +44,11 @@ jobs:
 
       - name: Test the package
         run: swift test --package-path NineRingsKit -c release -Xswiftc -enable-testing
+
+      # The App Store pictures' tools: that every moment of the series is a state the rules allow, the app's own reading
+      # of the store-capture options, and the composer.
+      - name: Test the store tools
+        run: swift test --package-path StoreTools
 
       - name: Build the app for the Mac
         run: xcodebuild -project NineRings.xcodeproj -scheme NineRings -destination 'platform=macOS' build CODE_SIGNING_ALLOWED=NO

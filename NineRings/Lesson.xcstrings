@@ -1,155 +1,155 @@
 {
-  "sourceLanguage": "en",
-  "strings": {
-    "lesson.downThroughTheSlot": {
-      "comment": "Lesson, step 7 of 12. Ring 3's move goes on from where step 6 stopped: ring 3 goes over the tip and down through the slot, and the sword comes back. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 3 swings over the tip and goes down through the slot, round ring 2’s rod. It can do this only because ring 2 is on: ring 2’s rod runs through ring 3 and stands in the slot. Then the sword comes back."
+  "sourceLanguage" : "en",
+  "strings" : {
+    "lesson.downThroughTheSlot" : {
+      "comment" : "Lesson, step 7 of 12. Ring 3's move goes on from where step 6 stopped: ring 3 goes over the tip and down through the slot, and the sword comes back. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ring 3 swings over the tip and goes down through the slot, round ring 2’s rod. It can do this only because ring 2 is on: ring 2’s rod runs through ring 3 and stands in the slot. Then the sword comes back."
           }
         }
       }
     },
-    "lesson.goingBackOn": {
-      "comment": "Lesson, step 8 of 12. Two moves play one after the other: ring 1 goes back on, then ring 2 comes off. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 1 goes back on, along the same path it came off by, played backwards. Now ring 2 can come off, because ring 1 is on. It comes off the same way ring 3 did: ring 1 keeps still, and ring 2 goes down through the slot round ring 1’s rod."
+    "lesson.goingBackOn" : {
+      "comment" : "Lesson, step 8 of 12. Two moves play one after the other: ring 1 goes back on, then ring 2 comes off. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ring 1 goes back on, along the same path it came off by, played backwards. Now ring 2 can come off, because ring 1 is on. It comes off the same way ring 3 did: ring 1 keeps still, and ring 2 goes down through the slot round ring 1’s rod."
           }
         }
       }
     },
-    "lesson.ringOneOff": {
-      "comment": "Lesson, step 4 of 12. Ring 1 comes off, from every ring on. Afterwards ring 1 hangs below the sword and its bead hangs lower than the others. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 1 can always move. It goes over the tip and down through the slot. A ring that is off hangs below the sword, and its bead hangs lower than the others."
+    "lesson.ringOneOff" : {
+      "comment" : "Lesson, step 4 of 12. Ring 1 comes off, from every ring on. Afterwards ring 1 hangs below the sword and its bead hangs lower than the others. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ring 1 can always move. It goes over the tip and down through the slot. A ring that is off hangs below the sword, and its bead hangs lower than the others."
           }
         }
       }
     },
-    "lesson.ringOneOffAgain": {
-      "comment": "Lesson, step 9 of 12. Ring 1 comes off. Afterwards rings 1 to 3 are off and rings 4 to 9 are on. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 1 comes off again. Now rings 1, 2 and 3 are off, so ring 4 is the first ring on the sword and ring 5 is the second."
+    "lesson.ringOneOffAgain" : {
+      "comment" : "Lesson, step 9 of 12. Ring 1 comes off. Afterwards rings 1 to 3 are off and rings 4 to 9 are on. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ring 1 comes off again. Now rings 1, 2 and 3 are off, so ring 4 is the first ring on the sword and ring 5 is the second."
           }
         }
       }
     },
-    "lesson.rodsAndBar": {
-      "comment": "Lesson, step 2 of 12. The toy rests with every ring on, seen from the side. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "A rod hangs from each ring, passes down through a hole in the bar, and ends in a bead. Every rod but the last also passes through the ring after it. This is what links the rings together."
+    "lesson.rodsAndBar" : {
+      "comment" : "Lesson, step 2 of 12. The toy rests with every ring on, seen from the side. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A rod hangs from each ring, passes down through a hole in the bar, and ends in a bead. Every rod but the last also passes through the ring after it. This is what links the rings together."
           }
         }
       }
     },
-    "lesson.rule": {
-      "comment": "Lesson, step 5 of 12. The toy rests with ring 1 off and rings 2 to 9 on. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Every other ring follows one rule: it can move only when the ring just before it is on and every ring before that one is off. So ring 3 can move now, because ring 2 is on and ring 1 is off. Ring 2 can’t move, because ring 1 is off."
+    "lesson.rule" : {
+      "comment" : "Lesson, step 5 of 12. The toy rests with ring 1 off and rings 2 to 9 on. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every other ring follows one rule: it can move only when the ring just before it is on and every ring before that one is off. So ring 3 can move now, because ring 2 is on and ring 1 is off. Ring 2 can’t move, because ring 1 is off."
           }
         }
       }
     },
-    "lesson.sameMoveFurtherAlong": {
-      "comment": "Lesson, step 10 of 12. Ring 5 comes off, the same move as ring 3's in steps 6 and 7, one ring further along. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring 5 can move, because ring 4 is on and rings 1 to 3 are off. It comes off the same way ring 3 did, round ring 4’s rod. Rings 6 to 9 only go down and up with the sword."
+    "lesson.sameMoveFurtherAlong" : {
+      "comment" : "Lesson, step 10 of 12. Ring 5 comes off, the same move as ring 3's in steps 6 and 7, one ring further along. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ring 5 can move, because ring 4 is on and rings 1 to 3 are off. It comes off the same way ring 3 did, round ring 4’s rod. Rings 6 to 9 only go down and up with the sword."
           }
         }
       }
     },
-    "lesson.sword": {
-      "comment": "Lesson, step 3 of 12. The toy rests with every ring on, seen from above. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Seen from above, the sword is one wire with two rails that meet at the tip. The narrow gap between the rails is the slot, and the rods stand in it. Ring 9 is nearest the other end, the grip."
+    "lesson.sword" : {
+      "comment" : "Lesson, step 3 of 12. The toy rests with every ring on, seen from above. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seen from above, the sword is one wire with two rails that meet at the tip. The narrow gap between the rails is the slot, and the rods stand in it. Ring 9 is nearest the other end, the grip."
           }
         }
       }
     },
-    "lesson.swordMovesAway": {
-      "comment": "Lesson, step 6 of 12. Ring 3 begins to come off: the sword slides back and goes down, taking rings 3 to 9 with it, and the move stops there. Rings 1 and 2 do not move. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Watch ring 3 come off. Rings 1 and 2 keep still while the sword slides back toward the grip and goes down, away from ring 2. The sword can slide back past ring 1 because ring 1 is off, so its rod is out of the slot."
+    "lesson.swordMovesAway" : {
+      "comment" : "Lesson, step 6 of 12. Ring 3 begins to come off: the sword slides back and goes down, taking rings 3 to 9 with it, and the move stops there. Rings 1 and 2 do not move. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch ring 3 come off. Rings 1 and 2 keep still while the sword slides back toward the grip and goes down, away from ring 2. The sword can slide back past ring 1 because ring 1 is off, so its rod is out of the slot."
           }
         }
       }
     },
-    "lesson.toy": {
-      "comment": "Lesson, step 1 of 12. The toy rests with every ring on, seen from the side. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This is the nine linked rings puzzle. Nine rings sit on a wire called the sword, with ring 1 nearest its tip. The aim is to take every ring off the sword."
+    "lesson.toy" : {
+      "comment" : "Lesson, step 1 of 12. The toy rests with every ring on, seen from the side. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is the nine linked rings puzzle. Nine rings sit on a wire called the sword, with ring 1 nearest its tip. The aim is to take every ring off the sword."
           }
         }
       }
     },
-    "lesson.twoMoves": {
-      "comment": "Lesson, step 11 of 12. The toy rests with rings 1, 2, 3 and 5 off and rings 4, 6, 7, 8 and 9 on. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "So the puzzle has only two moves: ring 1’s move, and the move of the second ring on the sword, which is the same for rings 2 to 9. Even so, taking all nine rings off takes 341 moves. Before a ring far from the tip can move, the rings before it must be set as the rule asks, and setting them takes many moves of their own."
+    "lesson.twoMoves" : {
+      "comment" : "Lesson, step 11 of 12. The toy rests with rings 1, 2, 3 and 5 off and rings 4, 6, 7, 8 and 9 on. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "So the puzzle has only two moves: ring 1’s move, and the move of the second ring on the sword, which is the same for rings 2 to 9. Even so, taking all nine rings off takes 341 moves. Before a ring far from the tip can move, the rings before it must be set as the rule asks, and setting them takes many moves of their own."
           }
         }
       }
     },
-    "lesson.yourTurn": {
-      "comment": "Lesson, step 12 of 12, the last. The toy rests as at step 11. 'Tap' on iPhone and iPad, 'Click' on the Mac. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "variations": {
-            "device": {
-              "mac": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "The six moves in this lesson are the first six of those 341. Now try it yourself: click a ring to move it. If a ring can’t move, the app tells you why."
+    "lesson.yourTurn" : {
+      "comment" : "Lesson, step 12 of 12, the last. The toy rests as at step 11. 'Tap' on iPhone and iPad, 'Click' on the Mac. Use the same word for each part as in the rest of the app: sword (the wire the rings sit on), tip (its rounded end), grip (its other end), rails (its two sides), slot (the gap between the rails), rod (the wire that hangs from a ring), bar (the flat piece with nine holes), bead (the ball at a rod's end). Rings are numbered 1 to 9 from the tip; 'before' means a lower number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "device" : {
+              "mac" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The six moves in this lesson are the first six of those 341. Now try it yourself: click a ring to move it. If a ring can’t move, the app tells you why."
                 }
               },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "The six moves in this lesson are the first six of those 341. Now try it yourself: tap a ring to move it. If a ring can’t move, the app tells you why."
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The six moves in this lesson are the first six of those 341. Now try it yourself: tap a ring to move it. If a ring can’t move, the app tells you why."
                 }
               }
             }
@@ -158,5 +158,5 @@
       }
     }
   },
-  "version": "1.0"
+  "version" : "1.0"
 }

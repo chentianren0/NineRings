@@ -125,7 +125,7 @@ struct ControlPanel: View {
                 Label { Text("Undo", comment: "Button that takes back the last move.") } icon: { Image(systemName: "arrow.uturn.backward") }
             }
             .disabled(!player.canUndo)
-            .keyboardShortcut("z", modifiers: .command)
+            .help(Text("Undo the last move", comment: "Tooltip on the Undo button."))
 
             Button(action: player.togglePlay) {
                 Label {
@@ -139,7 +139,9 @@ struct ControlPanel: View {
                 .font(.title)
             }
             .disabled(!player.canPlay && !player.isPlaying)
-            .keyboardShortcut(.space, modifiers: [])
+            .help(player.isPlaying
+                ? Text("Pause the move", comment: "Tooltip on the Pause button.")
+                : Text("Play the move", comment: "Tooltip on the Play button."))
 
             Slider(value: $player.progress, in: 0...1) {
                 Text("Progress", comment: "Spoken name of the slider that runs through the move.")
@@ -148,6 +150,7 @@ struct ControlPanel: View {
             }
             .labelsHidden()
             .disabled(!player.hasMove || player.lessonHoldsToy)
+            .help(Text("Drag to go through the move", comment: "Tooltip on the slider that runs through the move."))
 
             Menu {
                 Picker(selection: $player.speed) {
@@ -166,11 +169,13 @@ struct ControlPanel: View {
             .menuIndicator(.hidden)
             .fixedSize()
             .accessibilityLabel(Text("Speed", comment: "Menu of the speeds moves play at."))
+            .help(Text("Choose how fast moves play", comment: "Tooltip on the speed button."))
 
             Button(action: player.solve) {
                 Label { Text("Solve", comment: "Button that plays the moves left to take every ring off.") } icon: { Image(systemName: "forward.end.fill") }
             }
             .disabled(!player.canSolve)
+            .help(Text("Play the moves left to take every ring off", comment: "Tooltip on the Solve button."))
         }
         .labelStyle(.iconOnly)
         .buttonStyle(.borderless)

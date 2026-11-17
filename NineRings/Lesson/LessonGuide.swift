@@ -13,6 +13,9 @@ struct LessonGuide {
     let rig: CameraRig
     /// Hides the toy, makes the change, and shows the toy again. Where the toy is not on screen, it just makes it.
     var cover: (@escaping () -> Void) -> Void = { $0() }
+    /// Whether the lesson is wanted open now, as the panel is. A change made under the cover comes a moment later, so
+    /// it checks this again then: opened and closed within the cover, the lesson stays as the panel last asked.
+    var isWanted: () -> Bool = { true }
 
     /// Opens the lesson at its first step, with every ring on: at a launch option's step, the first time, in a debug
     /// build.
@@ -21,6 +24,7 @@ struct LessonGuide {
         let index = LessonLaunchOptions.takeStep() ?? 0
         rig.remember()
         cover {
+            guard isWanted(), !player.isInLesson else { return }
             player.openLesson(at: index)
             showStepView()
         }
@@ -30,6 +34,7 @@ struct LessonGuide {
     func close() {
         guard player.isInLesson else { return }
         let change = {
+            guard !isWanted(), player.isInLesson else { return }
             player.closeLesson()
             rig.flyBack()
         }
