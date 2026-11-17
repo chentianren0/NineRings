@@ -25,7 +25,7 @@ struct MainScreen: View {
                 rig.showDefault()
             }
             #if os(macOS)
-            .frame(minWidth: 360, minHeight: 420)
+            .frame(minHeight: 420)
             #endif
     }
 }

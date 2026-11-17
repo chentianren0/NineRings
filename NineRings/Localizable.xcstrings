@@ -16,6 +16,9 @@
     "Back": {
       "comment": "Lesson button that goes to the step before."
     },
+    "Choose how fast moves play": {
+      "comment": "Tooltip on the speed button."
+    },
     "Click a ring to move it.": {
       "comment": "Status when nothing is moving, on the Mac. A ring is clicked in the 3D view or by its numbered button."
     },
@@ -27,6 +30,9 @@
     },
     "Done": {
       "comment": "Lesson button on the last step that closes the lesson."
+    },
+    "Drag to go through the move": {
+      "comment": "Tooltip on the slider that runs through the move."
     },
     "From Above": {
       "comment": "View menu item: the toy seen from above."
@@ -64,6 +70,9 @@
     "Pause": {
       "comment": "Button that stops the move part way."
     },
+    "Pause the move": {
+      "comment": "Tooltip on the Pause button."
+    },
     "Paused: ring %lld coming off — %@": {
       "comment": "Status while a ring's move is stopped part way. The first variable is the ring's number, the second the name of the stage."
     },
@@ -75,6 +84,12 @@
     },
     "Play Again": {
       "comment": "Lesson button that plays the step's move again from the start."
+    },
+    "Play the move": {
+      "comment": "Tooltip on the Play button."
+    },
+    "Play the moves left to take every ring off": {
+      "comment": "Tooltip on the Solve button."
     },
     "Progress": {
       "comment": "Spoken name of the slider that runs through the move."
@@ -126,6 +141,9 @@
     },
     "Undo": {
       "comment": "Button that takes back the last move."
+    },
+    "Undo the last move": {
+      "comment": "Tooltip on the Undo button."
     },
     "Undoing: ring %lld comes back off — %@": {
       "comment": "Status while undoing a move that put a ring on. The first variable is the ring's number, the second the name of the stage the move is in."

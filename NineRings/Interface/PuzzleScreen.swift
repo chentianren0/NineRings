@@ -34,6 +34,7 @@ struct PuzzleScreen: View {
             }
             .arrangementViewStyle(.overlay)
             .congratulation(player) { jump { player.reset() } }
+            .puzzleCommands(PuzzleActions(player: player, rig: rig, showsLesson: $showsLesson, lesson: lesson) { jump { player.reset() } })
             .navigationTitle(Text("Nine Rings", comment: "The window's title."))
             .toolbar(removing: .title)
             #if os(iOS)
@@ -44,6 +45,11 @@ struct PuzzleScreen: View {
                 LessonPanel(player: player, guide: lesson) { showsLesson = false }
                     .inspectorColumnWidth(min: 300, ideal: 360, max: 440)
             }
+            #if os(macOS)
+            // The window's least width: room for the toy, and with the lesson open, for the toy beside it (360 and the
+            // lesson's least, 300), so that the lesson never covers the toy it is about.
+            .frame(minWidth: showsLesson ? 660 : 360)
+            #endif
             .onChange(of: showsLesson, initial: true) { _, shows in
                 if shows { lesson.open() } else { lesson.close() }
             }
@@ -123,7 +129,6 @@ struct PuzzleScreen: View {
             } label: {
                 Text("Standard View", comment: "View menu item: back to the view the toy is first seen from.")
             }
-            .keyboardShortcut("0", modifiers: .command)
             Divider()
             ForEach(CameraPreset.allCases) { preset in
                 Button {
@@ -131,7 +136,6 @@ struct PuzzleScreen: View {
                 } label: {
                     Text(preset.viewMenuTitle)
                 }
-                .keyboardShortcut(preset.viewShortcut, modifiers: .command)
             }
         } label: {
             Label { Text("View", comment: "Toolbar menu of the places to see the toy from.") } icon: { Image(systemName: "cube") }
@@ -151,7 +155,8 @@ struct PuzzleScreen: View {
     }
 }
 
-private extension CameraPreset {
+/// The places to see the toy from, as the toolbar's View menu and the menu bar's View menu name them.
+extension CameraPreset {
     var viewMenuTitle: LocalizedStringResource {
         switch self {
         case .side: LocalizedStringResource("From the Side", comment: "View menu item: the toy seen from the side.")

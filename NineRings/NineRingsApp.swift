@@ -3,6 +3,10 @@ import SwiftUI
 @main
 struct NineRingsApp: App {
     init() {
+        #if os(macOS)
+        // One window, so no window tabs, and no tab items in the View and Window menus.
+        NSWindow.allowsAutomaticWindowTabbing = false
+        #endif
         #if DEBUG
         if let request = Capture.request {
             Task { await Capture.run(request) }
@@ -21,9 +25,12 @@ struct NineRingsApp: App {
             #endif
         }
         .defaultSize(width: 1100, height: 720)
-        #if os(macOS)
-        .commands { AboutCommand() }
-        #endif
+        .commands {
+            PuzzleCommands()
+            #if os(macOS)
+            AboutCommand()
+            #endif
+        }
 
         #if os(macOS)
         Settings {
