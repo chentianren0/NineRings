@@ -14,6 +14,7 @@ struct LessonPanel: View {
 
     /// Whether VoiceOver's focus is on the panel's heading: it goes there when the lesson opens beside the toy.
     @AccessibilityFocusState private var headingFocused: Bool
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Group {
@@ -49,6 +50,12 @@ struct LessonPanel: View {
                     }
                     .buttonStyle(.bordered)
                 }
+                if dynamicTypeSize.isAccessibilitySize {
+                    // At the accessibility sizes Back and Next, stacked, would take most of a half-height sheet: they
+                    // come after the text, so that the text has the room.
+                    navigation(page)
+                        .padding(.top, 8)
+                }
             }
             .padding(20)
         }
@@ -57,9 +64,11 @@ struct LessonPanel: View {
         .scrollBounceBehavior(.basedOnSize)
         // A bar, so that text scrolled under the buttons fades under them rather than showing through.
         .safeAreaBar(edge: .bottom, spacing: 0) {
-            navigation(page)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
+            if !dynamicTypeSize.isAccessibilitySize {
+                navigation(page)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+            }
         }
         .animation(.easeInOut(duration: 0.2), value: page.index)
         .onChange(of: page.index) {

@@ -23,7 +23,12 @@ struct ControlPanel: View {
     @Bindable var player: Player
     let style: Style
     @State private var width: CGFloat = 0
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    /// The largest text size the panel follows. Larger text would make the panel cover the toy on the smallest screens,
+    /// the phone held sideways and the closed iPhone Duo; past it the panel keeps its size, and the ring buttons and
+    /// the controls show their Large Content Viewer, as the system's bars do. The screens that are text (the lesson,
+    /// the welcome page, settings, About, the congratulation) follow every size.
+    static let largestTextSize = DynamicTypeSize.xxxLarge
 
     /// The width the ring buttons take when they share a row with the controls.
     private static let ringsInRow: CGFloat = 356
@@ -32,11 +37,9 @@ struct ControlPanel: View {
     private static let rowSpacing: CGFloat = 20
     private static let padding: CGFloat = 16
 
-    /// Whether the panel is wide enough for the ring buttons and the controls in one row. At the accessibility text
-    /// sizes the controls grow with the text, so they take a row of their own.
+    /// Whether the panel is wide enough for the ring buttons and the controls in one row.
     private var isOneRow: Bool {
-        style == .floating && !dynamicTypeSize.isAccessibilitySize
-            && width >= Self.ringsInRow + Self.rowSpacing + Self.transportInRow + 2 * Self.padding
+        style == .floating && width >= Self.ringsInRow + Self.rowSpacing + Self.transportInRow + 2 * Self.padding
     }
 
     var body: some View {
@@ -68,6 +71,7 @@ struct ControlPanel: View {
         .padding(Self.padding)
         .frame(maxWidth: .infinity)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        .dynamicTypeSize(...Self.largestTextSize)
     }
 
     /// The ring buttons; dimmed while the lesson holds the toy, since asking for a ring then does nothing. (What is said
@@ -99,9 +103,7 @@ struct ControlPanel: View {
     /// Floating, it goes on saying what it said while a refusal shows in the bubble above; beside the toy, it says the
     /// refusal itself.
     private func caption(lines: Int) -> some View {
-        // At the accessibility text sizes a line holds fewer words: one more line, so that the sentence is not cut.
-        let lines = dynamicTypeSize.isAccessibilitySize ? lines + 1 : lines
-        return ZStack(alignment: .topLeading) {
+        ZStack(alignment: .topLeading) {
             Text(verbatim: String(repeating: "\n", count: lines - 1) + " ").hidden().accessibilityHidden(true)
             if style == .beside, let refusal {
                 RefusalLabel(text: refusal)
@@ -121,9 +123,10 @@ struct ControlPanel: View {
     }
 
     private var transport: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: Self.transportSpacing) {
             Button(action: player.undo) {
                 Label { Text("Undo", comment: "Button that takes back the last move.") } icon: { Image(systemName: "arrow.uturn.backward") }
+                    .touchTarget()
             }
             .disabled(!player.canUndo)
             .help(Text("Undo the last move", comment: "Tooltip on the Undo button."))
@@ -138,6 +141,7 @@ struct ControlPanel: View {
                         .contentTransition(.symbolEffect(.replace))
                 }
                 .font(.title)
+                .touchTarget()
             }
             .disabled(!player.canPlay && !player.isPlaying)
             .help(player.isPlaying
@@ -177,8 +181,11 @@ struct ControlPanel: View {
                 Text("\(player.speed.factor, format: .number)×", comment: "The speed button's label: how many times the normal speed moves play at, such as 0.5×.")
                     .font(.subheadline.monospacedDigit())
                     .frame(minWidth: 36)
+                    .touchTarget()
             }
             .menuIndicator(.hidden)
+            // In the primary colour: the tint, at this text size, is under the contrast text needs.
+            .tint(.primary)
             .fixedSize()
             .accessibilityLabel(Text("Speed", comment: "Menu of the speeds moves play at."))
             .help(Text("Choose how fast moves play", comment: "Tooltip on the speed button."))
@@ -195,11 +202,13 @@ struct ControlPanel: View {
 
             Button(action: player.solve) {
                 Label { Text("Solve", comment: "Button that plays the moves left to take every ring off.") } icon: { Image(systemName: "forward.end.fill") }
+                    .touchTarget()
             }
             .disabled(!player.canSolve)
             .help(Text("Play the moves left to take every ring off", comment: "Tooltip on the Solve button."))
         }
         .labelStyle(.iconOnly)
+        .largeContentViewer()
         .buttonStyle(.borderless)
         .font(.title3)
         .controlSize(.large)
@@ -244,6 +253,41 @@ private struct RefusalLabel: View {
     }
 }
 
+extension ControlPanel {
+    /// The space between the controls under the rings: less on iPhone and iPad, where each control has a touch target
+    /// of 44 points around it.
+    fileprivate static var transportSpacing: CGFloat {
+        #if os(iOS)
+        4
+        #else
+        14
+        #endif
+    }
+}
+
+private extension View {
+    /// The least touch target Apple asks for on iPhone and iPad, 44 by 44 points, around a small control.
+    @ViewBuilder
+    func touchTarget() -> some View {
+        #if os(iOS)
+        frame(minWidth: 44, minHeight: 44).contentShape(.rect)
+        #else
+        self
+        #endif
+    }
+
+    /// The Large Content Viewer for the controls, on iPhone and iPad: past the panel's largest text size, a long press
+    /// shows a control's symbol and name enlarged.
+    @ViewBuilder
+    func largeContentViewer() -> some View {
+        #if os(iOS)
+        accessibilityShowsLargeContentViewer()
+        #else
+        self
+        #endif
+    }
+}
+
 /// The reason a ring cannot move, above the floating panel, until the next request.
 struct RefusalBubble: View {
     let text: LocalizedStringResource
@@ -251,6 +295,7 @@ struct RefusalBubble: View {
     var body: some View {
         RefusalLabel(text: text)
             .font(.subheadline)
+            .dynamicTypeSize(...ControlPanel.largestTextSize)
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
             .frame(maxWidth: .infinity, alignment: .leading)
