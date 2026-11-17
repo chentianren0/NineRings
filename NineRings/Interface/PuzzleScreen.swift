@@ -34,7 +34,10 @@ struct PuzzleScreen: View {
     /// wide.
     @State private var windowSize: CGSize = .zero
     /// How high the lesson's sheet stands on a phone.
-    @State private var lessonDetent: PresentationDetent = .medium
+    @State private var lessonDetent: PresentationDetent = Self.halfDetent
+    /// The lesson's sheet on a phone stops half way up, and never lower than about 400 points, where the screen allows,
+    /// so that on a small screen, such as the closed iPhone Duo's, the step's text has room.
+    private static let halfDetent = PresentationDetent.custom(LessonSheetDetent.self)
     #endif
 
     var body: some View {
@@ -65,18 +68,21 @@ struct PuzzleScreen: View {
             .toolbarTitleDisplayMode(.inline)
             #endif
             .toolbar { toolbar }
-            .inspector(isPresented: $showsLesson) {
+            // Only the person opens the lesson (the toolbar's button, the menu bar, Help): the inspector's own binding
+            // may close it, as a swipe down closes the sheet, but never open it, so that the system restoring an
+            // inspector's state from the last run cannot bring the lesson back by itself.
+            .inspector(isPresented: Binding(get: { showsLesson }, set: { if !$0 { showsLesson = false } })) {
                 LessonPanel(player: player, guide: lesson) { showsLesson = false }
                     .inspectorColumnWidth(min: 300, ideal: 360, max: 440)
                     #if os(iOS)
                     // On a phone the inspector is a sheet. It stops half way up, so that the toy the text speaks of
                     // stays in view above it and can still be turned and tapped; it can be pulled up to read.
-                    .presentationDetents([tryingDetent, .medium, .large], selection: $lessonDetent)
-                    .presentationBackgroundInteraction(.enabled(upThrough: .medium))
+                    .presentationDetents([tryingDetent, Self.halfDetent, .large], selection: $lessonDetent)
+                    .presentationBackgroundInteraction(.enabled(upThrough: Self.halfDetent))
                     .presentationContentInteraction(.scrolls)
                     // When the last step gives the toy back to try, the sheet steps down to leave room for it.
                     .onChange(of: player.lessonHoldsToy, initial: true) { _, holds in
-                        lessonDetent = holds ? .medium : tryingDetent
+                        lessonDetent = holds ? Self.halfDetent : tryingDetent
                     }
                     #endif
                     .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { lessonFrame = $0 }
@@ -98,6 +104,11 @@ struct PuzzleScreen: View {
                 if shows { lesson.open() } else { lesson.close() }
             }
             .onAppear { hasAppeared = true }
+            // The toy is the lesson's only while its panel is open. Should the panel go without closing the lesson, as
+            // when it goes in the middle of the cover's change, the toy comes back to the person at once.
+            .onChange(of: player.lessonPage != nil) { _, inLesson in
+                if inLesson, !showsLesson { lesson.closeNow() }
+            }
             #if os(iOS)
             // Settings hold little: on a phone the sheet stops at half height. About, with its text and links, is a
             // full sheet. On an iPad each is the system's form sheet.
@@ -359,3 +370,12 @@ private struct Controls: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
     }
 }
+
+#if os(iOS)
+/// Half the screen, or about 400 points where half is less, but never more than about two thirds.
+private struct LessonSheetDetent: CustomPresentationDetent {
+    static func height(in context: Context) -> CGFloat? {
+        max(context.maxDetentValue / 2, min(400, context.maxDetentValue * 0.62))
+    }
+}
+#endif

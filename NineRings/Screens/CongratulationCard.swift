@@ -46,6 +46,23 @@ struct CongratulationCard: View {
         .frame(maxWidth: 820)
     }
 
+    /// A row whose words take two or three lines: on a short, wide screen, such as a phone held sideways, where the
+    /// one-line row is too wide and the stacked card would reach down to the controls.
+    private var wrappedRow: some View {
+        HStack(spacing: 16) {
+            seal
+            words(alignment: .leading)
+                .frame(maxWidth: 240, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
+            HStack(spacing: 12) { buttons }
+                .fixedSize()
+        }
+        .padding(.vertical, 14)
+        .padding(.horizontal, 20)
+        .frame(maxWidth: 820)
+    }
+
     /// One low row where the window is wide enough, so that it stays clear of the sword; stacked where it is not. At the
     /// accessibility text sizes always stacked, and scrolling: measured to fit a row, a scroll view would take its whole
     /// height and never scroll.
@@ -56,6 +73,7 @@ struct CongratulationCard: View {
         } else {
             ViewThatFits(in: .horizontal) {
                 row
+                wrappedRow
                 stacked
             }
         }
