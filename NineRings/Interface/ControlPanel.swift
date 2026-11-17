@@ -7,12 +7,16 @@ import SwiftUI
 /// Floating over the toy, the panel keeps one height, so that the toy, framed above it, never jumps: the line keeps
 /// its lines, and the reason a ring cannot move shows in a bubble above the panel. Where the panel is wide enough,
 /// the ring buttons and the row of controls sit side by side under a one-line caption, so that the panel stays low:
-/// the toy is long and low, and a wide, short window needs its height for it. In a column beside the toy, the line
-/// takes as many lines as it needs and says the reason itself.
+/// the toy is long and low, and a wide, short window needs its height for it.
+///
+/// Beside the toy, in a half of its own on a half-folded iPhone Duo, the controls have room: the buttons are larger,
+/// and the line says the reason a ring cannot move itself.
 struct ControlPanel: View {
     enum Style {
+        /// Over the toy, at the bottom of the window.
         case floating
-        case column
+        /// In a space of its own, beside the toy.
+        case beside
     }
 
     @Bindable var player: Player
@@ -33,14 +37,14 @@ struct ControlPanel: View {
 
     var body: some View {
         Group {
-            if style == .column {
-                VStack(alignment: .leading, spacing: 20) {
-                    caption(lines: nil)
+            switch style {
+            case .beside:
+                VStack(alignment: .leading, spacing: 28) {
+                    caption(lines: 3)
                     rings
                     transport
-                    Spacer(minLength: 0)
                 }
-            } else if isOneRow {
+            case .floating where isOneRow:
                 VStack(alignment: .leading, spacing: 10) {
                     caption(lines: 1)
                     HStack(spacing: Self.rowSpacing) {
@@ -49,7 +53,7 @@ struct ControlPanel: View {
                         transport
                     }
                 }
-            } else {
+            case .floating:
                 VStack(alignment: .leading, spacing: 12) {
                     caption(lines: 2)
                     rings
@@ -69,7 +73,7 @@ struct ControlPanel: View {
     }
 
     private var rings: some View {
-        RingButtons(markers: player.markers) { player.tap($0) }
+        RingButtons(markers: player.markers, diameter: style == .beside ? 52 : 40) { player.tap($0) }
     }
 
     /// Why the last ring asked for could not move, when that is the news.
@@ -80,27 +84,26 @@ struct ControlPanel: View {
 
     private var refusal: LocalizedStringResource? { Self.refusal(in: player.status) }
 
-    private var captionText: LocalizedStringResource {
-        if style == .floating, refusal != nil {
-            return Sentences.status(.resting(player.poseKey.state))
-        }
-        return Sentences.status(player.status)
-    }
-
-    /// The line that says what is happening, holding the place of `lines` lines, or as many as it needs when nil.
-    private func caption(lines: Int?) -> some View {
+    /// The line that says what is happening, holding the place of `lines` lines, so that the panel keeps its height.
+    /// Floating, it goes on saying what it said while a refusal shows in the bubble above; beside the toy, it says the
+    /// refusal itself.
+    private func caption(lines: Int) -> some View {
         ZStack(alignment: .topLeading) {
-            if let lines {
-                // Holds the lines' place, so that the panel keeps its height.
-                Text(verbatim: String(repeating: "\n", count: lines - 1) + " ").hidden().accessibilityHidden(true)
+            Text(verbatim: String(repeating: "\n", count: lines - 1) + " ").hidden().accessibilityHidden(true)
+            if style == .beside, let refusal {
+                RefusalLabel(text: refusal)
+                    .lineLimit(lines)
+                    .transition(.opacity)
+            } else {
+                Text(style == .floating && refusal != nil ? Sentences.status(.resting(player.poseKey.state)) : Sentences.status(player.status))
+                    .lineLimit(lines)
+                    .contentTransition(.opacity)
+                    .transition(.opacity)
             }
-            Text(captionText)
-                .foregroundStyle(style == .column && refusal != nil ? AnyShapeStyle(.orange) : AnyShapeStyle(.primary))
-                .lineLimit(lines)
-                .contentTransition(.opacity)
         }
-        .font(.subheadline)
+        .font(style == .beside ? .body : .subheadline)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .animation(.snappy(duration: 0.25), value: refusal == nil)
         .accessibilityElement(children: .combine)
     }
 
@@ -164,8 +167,8 @@ struct ControlPanel: View {
     }
 }
 
-/// The reason a ring cannot move, above the floating panel, until the next request.
-struct RefusalBubble: View {
+/// The reason a ring cannot move, with a raised hand.
+private struct RefusalLabel: View {
     let text: LocalizedStringResource
 
     var body: some View {
@@ -175,11 +178,20 @@ struct RefusalBubble: View {
             Image(systemName: "hand.raised.fill")
                 .foregroundStyle(.orange)
         }
-        .font(.subheadline)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: .rect(cornerRadius: 20))
-        .accessibilityElement(children: .combine)
+    }
+}
+
+/// The reason a ring cannot move, above the floating panel, until the next request.
+struct RefusalBubble: View {
+    let text: LocalizedStringResource
+
+    var body: some View {
+        RefusalLabel(text: text)
+            .font(.subheadline)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .glassEffect(.regular, in: .rect(cornerRadius: 20))
+            .accessibilityElement(children: .combine)
     }
 }
