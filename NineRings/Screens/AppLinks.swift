@@ -3,8 +3,8 @@ import SwiftUI
 /// The app's two addresses on the web, in one place: its privacy policy, and where to ask for help or report a
 /// problem. Both open in the browser. On the Mac they are in the Help menu; on iPhone and iPad, in About.
 enum AppLinks {
-    static let privacyPolicy = URL(string: "https://github.com/chentianren0/new_nine_rings_nov/blob/main/docs/privacy.md")!
-    static let support = URL(string: "https://github.com/chentianren0/new_nine_rings_nov/issues")!
+    static let privacyPolicy = URL(string: "https://github.com/chentianren0/NineRings/blob/main/docs/privacy.md")!
+    static let support = URL(string: "https://github.com/chentianren0/NineRings/issues")!
 }
 
 #if os(macOS)

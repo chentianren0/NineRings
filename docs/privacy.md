@@ -11,6 +11,6 @@ The app's Support and Privacy Policy links open these pages in your browser. The
 
 ## Questions
 
-Ask on the project's issues page: https://github.com/chentianren0/new_nine_rings_nov/issues. What you write there is public, and GitHub's own privacy statement applies to it.
+Ask on the project's issues page: https://github.com/chentianren0/NineRings/issues. What you write there is public, and GitHub's own privacy statement applies to it.
 
 Last updated: 17 November 2026.
