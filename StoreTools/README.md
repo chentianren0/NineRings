@@ -11,7 +11,8 @@ window, composes each store picture at Apple's exact size, checks it, and render
 options: languages, captions on or off, a bezel, light or dark for all, another folder, compose again without capturing.
 
 The Mac's pictures come from the app's own window. The iPhone, iPad and iPhone Duo pictures come from the `StoreShots`
-UI tests on each simulator (`--devices iphone-6.3,ipad-13,…`); see `StoreShots.md`. They are built but not yet run.
+UI tests on each simulator (`--devices iphone-6.3,ipad-13,…`); see `StoreShots.md`. The preview videos come from
+`scripts/store-preview.sh`, also described there.
 
 ## The parts
 

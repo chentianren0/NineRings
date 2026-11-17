@@ -17,6 +17,8 @@ import StoreComposer
 //       What App Store Connect would refuse in each file.
 //   store-compose captions --captions Captions.xcstrings --languages en,fr,ja
 //       Which captions each language still lacks.
+//   store-compose devices --manifest Shots.json
+//       The devices' ids, in the manifest's order, one per line.
 //   store-compose device --manifest Shots.json --device duo-inner
 //       The device's fields, one `name=value` per line, for the script.
 //   store-compose collect --from DIR --to DIR
@@ -123,8 +125,11 @@ func run() throws -> Bool {
                     throw ComposerError.wrongCaptureSize(input, size, expected: "\(window * 2), the window at the Mac's 2x scale")
                 }
             case .simulator:
-                if size != device.size, size != device.size.rotated {
-                    throw ComposerError.wrongCaptureSize(input, size, expected: "\(device.size), the simulator's screen")
+                // Turned is wrong too: the pixels of a turned device's screenshot, kept without their orientation. A
+                // pixel short is right: the UI test's screenshot of the Duo's inner display is 2006 x 2852 of its
+                // 2007 x 2853, and the capture is scaled into its place under the caption anyway.
+                if abs(size.width - device.size.width) > 1 || abs(size.height - device.size.height) > 1 {
+                    throw ComposerError.wrongCaptureSize(input, size, expected: "\(device.size), the simulator's screen, upright")
                 }
             }
             var caption: String?
@@ -171,6 +176,10 @@ func run() throws -> Bool {
             let missing = catalog.keys.filter { !catalog.isTranslated($0, into: language) }
             print(missing.isEmpty ? "\(language): every caption" : "\(language): lacks \(missing.joined(separator: ", ")) (falls back to \(catalog.sourceLanguage))")
         }
+        return true
+
+    case "devices":
+        for device in try Manifest(contentsOf: try options.url("manifest")).devices { print(device.id) }
         return true
 
     case "device":
