@@ -139,7 +139,15 @@ struct ControlPanel: View {
             }
             .labelsHidden()
             .disabled(!player.hasMove)
+            // Its spoken value is the stage's name rather than a number, and a swipe goes from stage to stage.
             .accessibilityValue(stageValue)
+            .accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment: player.progress = min(player.progress + 0.1, 1)
+                case .decrement: player.progress = max(player.progress - 0.1, 0)
+                @unknown default: break
+                }
+            }
 
             Menu {
                 Picker(selection: $player.speed) {
