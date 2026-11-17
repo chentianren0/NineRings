@@ -1,17 +1,15 @@
 import SwiftUI
 
-/// The app's one window: the puzzle, and, when the design has a tab bar, tabs for the lesson and settings beside it.
+/// The app's one window: the puzzle, with the lesson and settings opening from its toolbar.
 ///
-/// The player and the camera live here, so that switching the design keeps the puzzle where it is.
+/// The player and the camera live here, so that they outlast any rebuilding of the screen below.
 struct MainScreen: View {
     @State private var player: Player
     @State private var rig: CameraRig
     #if DEBUG
-    @AppStorage(DesignKey.navigation) private var navigation = NavigationDesign.none
-    @AppStorage(DesignKey.tallView) private var tallView = TallViewDesign.side
+    @AppStorage(DesignKey.tallView) private var tallView = TallViewDesign.standard
     #else
-    private let navigation = NavigationDesign.none
-    private let tallView = TallViewDesign.side
+    private let tallView = TallViewDesign.standard
     #endif
 
     init() {
@@ -20,38 +18,13 @@ struct MainScreen: View {
     }
 
     var body: some View {
-        Group {
-            switch navigation {
-            case .none:
-                PuzzleScreen(player: player, rig: rig, hasTabs: false)
-            case .tabBar:
-                TabView {
-                    Tab { PuzzleScreen(player: player, rig: rig, hasTabs: true) } label: {
-                        Label { Text("Puzzle", comment: "Tab with the toy.") } icon: { Image(systemName: "circle.grid.3x3") }
-                    }
-                    Tab {
-                        let lesson = LessonGuide(player: player, rig: rig)
-                        NavigationStack { LessonPanel(player: player, guide: lesson) }
-                            .onAppear { lesson.open() }
-                            .onDisappear { lesson.close() }
-                    } label: {
-                        Label { Text("Lesson", comment: "Tab with the lesson on how the puzzle works.") } icon: { Image(systemName: "book") }
-                    }
-                    Tab {
-                        NavigationStack { SettingsPlaceholder() }
-                    } label: {
-                        Label { Text("Settings", comment: "Tab with the app's settings.") } icon: { Image(systemName: "gear") }
-                    }
-                }
-                .tabViewStyle(.sidebarAdaptable)
+        PuzzleScreen(player: player, rig: rig)
+            .onChange(of: tallView, initial: true) { _, tallView in
+                rig.defaultAngles = Framing.defaultAngles(tallView: tallView)
+                rig.showDefault()
             }
-        }
-        .onChange(of: tallView, initial: true) { _, tallView in
-            rig.defaultAngles = Framing.defaultAngles(tallView: tallView)
-            rig.showDefault()
-        }
-        #if os(macOS)
-        .frame(minWidth: 360, minHeight: 420)
-        #endif
+            #if os(macOS)
+            .frame(minWidth: 360, minHeight: 420)
+            #endif
     }
 }

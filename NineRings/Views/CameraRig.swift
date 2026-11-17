@@ -25,7 +25,8 @@ struct CameraAngles: Equatable {
 ///
 /// Until a gesture or a preset moves it, the camera shows the default view, which may depend on the shape of the
 /// view (a tall one may be seen from higher up than a wide one): while it does, a change of size frames the toy
-/// afresh from the default angles for the new shape. Once moved, a change of size only keeps the toy the same size.
+/// afresh from the default angles for the new shape, flying there when the angles change. Once moved, a change of
+/// size only keeps the toy the same size.
 ///
 /// The 3D view reads `camera` once a frame, after calling `advance(by:)`; nothing here is observed by SwiftUI.
 @MainActor
@@ -80,12 +81,20 @@ final class CameraRig {
             camera = framing(showsDefault ? defaultAngles(newViewport) : CameraAngles(.side), in: newViewport)
         } else if flight == nil {
             if showsDefault {
-                camera = framing(defaultAngles(newViewport), in: newViewport)
+                let angles = defaultAngles(newViewport)
+                if !old.isEmpty, angles != defaultAngles(old) {
+                    // The space has changed shape enough to want another view, as when a phone turns or a Duo
+                    // opens: fly there rather than jump.
+                    fly(to: nil)
+                } else {
+                    camera = framing(angles, in: newViewport)
+                }
             } else {
                 camera.refit(box, from: old, to: newViewport)
             }
         }
-        // During a flight, its destination follows the new size.
+        // During a flight, its destination follows the new size; a camera flown back to is kept the same size too.
+        if flight != nil, !old.isEmpty, !newViewport.isEmpty { flightCamera?.refit(box, from: old, to: newViewport) }
         hasBeenFramed = true
         revision += 1
     }
