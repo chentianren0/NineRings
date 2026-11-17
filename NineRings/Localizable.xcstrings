@@ -13,8 +13,20 @@
     "All rings are off. The puzzle is solved.": {
       "comment": "Status when every ring is off the sword."
     },
+    "Back": {
+      "comment": "Lesson button that goes to the step before."
+    },
     "Click a ring to move it.": {
       "comment": "Status when nothing is moving, on the Mac. A ring is clicked in the 3D view or by its numbered button."
+    },
+    "Close": {
+      "comment": "Button that closes the lesson."
+    },
+    "Close the lesson": {
+      "comment": "Tooltip on the lesson's Close button."
+    },
+    "Done": {
+      "comment": "Lesson button on the last step that closes the lesson."
     },
     "From Above": {
       "comment": "View menu item: the toy seen from above."
@@ -30,6 +42,9 @@
     },
     "Move ring %lld": {
       "comment": "Tooltip on a ring button. The variable is the ring's number."
+    },
+    "Next": {
+      "comment": "Lesson button that goes to the next step."
     },
     "Nine Rings": {
       "comment": "The window's title."
@@ -57,6 +72,9 @@
     },
     "Play": {
       "comment": "Button that plays the move on the slider."
+    },
+    "Play Again": {
+      "comment": "Lesson button that plays the step's move again from the start."
     },
     "Progress": {
       "comment": "Spoken name of the slider that runs through the move."
@@ -102,6 +120,9 @@
     },
     "Standard View": {
       "comment": "View menu item: back to the view the toy is first seen from."
+    },
+    "Step %lld of %lld": {
+      "comment": "Where the reader is in the lesson. The first variable is the step's number, the second how many steps there are."
     },
     "Tap a ring to move it.": {
       "comment": "Status when nothing is moving. A ring is tapped in the 3D view or by its numbered button."

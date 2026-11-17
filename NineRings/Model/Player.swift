@@ -35,7 +35,23 @@ final class Player {
     /// and the capture mode start. Every move plays when its ring is tapped.
     static let moves = MoveMotion.written
 
-    @ObservationIgnored private var session: PuzzleSession
+    /// The toy as the person plays it. While the lesson is open, it waits, and the lesson's toy is shown instead.
+    @ObservationIgnored private var ownSession: PuzzleSession
+    /// The lesson, while it is open.
+    @ObservationIgnored private var lesson: LessonRun?
+
+    /// The toy as it is shown: the lesson's while the lesson is open. A change made to it while the lesson is open
+    /// reaches the toy only on the step that gives the person's toy back, the last; on the others it does nothing.
+    private var session: PuzzleSession {
+        get { lesson?.toy ?? ownSession }
+        set {
+            if lesson != nil {
+                lesson?.useToy { $0 = newValue }
+            } else {
+                ownSession = newValue
+            }
+        }
+    }
 
     /// How far through the move on the slider the toy is. Setting it is what dragging the slider does.
     var progress: Double {
@@ -54,6 +70,8 @@ final class Player {
     private(set) var canPlay = false
     private(set) var canUndo = false
     private(set) var canSolve = false
+    /// Whether the slider may be dragged: there is a move on it, and the lesson, if open, leaves the toy free.
+    private(set) var hasMove = false
     var speed: PlaybackSpeed = .normal
 
     /// When playing was last moved on, so that the next step covers exactly the time since.
@@ -61,13 +79,13 @@ final class Player {
 
     /// A session with every ring on.
     init() {
-        session = PuzzleSession()
+        ownSession = PuzzleSession()
         publish()
     }
 
     /// A session at the start of `move`, with that move on the slider at `progress`.
     init(move: Move, progress: Double = 0) {
-        session = PuzzleSession(at: move, progress: progress)
+        ownSession = PuzzleSession(at: move, progress: progress)
         publish()
     }
 
@@ -90,8 +108,6 @@ final class Player {
         session.motion?.stage(at: session.progress).name ?? ""
     }
 
-    var hasMove: Bool { !stages.isEmpty }
-
     // MARK: Requests
 
     func tap(_ ring: Int) {
@@ -100,12 +116,12 @@ final class Player {
     }
 
     func togglePlay() {
-        session.togglePlay()
+        if lesson != nil { lesson?.togglePlay() } else { session.togglePlay() }
         publish()
     }
 
     func pause() {
-        session.pause()
+        if lesson != nil { lesson?.pause() } else { session.pause() }
         publish()
     }
 
@@ -121,12 +137,13 @@ final class Player {
 
     /// Back to every ring on, at once. The screen covers the toy while this happens.
     func reset() {
-        session.reset()
+        if lesson != nil { lesson?.reset() } else { session.reset() }
         publish()
     }
 
     /// Sets the toy where `move` begins and plays it. The screen covers the toy while it jumps there.
     func begin(at move: Move) {
+        lesson = nil
         session = PuzzleSession(at: move)
         session.togglePlay()
         publish()
@@ -141,7 +158,7 @@ final class Player {
         // One frame's step is capped, so that after a pause in the frames, such as time in the background, the move
         // carries on from where it was rather than jumping to its end.
         let seconds = min(Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18, 0.1)
-        session.advance(by: seconds * speed.factor)
+        if lesson != nil { lesson?.advance(by: seconds * speed.factor) } else { session.advance(by: seconds * speed.factor) }
         publish()
     }
 
@@ -153,8 +170,51 @@ final class Player {
         markers = session.markers
         status = session.status
         stages = session.stages
-        canPlay = session.canPlay
-        canUndo = session.canUndo
-        canSolve = session.canSolve
+        canPlay = lesson?.canPlay ?? session.canPlay
+        canUndo = lesson?.canUndo ?? session.canUndo
+        canSolve = lesson?.canSolve ?? session.canSolve
+        hasMove = lesson?.canScrub ?? !stages.isEmpty
+        lessonPage = lesson?.page
     }
+
+    // MARK: Lesson
+
+    /// The lesson's step and what can be done on it, while the lesson is open.
+    private(set) var lessonPage: LessonRun.Page?
+
+    var isInLesson: Bool { lesson != nil }
+
+    /// Whether the lesson holds the toy, so that ring taps, undo, solve and the slider do nothing: open, on a step
+    /// that shows something of its own rather than give the toy back.
+    var lessonHoldsToy: Bool { lessonPage.map { !$0.givesToyBack } ?? false }
+
+    /// Opens the lesson at step `index`, counted from 0, keeping the toy as it is to give back on closing. The screen
+    /// covers the toy while every ring goes on.
+    func openLesson(at index: Int = 0) {
+        guard lesson == nil else { return }
+        lesson = LessonRun(opening: ownSession, at: index)
+        publish()
+    }
+
+    /// Closes the lesson: the toy is as it was before, or, on the step that gave it back, as the person has it there.
+    func closeLesson() {
+        guard let lesson else { return }
+        ownSession = lesson.closingToy
+        self.lesson = nil
+        publish()
+    }
+
+    /// Goes to step `index` of the lesson and plays it from its start.
+    func goToLessonStep(_ index: Int) {
+        lesson?.go(to: index)
+        publish()
+    }
+
+    /// Whether going to step `index` moves the toy to another pose at once, so that the screen should cover it.
+    func lessonJumps(to index: Int) -> Bool {
+        lesson?.jumps(to: index) ?? false
+    }
+
+    /// Whether closing the lesson moves the toy to another pose at once.
+    var lessonClosingJumps: Bool { lesson?.closingJumps ?? false }
 }

@@ -30,7 +30,10 @@ struct MainScreen: View {
                         Label { Text("Puzzle", comment: "Tab with the toy.") } icon: { Image(systemName: "circle.grid.3x3") }
                     }
                     Tab {
-                        NavigationStack { LessonPlaceholder() }
+                        let lesson = LessonGuide(player: player, rig: rig)
+                        NavigationStack { LessonPanel(player: player, guide: lesson) }
+                            .onAppear { lesson.open() }
+                            .onDisappear { lesson.close() }
                     } label: {
                         Label { Text("Lesson", comment: "Tab with the lesson on how the puzzle works.") } icon: { Image(systemName: "book") }
                     }

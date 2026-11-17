@@ -11,7 +11,7 @@ import Testing
     private var movesPlayed: [Move] {
         steps.flatMap { step -> [Move] in
             switch step.show {
-            case .rest, .hold: []
+            case .rest, .hold, .givenBack: []
             case .play(let moves): moves
             case .finish(let move, _): [move]
             }
@@ -23,8 +23,8 @@ import Testing
     }
 
     @Test func eachStepStartsWhereTheLastEnded() {
-        for (before, after) in zip(steps, steps.dropFirst()) {
-            #expect(after.start == before.end, "\(after.key) starts where \(before.key) ended")
+        for (before, after) in zip(steps, steps.dropFirst()) where after.show != .givenBack {
+            #expect(after.start != nil && after.start == before.end, "\(after.key) starts where \(before.key) ended")
         }
         for step in steps {
             guard case .play(let moves) = step.show else { continue }
@@ -66,10 +66,16 @@ import Testing
                 #expect(motion.stage(at: progress).key == key, "at the hold the move is still in its stage")
                 #expect(progress > stage.start && progress < stage.end)
                 #expect(stage.end - progress < 1e-9, "the hold is at the stage's end")
-            case .rest, .play:
+            case .rest, .play, .givenBack:
                 #expect(step.heldProgress == nil)
             }
         }
+    }
+
+    /// Only the last step, "your turn", gives the person's own toy back; every other step shows a state of its own.
+    @Test func onlyTheLastStepGivesTheToyBack() {
+        #expect(steps.last?.show == .givenBack)
+        #expect(steps.dropLast().allSatisfy { $0.show != .givenBack && $0.start != nil && $0.end != nil })
     }
 
     @Test func keysAreDistinct() {

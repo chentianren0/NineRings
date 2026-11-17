@@ -1,23 +1,7 @@
 import SwiftUI
 
-// Stand-ins for the lesson and settings, which come in later steps, so that the structure around them can be tried
-// now. Their words are not translated: they will not ship.
-
-/// Where the lesson on how the puzzle works will be.
-struct LessonPlaceholder: View {
-    var body: some View {
-        ContentUnavailableView {
-            Label {
-                Text(verbatim: "Lesson")
-            } icon: {
-                Image(systemName: "book")
-            }
-        } description: {
-            Text(verbatim: "How the puzzle works comes here in a later step.")
-        }
-        .navigationTitle(Text(verbatim: "Lesson"))
-    }
-}
+// A stand-in for settings, which come in a later step, so that the structure around them can be tried now. Its
+// words are not translated: it will not ship.
 
 /// Where settings and About will be.
 struct SettingsPlaceholder: View {
