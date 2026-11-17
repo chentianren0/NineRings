@@ -19,20 +19,21 @@ struct LessonPlaceholder: View {
     }
 }
 
-/// Where settings and About will be: for now, the switches for sound and haptics.
+/// Where settings and About will be.
 struct SettingsPlaceholder: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.isPresented) private var isPresented
 
     var body: some View {
-        Form {
-            SoundSettingsSection()
-            Section {
-                Text(verbatim: "About comes here in a later step.")
-                    .foregroundStyle(.secondary)
+        ContentUnavailableView {
+            Label {
+                Text(verbatim: "Settings")
+            } icon: {
+                Image(systemName: "gear")
             }
+        } description: {
+            Text(verbatim: "Sound, haptics and About come here in a later step.")
         }
-        .formStyle(.grouped)
         .navigationTitle(Text(verbatim: "Settings"))
         #if os(iOS)
         .toolbar {

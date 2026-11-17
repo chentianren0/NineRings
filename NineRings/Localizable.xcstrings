@@ -25,9 +25,6 @@
     "From the Tip": {
       "comment": "View menu item: the toy seen end on, from the sword's tip."
     },
-    "Haptics": {
-      "comment": "Settings switch: whether the rings' moves are felt as taps on iPhone."
-    },
     "Lesson": {
       "comment": "Toolbar button that shows or hides the lesson on how the puzzle works."
     },
@@ -99,9 +96,6 @@
     },
     "Solve": {
       "comment": "Button that plays the moves left to take every ring off."
-    },
-    "Sounds": {
-      "comment": "Settings switch: whether the toy makes sounds as its rings move."
     },
     "Speed": {
       "comment": "Menu of the speeds moves play at."

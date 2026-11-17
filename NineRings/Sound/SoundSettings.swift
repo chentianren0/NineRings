@@ -1,28 +1,10 @@
-import SwiftUI
+import Foundation
 
-/// The keys the sound settings are kept under.
+/// The keys the settings screen keeps the sound switches under: both on when nothing is stored. The switches
+/// themselves belong to the settings screen.
 enum SoundKey {
-    static let sounds = "sound.enabled"
-    static let haptics = "haptics.enabled"
-}
-
-/// The switches for sound and haptics, both on at first. Haptics is offered only where the device has them.
-struct SoundSettingsSection: View {
-    @AppStorage(SoundKey.sounds) private var sounds = true
-    @AppStorage(SoundKey.haptics) private var haptics = true
-
-    var body: some View {
-        Section {
-            Toggle(isOn: $sounds) {
-                Text("Sounds", comment: "Settings switch: whether the toy makes sounds as its rings move.")
-            }
-            if Haptics.isSupported {
-                Toggle(isOn: $haptics) {
-                    Text("Haptics", comment: "Settings switch: whether the rings' moves are felt as taps on iPhone.")
-                }
-            }
-        }
-    }
+    static let sounds = "settings.sounds"
+    static let haptics = "settings.haptics"
 }
 
 /// Whether the rings sound alike, as rings of one size do, or each has its own note. The owner chooses by listening,

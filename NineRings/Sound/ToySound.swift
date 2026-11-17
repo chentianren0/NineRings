@@ -136,3 +136,28 @@ final class ToySound {
         return Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18
     }
 }
+
+/// What the player passes on to the toy's sound, in one place: every change it publishes, the ring just tapped, and
+/// each frame. It keeps the session as last heard, so that each change is heard from where the last one left off.
+@MainActor
+final class SoundListener {
+    private var heard: PuzzleSession?
+    private var tapped: Int?
+
+    /// A ring was asked to move: asking twice for a ring the rule refuses is heard twice.
+    func tap(_ ring: Int) {
+        tapped = ring
+    }
+
+    /// The session as the player publishes it.
+    func publish(_ session: PuzzleSession) {
+        if let heard { ToySound.shared?.hear(Hearing(from: heard, to: session, tapped: tapped)) }
+        heard = session
+        tapped = nil
+    }
+
+    /// The session as it is drawn this frame.
+    func frame(_ session: PuzzleSession) {
+        ToySound.shared?.frame(session)
+    }
+}
