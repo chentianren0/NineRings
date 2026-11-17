@@ -1,47 +1,37 @@
 import Session
 import SwiftUI
 
-/// The puzzle: the toy filling the window, the controls floating over it, or in a column beside it when the window
-/// is wide and the design asks for one, and the toolbar.
+/// The puzzle: the toy filling the window with the controls floating over it, and the toolbar.
 ///
 /// The controls and the toy are an overlay arrangement, so that on a half-folded iPhone Duo the system puts the toy
-/// on one half and the controls on the other.
+/// on one half and the controls on the other. On a wide screen the room goes to the toy, and the lesson opens beside
+/// it, as an inspector, rather than over it.
 struct PuzzleScreen: View {
     let player: Player
     let rig: CameraRig
-    /// Whether tabs hold the lesson and settings, so that the toolbar need not.
-    let hasTabs: Bool
 
-    #if DEBUG
-    @AppStorage(DesignKey.wide) private var wide = WideDesign.floating
-    #else
-    private let wide = WideDesign.floating
-    #endif
     @State private var showsLesson = false
     @State private var showsSettings = false
     /// How much of the toy a plain cover hides, while the toy jumps to another state.
     @State private var cover = 0.0
-    /// Where the controls are, in the global coordinate space, so that the toy is framed clear of them.
+    /// Where the floating controls are, in the global coordinate space, so that the toy is framed clear of them.
     @State private var panelFrame: CGRect = .null
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         NavigationStack {
-            GeometryReader { proxy in
-                let column = wide == .column && Self.isWide(proxy.size)
-                ArrangementView {
-                    panel(column: column)
-                } secondary: {
-                    ToyCanvas(player: player, rig: rig, cover: panelFrame) { player.tap($0) }
-                        .overlay {
-                            Backdrop.color(for: colorScheme)
-                                .opacity(cover)
-                                .ignoresSafeArea()
-                                .allowsHitTesting(false)
-                        }
-                }
-                .arrangementViewStyle(.overlay)
+            ArrangementView {
+                Controls(player: player, panelFrame: $panelFrame)
+            } secondary: {
+                ToyCanvas(player: player, rig: rig, cover: panelFrame) { player.tap($0) }
+                    .overlay {
+                        Backdrop.color(for: colorScheme)
+                            .opacity(cover)
+                            .ignoresSafeArea()
+                            .allowsHitTesting(false)
+                    }
             }
+            .arrangementViewStyle(.overlay)
             .congratulation(player) { jump { player.reset() } }
             .navigationTitle(Text("Nine Rings", comment: "The window's title."))
             .toolbar(removing: .title)
@@ -51,52 +41,13 @@ struct PuzzleScreen: View {
             .toolbar { toolbar }
             .inspector(isPresented: $showsLesson) {
                 LessonPlaceholder()
+                    .inspectorColumnWidth(min: 300, ideal: 360, max: 440)
             }
             #if os(iOS)
             .sheet(isPresented: $showsSettings) {
                 NavigationStack { SettingsScreen() }
             }
             #endif
-        }
-    }
-
-    /// Wide enough, for its height, to give the controls a column.
-    static func isWide(_ size: CGSize) -> Bool {
-        size.width >= 700 && size.width > 1.15 * size.height
-    }
-
-    @ViewBuilder
-    private func panel(column: Bool) -> some View {
-        if column {
-            ControlPanel(player: player, style: .column)
-                .frame(width: 340)
-                .frame(maxHeight: .infinity)
-                .glassEffect(.regular, in: .rect(cornerRadius: 28))
-                .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { panelFrame = $0 }
-                .padding(12)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-        } else {
-            ControlPanel(player: player, style: .floating)
-                .fixedSize(horizontal: false, vertical: true)
-                .glassEffect(.regular, in: .rect(cornerRadius: 28))
-                .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { panelFrame = $0 }
-                .overlay(alignment: .top) {
-                    // The reason a ring cannot move floats above the panel, over the toy, taking no room, so that the
-                    // panel keeps its height and the toy does not move.
-                    if let refusal = ControlPanel.refusal(in: player.status) {
-                        RefusalBubble(text: refusal)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .visualEffect { content, proxy in
-                                content.offset(y: -proxy.size.height - 10)
-                            }
-                            .transition(.blurReplace)
-                    }
-                }
-                .animation(.snappy(duration: 0.25), value: ControlPanel.refusal(in: player.status) == nil)
-                .frame(maxWidth: 720)
-            .padding(.horizontal, 12)
-            .padding(.bottom, 8)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         }
     }
 
@@ -129,26 +80,24 @@ struct PuzzleScreen: View {
             }
             .help(Text("Put every ring back on", comment: "Tooltip on the Reset button."))
         }
-        if !hasTabs {
-            ToolbarSpacer(.fixed, placement: Self.trailing)
-            ToolbarItem(placement: Self.trailing) {
-                Button {
-                    showsLesson.toggle()
-                } label: {
-                    Label { Text("Lesson", comment: "Toolbar button that shows or hides the lesson on how the puzzle works.") } icon: { Image(systemName: "book") }
-                }
-                .help(Text("Show how the puzzle works", comment: "Tooltip on the Lesson button."))
+        ToolbarSpacer(.fixed, placement: Self.trailing)
+        ToolbarItem(placement: Self.trailing) {
+            Button {
+                showsLesson.toggle()
+            } label: {
+                Label { Text("Lesson", comment: "Toolbar button that shows or hides the lesson on how the puzzle works.") } icon: { Image(systemName: "book") }
             }
-            #if os(iOS)
-            ToolbarOverflowMenu {
-                Button {
-                    showsSettings = true
-                } label: {
-                    Label { Text("Settings", comment: "Menu item that opens the app's settings.") } icon: { Image(systemName: "gear") }
-                }
-            }
-            #endif
+            .help(Text("Show how the puzzle works", comment: "Tooltip on the Lesson button."))
         }
+        #if os(iOS)
+        ToolbarOverflowMenu {
+            Button {
+                showsSettings = true
+            } label: {
+                Label { Text("Settings", comment: "Menu item that opens the app's settings.") } icon: { Image(systemName: "gear") }
+            }
+        }
+        #endif
     }
 
     private var viewMenu: some View {
@@ -201,5 +150,55 @@ private extension CameraPreset {
         case .top: "2"
         case .tip: "3"
         }
+    }
+}
+
+/// The controls, floating at the bottom over the toy, or, when the arrangement gives them a half of the screen to
+/// themselves on a half-folded iPhone Duo, filling it.
+private struct Controls: View {
+    let player: Player
+    /// Where the floating panel is, in the global coordinate space, or null when the controls cover no part of the toy.
+    @Binding var panelFrame: CGRect
+    @Environment(\.overlayArrangementZIndex) private var zIndex
+
+    var body: some View {
+        if hasOwnSpace {
+            ControlPanel(player: player, style: .beside)
+                .frame(maxWidth: 560)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .onAppear { panelFrame = .null }
+        } else {
+            floatingPanel
+        }
+    }
+
+    /// Whether the controls sit beside the toy rather than over it: the arrangement puts them over the toy, at a
+    /// z-index above it, except on a half-folded Duo, where each view has its own half and the z-index is 0.
+    private var hasOwnSpace: Bool {
+        zIndex == 0
+    }
+
+    private var floatingPanel: some View {
+        ControlPanel(player: player, style: .floating)
+            .fixedSize(horizontal: false, vertical: true)
+            .glassEffect(.regular, in: .rect(cornerRadius: 28))
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { panelFrame = $0 }
+            .overlay(alignment: .top) {
+                // The reason a ring cannot move floats above the panel, over the toy, taking no room, so that the
+                // panel keeps its height and the toy does not move.
+                if let refusal = ControlPanel.refusal(in: player.status) {
+                    RefusalBubble(text: refusal)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .visualEffect { content, proxy in
+                            content.offset(y: -proxy.size.height - 10)
+                        }
+                        .transition(.blurReplace)
+                }
+            }
+            .animation(.snappy(duration: 0.25), value: ControlPanel.refusal(in: player.status) == nil)
+            .frame(maxWidth: 720)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
     }
 }
