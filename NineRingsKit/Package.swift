@@ -39,5 +39,7 @@ let package = Package(
         .testTarget(name: "GeometryTests", dependencies: ["Geometry"]),
         .testTarget(name: "MotionTests", dependencies: ["Motion", "Toy", "Puzzle", "Geometry"]),
         .testTarget(name: "SessionTests", dependencies: ["Session", "Motion", "Puzzle", "Toy"]),
+        // Rules the app's own code must keep, read from its sources in this repository.
+        .testTarget(name: "AppRulesTests"),
     ]
 )

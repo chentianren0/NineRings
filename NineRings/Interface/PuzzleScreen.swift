@@ -44,8 +44,11 @@ struct PuzzleScreen: View {
                          stepsAside: controlsStepAside) {
                     jump { player.reset() }
                 }
+                .accessibilitySortPriority(1)
             } secondary: {
+                // VoiceOver meets the toy first, then the controls.
                 ToyCanvas(player: player, rig: rig, covers: [panelFrame, lessonFrame]) { player.tap($0) }
+                    .accessibilitySortPriority(2)
                     .overlay {
                         Backdrop.color(for: colorScheme)
                             .opacity(cover)
@@ -190,6 +193,7 @@ struct PuzzleScreen: View {
             } label: {
                 Label { Text("Lesson", comment: "Toolbar button that shows or hides the lesson on how the puzzle works.") } icon: { Image(systemName: "book") }
             }
+            .accessibilityAddTraits(showsLesson ? .isSelected : [])
             .help(Text("Show how the puzzle works", comment: "Tooltip on the Lesson button."))
         }
         #if os(iOS)
@@ -231,7 +235,8 @@ struct PuzzleScreen: View {
     /// Covers the toy, makes a change that moves it to another state at once, and uncovers it, so that the jump
     /// is calm.
     private func jump(_ change: @escaping () -> Void) {
-        player.pause()
+        // Quietly: the jump says what the toy has become, and "Paused" would only come before it.
+        player.pause(quiet: true)
         withAnimation(.easeIn(duration: 0.25)) {
             cover = 1
         } completion: {
@@ -275,6 +280,7 @@ private struct Controls: View {
     /// Puts every ring back on, from the congratulation.
     let putBack: () -> Void
     @Environment(\.overlayArrangementZIndex) private var zIndex
+    @Environment(\.reducesMotion) private var reducesMotion
 
     /// The congratulation goes with the controls: over the top of the whole window where they float over the toy, and
     /// in the controls' own half above them on a half-folded Duo, clear of the fold and of the toy.
@@ -342,7 +348,7 @@ private struct Controls: View {
                         .visualEffect { content, proxy in
                             content.offset(y: -proxy.size.height - 10)
                         }
-                        .transition(.blurReplace)
+                        .appearingOverToy(reducesMotion: reducesMotion)
                 }
             }
             .animation(.snappy(duration: 0.25), value: ControlPanel.refusal(in: player.status) == nil)

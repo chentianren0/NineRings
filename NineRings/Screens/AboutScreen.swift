@@ -1,7 +1,7 @@
 import SwiftUI
 
 #if os(iOS)
-/// About the app on iPhone and iPad: its name and its version, what it is in three sentences, and links to
+/// About the app on iPhone and iPad: its icon, its name and its version, what it is in three sentences, and links to
 /// support and the privacy policy. It opens from the main screen's menu, beside Settings. On the Mac, About Nine Rings
 /// in the app menu shows the system's About panel with the same words, and the links are in the Help menu.
 struct AboutScreen: View {
@@ -11,14 +11,20 @@ struct AboutScreen: View {
         Form {
             Section {
                 VStack(spacing: 8) {
-                    // No icon: loading the app's icon by name crashes on iOS 27 with an icon made in Icon Composer
-                    // (UIKit asserts while building the image), and there is no other public way to get it.
+                    // A copy of the app icon, rendered from it by scripts/render-about-icon.sh. An iOS app cannot load
+                    // its own icon: UIImage(named: "AppIcon") works in a local build but crashes the app from TestFlight
+                    // and the App Store, where the icon is processed again for each device.
+                    Image("AboutIcon")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 96, height: 96)
+                        .accessibilityHidden(true)
                     Text(verbatim: AppInfo.name)
                         .font(.title2.bold())
                         .accessibilityAddTraits(.isHeader)
                     Text(verbatim: AppInfo.version)
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .supportingTextStyle()
                 }
                 .frame(maxWidth: .infinity)
                 .multilineTextAlignment(.center)
@@ -65,7 +71,6 @@ enum AppInfo {
         let build = info["CFBundleVersion"] as? String ?? ""
         return String(localized: "about.version \(version) \(build)", table: "Screens")
     }
-
 }
 
 #if os(macOS)
@@ -86,7 +91,7 @@ struct AboutCommand: Commands {
     static func showPanel() {
         let text = String(localized: "about.text", table: "Screens")
         let credits = NSAttributedString(string: text, attributes: [
-            .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize),
+            .font: NSFont.preferredFont(forTextStyle: .subheadline),
             .foregroundColor: NSColor.labelColor,
         ])
         NSApplication.shared.orderFrontStandardAboutPanel(options: [.applicationName: AppInfo.name, .credits: credits])
