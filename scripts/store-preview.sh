@@ -2,13 +2,14 @@
 # Makes the App Store preview videos for iPhone and iPad, in English: the app played on its simulator by the StorePreview
 # UI test, recorded from the simulator's screen, cut into three pieces joined by dissolves, with a touch point drawn
 # where each tap lands, at Apple's size, 30 frames a second, with a silent stereo track (previews play muted first; the
-# simulator records no sound). Also the poster frame: ring 3 part way through the slot, as in the first picture.
+# simulator records no sound). Also the poster frame: ring 3 part way through the slot, as in the first picture; and the
+# same moment at the simulator's full size, upright, as poster-full.png, for other store pictures.
 #
 #   scripts/store-preview.sh [--devices iphone-6.3,ipad-13] [--out DIR] [--skip-build] [--edit-only]
 #
 #   --devices    iphone-6.3 (886 x 1920, portrait) and/or ipad-13 (1600 x 1200, landscape); default both.
 #   --out        Where the videos go (default: scratch/store/out in the main checkout), as OUT/preview/<device>/preview.mp4
-#                and poster.png; the raw recording and the steps under OUT/captures/preview/.
+#                poster.png and poster-full.png; the raw recording and the steps under OUT/captures/preview/.
 #   --skip-build Use the app and the tests as last built (by this script or scripts/store-assets.sh).
 #   --edit-only  Cut the last recording again, without the simulator.
 #
@@ -123,7 +124,7 @@ edit() {
     points_w="$(awk '$1 == "screen" { print $3 }' "$work/marks.txt")"
     scale="$(calc "$frame_w / $points_w")"
 
-    # The pieces: ring 1 and ring 3 off, then ring 5 refused, with its reason; with a dissolve, solving at 4x; with a
+    # The pieces: ring 1 and ring 3 off, then ring 5 refused, with its reason; with a dissolve, Solve playing on; with a
     # dissolve, the last ring off, the congratulation, and every ring back on, which is where the preview starts again.
     local fade=0.5 r1 r3 rf sv la rs
     r1="$(step "$work" ring1)"; r3="$(step "$work" ring3)"; rf="$(step "$work" refuse)"
@@ -180,6 +181,8 @@ edit() {
     local poster
     poster="$(calc "$r3 + 2.4 - ${cuts[0]}")"
     ffmpeg -loglevel error -y -ss "$poster" -i "$dest/preview.mp4" -frames:v 1 "$dest/poster.png"
+    # The same moment from the recording, at the simulator's full size, upright, without a touch point.
+    ffmpeg -loglevel error -y -ss "$(calc "$r3 + 2.4")" -i "$work/raw.mov" -frames:v 1 ${turn:+-vf "${turn%,}"} "$dest/poster-full.png"
     echo "$poster" > "$dest/poster-time.txt"
     local got
     got="$(ffprobe -v error -show_entries stream=codec_name,width,height,r_frame_rate,channels,sample_rate -show_entries format=duration -of compact=p=0:nk=1 "$dest/preview.mp4" | tr '\n' ' ')"
