@@ -31,8 +31,8 @@ struct CameraAngles: Equatable {
 /// size only keeps the toy the same size.
 ///
 /// With `followsMove` on, the camera drawn from is not always `camera` itself: while a move slides the sword, the
-/// picture widens just enough to keep in view the part of the sword it shows at rest, wherever the sword has gone
-/// (see `camera(for:)`). Gestures, presets and flights still move `camera`, the picture at rest.
+/// picture widens to keep the sword in view, wherever it has gone (see `camera(for:)`). Gestures, presets and flights
+/// still move `camera`, the picture at rest.
 ///
 /// The 3D view reads `camera(for:)` once a frame, after calling `advance(by:)`; nothing here is observed by SwiftUI.
 @MainActor
@@ -130,8 +130,12 @@ final class CameraRig {
         change { $0.zoom(by: factor) }
     }
 
-    /// The camera to draw `pose` from: `camera` itself, or, following the move, `camera` moved back and over just
-    /// enough to keep in view the part of the sword the picture shows at rest, slid and lowered as `pose` has it.
+    /// The camera to draw `pose` from: `camera` itself, or, following the move, `camera` moved back and over to keep
+    /// the sword in view where `pose` has slid and lowered it.
+    ///
+    /// The picture at rest may cut the sword's grip at its edge. As the sword starts to slide, the picture holds the
+    /// part of the sword it shows at rest; over the first `wholeSwordSlide` of the slide it comes to hold the whole
+    /// sword, so that in a far move the grip is in view wherever the edge cut it at rest.
     ///
     /// It depends on the pose and on `camera` alone, so the same point of a move always gives the same picture,
     /// whether the move plays forward or back, is paused or is dragged; and with the sword at home it is `camera`.
@@ -141,11 +145,20 @@ final class CameraRig {
             shown = camera
             return camera
         }
-        let held = swordPointsInView().map { $0 + offset }
-        let following = camera.holding(held, in: viewport)
+        var following = camera.holding(swordPointsInView().map { $0 + offset }, in: viewport)
+        let reach = min(abs(offset.x) / Self.wholeSwordSlide, 1)
+        if reach > 0 {
+            let whole = camera.holding(Self.swordPoints.map { $0 + offset }, in: viewport)
+            following = following.blended(to: whole, t: reach * reach * (3 - 2 * reach))
+        }
         shown = following
         return following
     }
+
+    /// How far the sword slides, in millimetres, before the picture holds the whole of it: four holes. Ring 1's move
+    /// slides it about 12 mm and ring 2's about 24, so near moves change the picture little; ring 5's slides it about
+    /// 69 and ring 9's about 129.
+    private static let wholeSwordSlide: Float = 60
 
     /// The sword's centreline at home, a point every millimetre or so, taken once.
     private static let swordPoints: [SIMD3<Float>] = {
