@@ -11,6 +11,13 @@ struct LessonPanel: View {
     let guide: LessonGuide
     /// Closes the lesson, where the panel offers that; nil where leaving the panel's place closes it, as a tab does.
     var close: (() -> Void)?
+    #if os(iOS)
+    /// A phone held sideways is short: the buttons are the regular size there, to leave the text more room.
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    private var isShort: Bool { verticalSizeClass == .compact }
+    #else
+    private let isShort = false
+    #endif
 
     /// Whether VoiceOver's focus is on the panel's heading: it goes there when the lesson opens beside the toy.
     @AccessibilityFocusState private var headingFocused: Bool
@@ -109,9 +116,17 @@ struct LessonPanel: View {
 
     /// Back and next side by side, or one above the other where the text is too large for that.
     private func navigation(_ page: LessonRun.Page) -> some View {
+        // One row wherever it can be: in a short panel two rows of buttons leave little room for the text. Before the
+        // buttons stack, Back gives up its word and keeps its chevron, as a back button does.
         ViewThatFits(in: .horizontal) {
             HStack {
                 backButton(page)
+                Spacer(minLength: 12)
+                nextButton(page)
+            }
+            HStack {
+                backButton(page)
+                    .labelStyle(.iconOnly)
                 Spacer(minLength: 12)
                 nextButton(page)
             }
@@ -120,7 +135,7 @@ struct LessonPanel: View {
                 backButton(page).frame(maxWidth: .infinity)
             }
         }
-        .controlSize(.large)
+        .controlSize(isShort ? .regular : .large)
     }
 
     private func backButton(_ page: LessonRun.Page) -> some View {
