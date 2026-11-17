@@ -69,6 +69,7 @@ struct SettingsWindow: View {
             .scrollDisabled(true)
             .fixedSize(horizontal: false, vertical: true)
             .frame(width: 420)
+            .accessibilitySettings()
     }
 }
 #endif

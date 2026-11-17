@@ -79,7 +79,7 @@ struct WelcomeSheet: View {
                     .font(.headline)
                 Text(detail)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .supportingTextStyle()
             }
             .fixedSize(horizontal: false, vertical: true)
         }

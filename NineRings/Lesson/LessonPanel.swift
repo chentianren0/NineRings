@@ -12,12 +12,23 @@ struct LessonPanel: View {
     /// Closes the lesson, where the panel offers that; nil where leaving the panel's place closes it, as a tab does.
     var close: (() -> Void)?
 
+    /// Whether VoiceOver's focus is on the panel's heading: it goes there when the lesson opens beside the toy.
+    @AccessibilityFocusState private var headingFocused: Bool
+
     var body: some View {
-        if let page = player.lessonPage {
-            content(page)
-        } else {
-            // Only for the moment the toy is covered while the lesson opens.
-            Color.clear
+        Group {
+            if let page = player.lessonPage {
+                content(page)
+            } else {
+                // Only for the moment the toy is covered while the lesson opens.
+                Color.clear
+            }
+        }
+        .task(id: player.lessonPage != nil) {
+            guard player.lessonPage != nil else { return }
+            // Once the heading is on screen.
+            try? await Task.sleep(for: .milliseconds(100))
+            headingFocused = true
         }
     }
 
@@ -51,8 +62,9 @@ struct LessonPanel: View {
         }
         .animation(.easeInOut(duration: 0.2), value: page.index)
         .onChange(of: page.index) {
-            // The text changed under the button that was pressed: say it to someone who cannot see it.
-            AccessibilityNotification.Announcement(String(localized: Self.text(page))).post()
+            // The text changed under the button that was pressed: say where the reader is and the step's text to someone
+            // who cannot see it. The step's own moves are not narrated, so the text is heard whole.
+            Announcer.say(String(localized: "lesson.step \(String(localized: Self.place(page))) \(String(localized: Self.text(page)))", table: "Accessibility"))
         }
     }
 
@@ -62,9 +74,10 @@ struct LessonPanel: View {
                 Text("Lesson", comment: "Title of the lesson's panel.")
                     .font(.title2.bold())
                     .accessibilityAddTraits(.isHeader)
-                Text("Step \(page.index + 1) of \(page.count)", comment: "Where the reader is in the lesson. The first variable is the step's number, the second how many steps there are.")
+                    .accessibilityFocused($headingFocused)
+                Text(Self.place(page))
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .supportingTextStyle()
                     .monospacedDigit()
             }
             Spacer(minLength: 8)
@@ -133,6 +146,11 @@ struct LessonPanel: View {
             .keyboardShortcut(.defaultAction)
             .disabled(!page.canGoForward)
         }
+    }
+
+    /// Where the reader is in the lesson: "Step 3 of 12".
+    static func place(_ page: LessonRun.Page) -> LocalizedStringResource {
+        LocalizedStringResource("Step \(page.index + 1) of \(page.count)", comment: "Where the reader is in the lesson. The first variable is the step's number, the second how many steps there are.")
     }
 
     /// The step's text, from the lesson's String Catalog.

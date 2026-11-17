@@ -11,21 +11,20 @@ struct AboutScreen: View {
         Form {
             Section {
                 VStack(spacing: 8) {
-                    if let icon = AppInfo.icon {
-                        icon
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 96, height: 96)
-                            // The bundle's image is the square artwork; the system rounds it on the Home Screen.
-                            .clipShape(.rect(cornerRadius: 22, style: .continuous))
-                            .accessibilityHidden(true)
-                    }
+                    // A copy of the app icon, rendered from it by scripts/render-about-icon.sh. An iOS app cannot load
+                    // its own icon: UIImage(named: "AppIcon") works in a local build but crashes the app from TestFlight
+                    // and the App Store, where the icon is processed again for each device.
+                    Image("AboutIcon")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 96, height: 96)
+                        .accessibilityHidden(true)
                     Text(verbatim: AppInfo.name)
                         .font(.title2.bold())
                         .accessibilityAddTraits(.isHeader)
                     Text(verbatim: AppInfo.version)
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .supportingTextStyle()
                 }
                 .frame(maxWidth: .infinity)
                 .multilineTextAlignment(.center)
@@ -56,7 +55,7 @@ struct AboutScreen: View {
 }
 #endif
 
-/// The app's name, version and icon, as the bundle has them.
+/// The app's name and version, as the bundle has them.
 enum AppInfo {
     /// The name the bundle shows, in the app's language where the bundle has one, or else the app's name as written.
     /// The bundle's own name is the product's, "NineRings", which is not the name to show.
@@ -72,21 +71,6 @@ enum AppInfo {
         let build = info["CFBundleVersion"] as? String ?? ""
         return String(localized: "about.version \(version) \(build)", table: "Screens")
     }
-
-    #if os(iOS)
-    /// The icon, from the primary icon's name as the build writes it into the bundle's information.
-    static var icon: Image? {
-        let icons = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any]
-        let primary = icons?["CFBundlePrimaryIcon"] as? [String: Any]
-        let names = [primary?["CFBundleIconName"] as? String] + ((primary?["CFBundleIconFiles"] as? [String])?.reversed().map { $0 } ?? [])
-        for case let name? in names {
-            if let image = UIImage(named: name) {
-                return Image(uiImage: image)
-            }
-        }
-        return nil
-    }
-    #endif
 }
 
 #if os(macOS)
@@ -107,7 +91,7 @@ struct AboutCommand: Commands {
     static func showPanel() {
         let text = String(localized: "about.text", table: "Screens")
         let credits = NSAttributedString(string: text, attributes: [
-            .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize),
+            .font: NSFont.preferredFont(forTextStyle: .subheadline),
             .foregroundColor: NSColor.labelColor,
         ])
         NSApplication.shared.orderFrontStandardAboutPanel(options: [.applicationName: AppInfo.name, .credits: credits])
