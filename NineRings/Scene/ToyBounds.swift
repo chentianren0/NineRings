@@ -26,6 +26,11 @@ struct ToyBounds {
     init(_ pose: ToyPose) {
         let offset = SIMD3<Float>(pose.swordOffset)
         self.init(lower: Self.sword.lower + offset, upper: Self.sword.upper + offset)
+        includeParts(of: pose)
+    }
+
+    /// Takes in every part of `pose` but the sword.
+    private mutating func includeParts(of pose: ToyPose) {
         let ringReach = Float(Dimensions.Ring.radius + Dimensions.Ring.wireRadius)
         let eyeReach = Float(Dimensions.Rod.eyeRadius + Dimensions.Rod.wireRadius)
         let bead = SIMD3(0, Dimensions.Rod.beadCenterY, 0)
@@ -50,6 +55,20 @@ struct ToyBounds {
         }
         guard let box else { preconditionFailure("a box needs at least one pose") }
         self = box
+    }
+
+    /// The box around the rings, rods, beads and bar in every pose of `poses`, stretched to the sword's tip end as
+    /// it is at home. The rings and the bar never move along the sword, only the sword slides, so a box made from a
+    /// few moves holds every move; the sword's grip may leave it when the sword is drawn back.
+    static func rings(_ poses: some Sequence<ToyPose>) -> ToyBounds {
+        var box = ToyBounds(lower: SIMD3(repeating: .infinity), upper: SIMD3(repeating: -.infinity))
+        for pose in poses {
+            box.includeParts(of: pose)
+        }
+        precondition(box.lower.x <= box.upper.x, "a box needs at least one pose")
+        // The tip is the sword's end on the rings' side, the end with the smaller x.
+        box.lower.x = min(box.lower.x, sword.lower.x)
+        return box
     }
 
     /// A cube of side `size` around `center`.

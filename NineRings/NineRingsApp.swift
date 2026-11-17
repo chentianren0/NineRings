@@ -14,12 +14,19 @@ struct NineRingsApp: App {
         WindowGroup {
             #if DEBUG
             if Capture.request == nil {
-                ContentView()
+                MainScreen()
             }
             #else
-            ContentView()
+            MainScreen()
             #endif
         }
         .defaultSize(width: 1100, height: 720)
+
+        #if os(macOS)
+        Settings {
+            SettingsPlaceholder()
+                .frame(width: 420, height: 280)
+        }
+        #endif
     }
 }

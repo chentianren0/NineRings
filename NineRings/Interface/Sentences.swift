@@ -2,51 +2,6 @@ import Foundation
 import Motion
 import Puzzle
 import Session
-import SwiftUI
-
-/// The one line that says what is happening, or why nothing is.
-struct StatusLine: View {
-    let status: PuzzleSession.Status
-
-    var body: some View {
-        Label {
-            // Two lines are always kept, so that the controls do not jump as the line changes. A long reason takes
-            // as many more as it needs: cut short, it would no longer say why.
-            ZStack(alignment: .topLeading) {
-                Text(verbatim: "\n").hidden().accessibilityHidden(true)
-                Text(Sentences.status(status))
-                    .contentTransition(.opacity)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        } icon: {
-            Image(systemName: symbol)
-                .foregroundStyle(isBlocked ? AnyShapeStyle(.orange) : AnyShapeStyle(.secondary))
-        }
-        .font(.callout)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
-        .onChange(of: status) { _, status in
-            // A refusal comes after a tap with nothing moving, so say it aloud to someone who cannot see it.
-            if case .note = status {
-                AccessibilityNotification.Announcement(String(localized: Sentences.status(status))).post()
-            }
-        }
-    }
-
-    private var isBlocked: Bool {
-        if case .note(.blocked) = status { return true }
-        return false
-    }
-
-    private var symbol: String {
-        switch status {
-        case .playing: "play.fill"
-        case .paused: "pause.fill"
-        case .note(.blocked): "hand.raised.fill"
-        case .resting: "hand.tap"
-        }
-    }
-}
 
 /// Every sentence the screen says about the puzzle, kept in the String Catalog.
 enum Sentences {
@@ -75,14 +30,14 @@ enum Sentences {
             }
             #if os(macOS)
             if state == .allOn {
-                return LocalizedStringResource("All nine rings are on the sword. Click a numbered marker to move its ring.", comment: "Status at the start, with every ring on, on the Mac. The markers are the row of numbered discs, one for each ring.")
+                return LocalizedStringResource("All nine rings are on the sword. Click a ring to move it.", comment: "Status at the start, with every ring on, on the Mac. A ring is clicked in the 3D view or by its numbered button.")
             }
-            return LocalizedStringResource("Click a numbered marker to move its ring.", comment: "Status when nothing is moving, on the Mac. The markers are the row of numbered discs, one for each ring.")
+            return LocalizedStringResource("Click a ring to move it.", comment: "Status when nothing is moving, on the Mac. A ring is clicked in the 3D view or by its numbered button.")
             #else
             if state == .allOn {
-                return LocalizedStringResource("All nine rings are on the sword. Tap a numbered marker to move its ring.", comment: "Status at the start, with every ring on. The markers are the row of numbered discs, one for each ring.")
+                return LocalizedStringResource("All nine rings are on the sword. Tap a ring to move it.", comment: "Status at the start, with every ring on. A ring is tapped in the 3D view or by its numbered button.")
             }
-            return LocalizedStringResource("Tap a numbered marker to move its ring.", comment: "Status when nothing is moving. The markers are the row of numbered discs, one for each ring.")
+            return LocalizedStringResource("Tap a ring to move it.", comment: "Status when nothing is moving. A ring is tapped in the 3D view or by its numbered button.")
             #endif
         }
     }
@@ -93,7 +48,7 @@ enum Sentences {
         case .earlierRingOn(let earlier):
             LocalizedStringResource(
                 "Ring \(ring) can’t move while ring \(earlier) is on: ring \(earlier)’s rod stands in the slot between ring \(ring) and the tip.",
-                comment: "Why a ring cannot move. The first and fourth variables are the ring tapped; the second and third the earlier ring that is on. A ring's rod is the wire that holds it; the slot is the gap between the sword's two rails; the tip is the sword's rounded end."
+                comment: "Why a ring cannot move. The first and fourth variables are the ring tapped; the second and third a ring before it (a lower number) that is on. A ring's rod is the wire that holds it; the slot is the gap between the sword's two rails; the tip is the sword's rounded end."
             )
         case .previousRingOff(let previous):
             LocalizedStringResource(
@@ -103,13 +58,13 @@ enum Sentences {
         }
     }
 
-    /// A short reason, for a marker's spoken value.
+    /// A short reason, for a ring button's spoken hint.
     static func shortReason(_ block: PuzzleState.Block) -> LocalizedStringResource {
         switch block {
         case .earlierRingOn(let earlier):
-            LocalizedStringResource("can’t move while ring \(earlier) is on", comment: "Part of a ring marker's spoken value. The variable is the earlier ring that is on.")
+            LocalizedStringResource("can’t move while ring \(earlier) is on", comment: "Spoken hint on a ring button that cannot move. The variable is a ring before it (a lower number) that is on.")
         case .previousRingOff(let previous):
-            LocalizedStringResource("can’t move while ring \(previous) is off", comment: "Part of a ring marker's spoken value. The variable is the ring just before, which is off.")
+            LocalizedStringResource("can’t move while ring \(previous) is off", comment: "Spoken hint on a ring button that cannot move. The variable is the ring just before it, which is off.")
         }
     }
 

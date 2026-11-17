@@ -30,14 +30,23 @@ enum CameraPreset: String, CaseIterable, Identifiable {
     }
 }
 
-/// The part of a view the toy is framed in, in points: its size, and how much of its top and bottom is
-/// covered by bars and controls.
+/// The part of a view the toy is framed in, in points: its size, and how much of each edge is covered by bars
+/// and controls.
 struct Viewport: Equatable {
     var size: CGSize
     var topInset: CGFloat = 0
     var bottomInset: CGFloat = 0
+    var leftInset: CGFloat = 0
+    var rightInset: CGFloat = 0
 
-    var isEmpty: Bool { size.width < 1 || size.height <= topInset + bottomInset + 1 }
+    var isEmpty: Bool {
+        size.width <= leftInset + rightInset + 1 || size.height <= topInset + bottomInset + 1
+    }
+
+    /// The uncovered part's width over its height.
+    var aspectRatio: CGFloat {
+        isEmpty ? 1 : (size.width - leftInset - rightInset) / (size.height - topInset - bottomInset)
+    }
 }
 
 /// A camera that circles a target point: everything about it is in millimetres in the toy's frame.
@@ -92,8 +101,10 @@ struct OrbitCamera: Equatable {
         guard !viewport.isEmpty else { return camera }
         camera.distance = camera.fittingDistance(of: box, in: viewport)
         // Move the target so the toy sits in the middle of the uncovered part.
-        let shift = Float((viewport.bottomInset - viewport.topInset) / viewport.size.height) * camera.distance * tan(fieldOfView / 2)
-        camera.target -= camera.rotation.act([0, 1, 0]) * shift
+        let millimetresPerPoint = camera.distance * tan(fieldOfView / 2) / Float(viewport.size.height)
+        let up = Float(viewport.bottomInset - viewport.topInset) * millimetresPerPoint
+        let right = Float(viewport.leftInset - viewport.rightInset) * millimetresPerPoint
+        camera.target -= camera.rotation.act([0, 1, 0]) * up + camera.rotation.act([1, 0, 0]) * right
         return camera
     }
 
@@ -102,7 +113,7 @@ struct OrbitCamera: Equatable {
         let tangent = tan(Self.fieldOfView / 2)
         let height = Float(viewport.size.height)
         let vertical = tangent * (height - Float(viewport.topInset + viewport.bottomInset)) / height
-        let horizontal = tangent * Float(viewport.size.width) / height
+        let horizontal = tangent * Float(viewport.size.width - viewport.leftInset - viewport.rightInset) / height
         let right = rotation.act([1, 0, 0]), up = rotation.act([0, 1, 0]), back = rotation.act([0, 0, 1])
         let margin: Float = 1.08
         var distance: Float = 0
