@@ -6,13 +6,14 @@ import AppKit
 /// Debug options for checking the app's accessibility from its own process, without VoiceOver and without touching
 /// the system's settings, which belong to the person using the computer. Every option is off in a release build.
 ///
-/// Each option takes a value, even the switches (`-reduce-motion YES`): the system reads the arguments as name and value
-/// pairs, and a lone switch would take the next option as its value, leaving a stray word the Mac opens as a document,
-/// so that no window comes up.
+/// Each option takes a value, even the switches (`-reduce-motion YES`): the system reads the arguments as name and
+/// value pairs, and a lone switch would take the next option as its value, leaving a stray word the Mac opens as a
+/// document, so that no window comes up.
 ///
-/// - `-reduce-motion YES`, `-differentiate-without-color YES` and `-increase-contrast YES` force those settings for this
-///   process: the app's own views follow them (see ``EnvironmentValues/reducesMotion``). On the Mac, `-increase-contrast` also
-///   gives the process the system's high-contrast appearance, so that the system's own controls follow it too.
+/// - `-reduce-motion YES`, `-differentiate-without-color YES` and `-increase-contrast YES` force those settings for
+///   this process: the app's own views follow them (see ``EnvironmentValues/reducesMotion``). On the Mac,
+///   `-increase-contrast` also gives the process the system's high-contrast appearance, so that the system's own
+///   controls follow it too.
 /// - `-dynamic-type accessibility3` sets the text size, by the names of `DynamicTypeSize` (`xSmall` to
 ///   `accessibility5`).
 /// - `-appearance dark` or `-appearance light` sets the appearance, on iPhone and iPad too (on the Mac the screens'
