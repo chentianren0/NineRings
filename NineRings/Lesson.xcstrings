@@ -68,7 +68,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Every other ring follows one rule: it can move only when the ring just before it is on and every ring before that one is off. So ring 3 can move now, because ring 2 is on and ring 1 is off. Ring 2 can’t move, because ring 1 is off."
+            "value" : "All the other rings follow one rule: a ring can move only when the ring just before it is on and every ring before that one is off. So ring 3 can move now, because ring 2 is on and ring 1 is off. Ring 2 can’t move, because ring 1 is off."
           }
         }
       }

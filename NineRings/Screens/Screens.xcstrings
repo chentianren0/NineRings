@@ -44,7 +44,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nine Rings shows how the nine linked rings puzzle works. The puzzle is a wire sword with nine rings on it, each held by a rod that links it to the next, and the aim is to take every ring off. The toy here plays every one of the puzzle’s 511 moves, each by the puzzle’s one rule."
+            "value" : "Nine Rings shows how the nine linked rings puzzle works. The puzzle is a wire sword with nine rings on it, each held by a rod that links it to the next, and the aim is to take every ring off. The toy here plays every move the puzzle allows, each by the puzzle’s one rule."
           }
         }
       }
