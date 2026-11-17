@@ -14,25 +14,25 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Neuf anneaux"
+            "value" : "Nine Rings"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "九連環"
+            "value" : "Nine Rings"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "九连环"
+            "value" : "解连环"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "九連環"
+            "value" : "Nine Rings"
           }
         }
       }
@@ -122,25 +122,25 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Neuf anneaux montre comment fonctionne le baguenaudier. Ce casse-tête est une navette en fil de fer portant neuf anneaux, chacun tenu par une tige qui le relie au suivant, et le but est de descendre tous les anneaux. Le modèle présenté ici exécute tous les coups que le casse-tête permet, chacun selon son unique règle."
+            "value" : "Nine Rings montre comment fonctionne le baguenaudier. Ce casse-tête est une navette en fil de fer portant neuf anneaux, chacun tenu par une tige qui le relie au suivant, et le but est de descendre tous les anneaux. Le modèle présenté ici exécute tous les coups que le casse-tête permet, chacun selon son unique règle."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“九連環”は、九連環というパズルのしくみをわかりやすく示すAppです。このパズルは、針金の枠に9つの輪がかかったもので、それぞれの輪は棒で次の輪とつながっています。目的は、すべての輪を外すことです。このAppでは、パズルで許されるすべての手を、ただ1つのルールに従って再現できます。"
+            "value" : "Nine Ringsは、九連環というパズルのしくみをわかりやすく示すAppです。このパズルは、針金の枠に9つの輪がかかったもので、それぞれの輪は棒で次の輪とつながっています。目的は、すべての輪を外すことです。このAppでは、パズルで許されるすべての手を、ただ1つのルールに従って再現できます。"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“九连环”演示这个益智玩具的原理。九连环由一个金属丝框架和套在上面的九个环组成，每个环由一根直杆连向下一个环，目标是把所有环都取下来。App中的九连环能走出它允许的每一步，每一步都遵循同一条规则。"
+            "value" : "“解连环”演示九连环这个益智玩具的原理。九连环由一个金属丝框架和套在上面的九个环组成，每个环由一根直杆连向下一个环，目标是把所有环都取下来。App中的九连环能走出它允许的每一步，每一步都遵循同一条规则。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「九連環」App示範這個益智玩具的原理。九連環由一把金屬線彎成的劍和套在上面的九個環組成，每個環由一根直桿連向下一個環，目標是把所有環都取下來。App裡的九連環能走出它允許的每一步，每一步都依照那唯一的一條規則。"
+            "value" : "Nine Rings示範九連環這個益智玩具的原理。九連環由一把金屬線彎成的劍和套在上面的九個環組成，每個環由一根直桿連向下一個環，目標是把所有環都取下來。App裡的九連環能走出它允許的每一步，每一步都依照那唯一的一條規則。"
           }
         }
       }
@@ -338,25 +338,25 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "À propos de Neuf anneaux"
+            "value" : "À propos de Nine Rings"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "九連環について"
+            "value" : "Nine Ringsについて"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "关于九连环"
+            "value" : "关于解连环"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "關於九連環"
+            "value" : "關於Nine Rings"
           }
         }
       }
@@ -722,25 +722,25 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bienvenue dans Neuf anneaux"
+            "value" : "Bienvenue dans Nine Rings"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "九連環へようこそ"
+            "value" : "Nine Ringsへようこそ"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "欢迎使用九连环"
+            "value" : "欢迎使用解连环"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "歡迎使用九連環"
+            "value" : "歡迎使用Nine Rings"
           }
         }
       }

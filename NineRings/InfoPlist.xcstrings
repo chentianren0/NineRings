@@ -14,25 +14,25 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Neuf anneaux"
+            "value" : "Nine Rings"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "九連環"
+            "value" : "Nine Rings"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "九连环"
+            "value" : "解连环"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "九連環"
+            "value" : "Nine Rings"
           }
         }
       }
@@ -50,25 +50,25 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Neuf anneaux"
+            "value" : "Nine Rings"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "九連環"
+            "value" : "Nine Rings"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "九连环"
+            "value" : "解连环"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "九連環"
+            "value" : "Nine Rings"
           }
         }
       }

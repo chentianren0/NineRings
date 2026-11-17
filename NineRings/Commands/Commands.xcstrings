@@ -14,25 +14,25 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aide Neuf anneaux"
+            "value" : "Aide Nine Rings"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "九連環ヘルプ"
+            "value" : "Nine Ringsヘルプ"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "九连环帮助"
+            "value" : "解连环帮助"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "九連環輔助說明"
+            "value" : "Nine Rings輔助說明"
           }
         }
       }
@@ -698,25 +698,25 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Assistance Neuf anneaux"
+            "value" : "Assistance Nine Rings"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "九連環サポート"
+            "value" : "Nine Ringsサポート"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "九连环支持"
+            "value" : "解连环支持"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "九連環支援"
+            "value" : "Nine Rings支援"
           }
         }
       }
