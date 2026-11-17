@@ -10,8 +10,9 @@ struct PuzzleScreen: View {
     let player: Player
     let rig: CameraRig
 
-    @State private var showsLesson = false
+    @State private var showsLesson = LessonLaunchOptions.opensAtLaunch
     @State private var showsSettings = false
+    @State private var showsAbout = false
     /// How much of the toy a plain cover hides, while the toy jumps to another state.
     @State private var cover = 0.0
     /// Where the floating controls are, in the global coordinate space, so that the toy is framed clear of them.
@@ -32,6 +33,7 @@ struct PuzzleScreen: View {
                     }
             }
             .arrangementViewStyle(.overlay)
+            .congratulation(player) { jump { player.reset() } }
             .navigationTitle(Text("Nine Rings", comment: "The window's title."))
             .toolbar(removing: .title)
             #if os(iOS)
@@ -39,15 +41,25 @@ struct PuzzleScreen: View {
             #endif
             .toolbar { toolbar }
             .inspector(isPresented: $showsLesson) {
-                LessonPlaceholder()
+                LessonPanel(player: player, guide: lesson) { showsLesson = false }
                     .inspectorColumnWidth(min: 300, ideal: 360, max: 440)
+            }
+            .onChange(of: showsLesson, initial: true) { _, shows in
+                if shows { lesson.open() } else { lesson.close() }
             }
             #if os(iOS)
             .sheet(isPresented: $showsSettings) {
-                NavigationStack { SettingsPlaceholder() }
+                NavigationStack { SettingsScreen() }
+            }
+            .sheet(isPresented: $showsAbout) {
+                NavigationStack { AboutScreen() }
             }
             #endif
         }
+    }
+
+    private var lesson: LessonGuide {
+        LessonGuide(player: player, rig: rig, cover: jump)
     }
 
     /// Where the puzzle's toolbar items go: the trailing end, on every device.
@@ -94,6 +106,11 @@ struct PuzzleScreen: View {
                 showsSettings = true
             } label: {
                 Label { Text("Settings", comment: "Menu item that opens the app's settings.") } icon: { Image(systemName: "gear") }
+            }
+            Button {
+                showsAbout = true
+            } label: {
+                Label { Text("menu.about", tableName: "Screens") } icon: { Image(systemName: "info.circle") }
             }
         }
         #endif

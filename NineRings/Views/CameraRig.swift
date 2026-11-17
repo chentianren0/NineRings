@@ -48,6 +48,10 @@ final class CameraRig {
     /// A flight in progress, toward the given angles, or toward the default view for the present shape when nil.
     private var flight: (from: OrbitCamera, to: CameraAngles?, elapsed: Double)?
     private var hasBeenFramed = false
+    /// A flight toward this camera rather than toward angles: back to one kept by `remember()`.
+    private var flightCamera: OrbitCamera?
+    /// The camera as it was when `remember()` kept it, whether it showed the default view, and the view's size then.
+    private var remembered: (camera: OrbitCamera, showsDefault: Bool, viewport: Viewport)?
     /// The box the camera frames.
     private var box: ToyBounds
     /// Whether the picture follows the move, widening to keep the sword in view as it slides.
@@ -104,7 +108,8 @@ final class CameraRig {
                 camera.refit(box, from: old, to: newViewport)
             }
         }
-        // During a flight, its destination follows the new size.
+        // During a flight, its destination follows the new size; a camera flown back to is kept the same size too.
+        if flight != nil, !old.isEmpty, !newViewport.isEmpty { flightCamera?.refit(box, from: old, to: newViewport) }
         hasBeenFramed = true
         revision += 1
     }
@@ -165,14 +170,39 @@ final class CameraRig {
         guard var current = flight else { return }
         current.elapsed = min(current.elapsed + seconds, Self.flightDuration)
         let linear = Float(current.elapsed / Self.flightDuration)
-        let destination = framing(current.to ?? defaultAngles(viewport), in: viewport)
+        let destination = flightCamera ?? framing(current.to ?? defaultAngles(viewport), in: viewport)
         camera = current.from.blended(to: destination, t: linear * linear * (3 - 2 * linear))
         flight = current.elapsed < Self.flightDuration ? current : nil
+        if flight == nil { flightCamera = nil }
         revision += 1
     }
 
     private func fly(to angles: CameraAngles?) {
         flight = (camera, angles, 0)
+        flightCamera = nil
+    }
+
+    /// Keeps the camera as it is now, so that `flyBack()` can return to it, as the lesson does when it closes.
+    func remember() {
+        remembered = (camera, showsDefault, viewport)
+    }
+
+    /// Flies back to the camera kept by `remember()`: to the default view if it showed that, or else to where it was,
+    /// kept the same size for the view's size now.
+    func flyBack() {
+        guard let remembered else { return }
+        self.remembered = nil
+        if remembered.showsDefault {
+            showDefault()
+            return
+        }
+        var destination = remembered.camera
+        if !remembered.viewport.isEmpty, !viewport.isEmpty {
+            destination.refit(box, from: remembered.viewport, to: viewport)
+        }
+        flight = (camera, nil, 0)
+        flightCamera = destination
+        showsDefault = false
     }
 
     private func framing(_ angles: CameraAngles, in viewport: Viewport) -> OrbitCamera {
@@ -182,6 +212,7 @@ final class CameraRig {
     /// A gesture takes over from any flight in progress.
     private func change(_ edit: (inout OrbitCamera) -> Void) {
         flight = nil
+        flightCamera = nil
         showsDefault = false
         edit(&camera)
         revision += 1

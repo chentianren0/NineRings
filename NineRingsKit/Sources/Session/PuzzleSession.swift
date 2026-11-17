@@ -84,6 +84,11 @@ public struct PuzzleSession: Sendable, Equatable {
         start = .allOn
     }
 
+    /// A session resting in `state`, with no move made and none on the slider.
+    public init(resting state: PuzzleState) {
+        start = state
+    }
+
     /// A session at the start of `move`, with that move on the slider at `progress`, not playing.
     public init(at move: Move, progress: Double = 0) {
         start = move.from
