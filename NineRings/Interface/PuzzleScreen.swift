@@ -23,8 +23,11 @@ struct PuzzleScreen: View {
         NavigationStack {
             ArrangementView {
                 Controls(player: player, panelFrame: $panelFrame)
+                    .accessibilitySortPriority(1)
             } secondary: {
+                // VoiceOver meets the toy first, then the controls.
                 ToyCanvas(player: player, rig: rig, cover: panelFrame) { player.tap($0) }
+                    .accessibilitySortPriority(2)
                     .overlay {
                         Backdrop.color(for: colorScheme)
                             .opacity(cover)
@@ -106,6 +109,7 @@ struct PuzzleScreen: View {
             } label: {
                 Label { Text("Lesson", comment: "Toolbar button that shows or hides the lesson on how the puzzle works.") } icon: { Image(systemName: "book") }
             }
+            .accessibilityAddTraits(showsLesson ? .isSelected : [])
             .help(Text("Show how the puzzle works", comment: "Tooltip on the Lesson button."))
         }
         #if os(iOS)
@@ -147,7 +151,8 @@ struct PuzzleScreen: View {
     /// Covers the toy, makes a change that moves it to another state at once, and uncovers it, so that the jump
     /// is calm.
     private func jump(_ change: @escaping () -> Void) {
-        player.pause()
+        // Quietly: the jump says what the toy has become, and "Paused" would only come before it.
+        player.pause(quiet: true)
         withAnimation(.easeIn(duration: 0.25)) {
             cover = 1
         } completion: {
@@ -183,6 +188,7 @@ private struct Controls: View {
     /// Where the floating panel is, in the global coordinate space, or null when the controls cover no part of the toy.
     @Binding var panelFrame: CGRect
     @Environment(\.overlayArrangementZIndex) private var zIndex
+    @Environment(\.reducesMotion) private var reducesMotion
 
     var body: some View {
         if hasOwnSpace {
@@ -215,7 +221,7 @@ private struct Controls: View {
                         .visualEffect { content, proxy in
                             content.offset(y: -proxy.size.height - 10)
                         }
-                        .transition(.blurReplace)
+                        .appearingOverToy(reducesMotion: reducesMotion)
                 }
             }
             .animation(.snappy(duration: 0.25), value: ControlPanel.refusal(in: player.status) == nil)

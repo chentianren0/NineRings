@@ -98,6 +98,12 @@ final class Player {
     /// The toy as it is now.
     var pose: ToyPose { session.pose }
 
+    /// The state the ring buttons show: the toy's, or the one it was in when the move in hand began. Read through the
+    /// markers, so that a view reading it follows it.
+    var shownState: PuzzleState {
+        PuzzleState(bits: markers.reduce(0) { $1.isOn ? $0 | 1 << ($1.ring - 1) : $0 })
+    }
+
     /// The name of the stage the slider is in, as written for making the move; empty before the first move.
     var stageName: String {
         session.motion?.stage(at: session.progress).name ?? ""
@@ -115,8 +121,10 @@ final class Player {
         publish()
     }
 
-    func pause() {
-        play.pause()
+    /// Stops the move part way. A `quiet` pause says nothing: the screen pauses this way before it covers the toy for a
+    /// jump, which says the news itself.
+    func pause(quiet: Bool = false) {
+        play.pause(quiet: quiet)
         publish()
     }
 
@@ -178,6 +186,7 @@ final class Player {
         lessonPage = lesson?.page
         isCongratulating = play.isCongratulating
         sound.publish(play.hearing, congratulates: play.congratulates)
+        Announcer.say(play.narration)
     }
 
     // MARK: Lesson
@@ -208,6 +217,7 @@ final class Player {
 
     /// Goes to step `index` of the lesson and plays it from its start.
     func goToLessonStep(_ index: Int) {
+        guard isInLesson else { return }
         play.goToLessonStep(index)
         publish()
     }

@@ -24,7 +24,7 @@ struct AboutScreen: View {
                         .accessibilityAddTraits(.isHeader)
                     Text(verbatim: AppInfo.version)
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .supportingTextStyle()
                 }
                 .frame(maxWidth: .infinity)
                 .multilineTextAlignment(.center)
@@ -91,7 +91,7 @@ struct AboutCommand: Commands {
     static func showPanel() {
         let text = String(localized: "about.text", table: "Screens")
         let credits = NSAttributedString(string: text, attributes: [
-            .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize),
+            .font: NSFont.preferredFont(forTextStyle: .subheadline),
             .foregroundColor: NSColor.labelColor,
         ])
         NSApplication.shared.orderFrontStandardAboutPanel(options: [.applicationName: AppInfo.name, .credits: credits])

@@ -54,6 +54,9 @@ final class CameraRig {
     private var remembered: (camera: OrbitCamera, showsDefault: Bool, viewport: Viewport)?
     /// The box the camera frames.
     private var box: ToyBounds
+    /// Whether flights cut to where they go rather than fly there, as Reduce Motion asks: the camera moves at once, on
+    /// the next frame, wherever a flight would have taken it.
+    var reducesMotion = false
     /// Whether the picture follows the move, widening to keep the sword in view as it slides.
     var followsMove = false {
         didSet { if followsMove != oldValue { revision += 1 } }
@@ -181,11 +184,12 @@ final class CameraRig {
 
     func advance(by seconds: Double) {
         guard var current = flight else { return }
-        current.elapsed = min(current.elapsed + seconds, Self.flightDuration)
-        let linear = Float(current.elapsed / Self.flightDuration)
+        let duration = reducesMotion ? 0 : Self.flightDuration
+        current.elapsed = min(current.elapsed + seconds, duration)
+        let linear = duration > 0 ? Float(current.elapsed / duration) : 1
         let destination = flightCamera ?? framing(current.to ?? defaultAngles(viewport), in: viewport)
         camera = current.from.blended(to: destination, t: linear * linear * (3 - 2 * linear))
-        flight = current.elapsed < Self.flightDuration ? current : nil
+        flight = current.elapsed < duration ? current : nil
         if flight == nil { flightCamera = nil }
         revision += 1
     }

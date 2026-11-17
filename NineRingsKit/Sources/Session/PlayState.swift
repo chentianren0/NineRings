@@ -16,6 +16,14 @@ import Puzzle
 /// - The congratulation follows the person's own toy: their toy when the lesson is closed, and, on the lesson's last
 ///   step, the toy it gives back. Arriving there, opening and closing the lesson, and going to another step are not
 ///   moves: they never congratulate, and hide the card. Solve never congratulates (see ``Congratulation``).
+/// - What is said aloud follows ``Narration`` for every change that is heard, with these exceptions. A drag of the
+///   slider says nothing: the slider says its own value. While the lesson holds the toy nothing is said: the step's
+///   text says what the toy shows, and is heard whole. A move whose end congratulates does not say its ring is off:
+///   the congratulation says it. Of the jumps, Reset and closing the lesson say what the toy now is; opening the
+///   lesson and going to a step say nothing here, since the lesson's panel says the step. The pause before a jump,
+///   while the screen covers the toy, says nothing either: what the jump says is the news.
+/// - A request that changes nothing, such as going to a step with the lesson closed, is heard and said as nothing:
+///   what the last change said is not said again.
 public struct PlayState: Sendable, Equatable {
     /// The person's own toy. While the lesson is open it waits, and the lesson's toy is shown instead.
     public private(set) var own: PuzzleSession
@@ -26,6 +34,8 @@ public struct PlayState: Sendable, Equatable {
     public private(set) var hearing = Hearing()
     /// Whether the last change was the moment to congratulate: the card has just appeared.
     public private(set) var congratulates = false
+    /// What the last change says aloud.
+    public private(set) var narration = Narration()
 
     /// The person's toy as the congratulation last saw it.
     private var judged: PuzzleSession
@@ -73,7 +83,7 @@ public struct PlayState: Sendable, Equatable {
     /// A drag of the slider.
     public mutating func scrub(to progress: Double) {
         useToy { $0.scrub(to: progress) }
-        settle()
+        settle(quiet: true)
     }
 
     public mutating func togglePlay() {
@@ -81,9 +91,10 @@ public struct PlayState: Sendable, Equatable {
         settle()
     }
 
-    public mutating func pause() {
+    /// Stops the move part way. A `quiet` pause says nothing, as the one before a jump does.
+    public mutating func pause(quiet: Bool = false) {
         if lesson != nil { lesson?.pause() } else { own.pause() }
-        settle()
+        settle(quiet: quiet)
     }
 
     /// The clock: `seconds` of the move's own time, at the playing speed.
@@ -102,7 +113,7 @@ public struct PlayState: Sendable, Equatable {
     /// Every ring on, at once: the toy's Reset, or on the lesson's steps but the last, back to its first step.
     public mutating func reset() {
         if lesson != nil { lesson?.reset() } else { own.reset() }
-        settle(jump: true)
+        settle(jump: true, sayingWhereItRests: true)
     }
 
     /// The toy set where `move` begins, playing it, with the lesson closed.
@@ -115,22 +126,22 @@ public struct PlayState: Sendable, Equatable {
 
     /// Opens the lesson at step `index`, counted from 0, keeping the toy as it is to give back on closing.
     public mutating func openLesson(at index: Int = 0) {
-        guard lesson == nil else { return }
+        guard lesson == nil else { return nothingChanged() }
         lesson = LessonRun(opening: own, at: index)
         settle(jump: true, rebase: true)
     }
 
     /// Closes the lesson: the toy is as it was before, or, on the step that gave it back, as the person has it there.
     public mutating func closeLesson() {
-        guard let lesson else { return }
+        guard let lesson else { return nothingChanged() }
         own = lesson.closingToy
         self.lesson = nil
-        settle(jump: true, rebase: true)
+        settle(jump: true, rebase: true, sayingWhereItRests: true)
     }
 
     /// Goes to step `index` of the lesson and plays it from its start.
     public mutating func goToLessonStep(_ index: Int) {
-        guard lesson != nil else { return }
+        guard lesson != nil else { return nothingChanged() }
         lesson?.go(to: index)
         settle(jump: true, rebase: true)
     }
@@ -146,16 +157,27 @@ public struct PlayState: Sendable, Equatable {
 
     // MARK: - Inside
 
+    /// After a request that changed nothing: nothing heard, nothing said, no congratulation appearing.
+    private mutating func nothingChanged() {
+        hearing = Hearing()
+        narration = Narration()
+        congratulates = false
+    }
+
     /// A change to the toy shown, as a ring tap, undo, Solve or a drag makes it: on the lesson's steps but the last,
     /// nothing happens.
     private mutating func useToy(_ change: (inout PuzzleSession) -> Void) {
         if lesson != nil { lesson?.useToy(change) } else { change(&own) }
     }
 
-    /// After a change: what is heard, and what the congratulation makes of it. A jump is heard as nothing. A change
-    /// that `rebase`s is not a move of the person's toy: the congratulation hides and takes the toy as it now is.
-    private mutating func settle(tapped: Int? = nil, jump: Bool = false, rebase: Bool = false) {
+    /// After a change: what is heard, what the congratulation makes of it, and what is said. A jump is heard as nothing,
+    /// and says where the toy rests only when `sayingWhereItRests`. A change that `rebase`s is not a move of the person's
+    /// toy: the congratulation hides and takes the toy as it now is. A `quiet` change says nothing.
+    private mutating func settle(
+        tapped: Int? = nil, jump: Bool = false, rebase: Bool = false, sayingWhereItRests: Bool = false, quiet: Bool = false
+    ) {
         let toy = toy
+        let before = heard
         hearing = jump ? Hearing() : Hearing(from: heard, to: toy, tapped: tapped)
         heard = toy
         if jump { framed = toy }
@@ -171,5 +193,17 @@ public struct PlayState: Sendable, Equatable {
             congratulation.dismiss()
         }
         congratulates = congratulation.isShowing && !wasShowing
+        narration = narrate(from: before, to: toy, jump: jump, sayingWhereItRests: sayingWhereItRests, quiet: quiet)
+    }
+
+    private func narrate(from before: PuzzleSession, to toy: PuzzleSession, jump: Bool, sayingWhereItRests: Bool, quiet: Bool) -> Narration {
+        let lessonHoldsToy = lesson.map { !$0.givesToyBack } ?? false
+        if quiet || lessonHoldsToy { return Narration() }
+        if jump { return Narration(sayingWhereItRests ? [.rested(ToySummary(toy.state))] : []) }
+        var narration = Narration(from: before, to: toy, refused: hearing.refused)
+        if congratulates {
+            narration.lines.removeAll { if case .ended = $0 { true } else { false } }
+        }
+        return narration
     }
 }
