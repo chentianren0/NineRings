@@ -6,6 +6,13 @@ struct WelcomeSheet: View {
     let onContinue: () -> Void
 
     @ScaledMetric(relativeTo: .title) private var symbolWidth = 44
+    #if os(iOS)
+    /// A phone held sideways is short: the page tightens so that its three points and Continue fit.
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    private var isShort: Bool { verticalSizeClass == .compact }
+    #else
+    private let isShort = false
+    #endif
 
     var body: some View {
         VStack(spacing: 0) {
@@ -16,6 +23,8 @@ struct WelcomeSheet: View {
             // Larger text can make the points taller than the screen.
             ScrollView { content }
                 .scrollBounceBehavior(.basedOnSize)
+                // Where the points do not all fit, as with larger text, show at once that there is more.
+                .scrollIndicatorsFlash(onAppear: true)
             #endif
             Button(action: onContinue) {
                 Text("welcome.continue", tableName: "Screens")
@@ -25,7 +34,7 @@ struct WelcomeSheet: View {
             .controlSize(.extraLarge)
             .keyboardShortcut(.defaultAction)
             .padding(.horizontal, 40)
-            .padding(.bottom, 24)
+            .padding(.bottom, isShort ? 8 : 24)
             .padding(.top, 8)
         }
         .interactiveDismissDisabled()
@@ -36,12 +45,12 @@ struct WelcomeSheet: View {
     }
 
     private var content: some View {
-        VStack(spacing: 40) {
+        VStack(spacing: isShort ? 16 : 40) {
             Text("welcome.title", tableName: "Screens")
-                .font(.largeTitle.bold())
+                .font(isShort ? .title.bold() : .largeTitle.bold())
                 .multilineTextAlignment(.center)
                 .accessibilityAddTraits(.isHeader)
-            VStack(alignment: .leading, spacing: 28) {
+            VStack(alignment: .leading, spacing: isShort ? 14 : 28) {
                 point(
                     Self.moveSymbol,
                     title: LocalizedStringResource("welcome.move.title", table: "Screens"),
@@ -60,8 +69,8 @@ struct WelcomeSheet: View {
             }
         }
         .padding(.horizontal, 40)
-        .padding(.top, Self.topPadding)
-        .padding(.bottom, Self.bottomPadding)
+        .padding(.top, isShort ? 20 : Self.topPadding)
+        .padding(.bottom, isShort ? 8 : Self.bottomPadding)
         .frame(maxWidth: 540)
         .frame(maxWidth: .infinity)
     }
