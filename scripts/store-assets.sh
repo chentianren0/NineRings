@@ -135,7 +135,7 @@ capture_simulator() {
     rm -rf "$result" "$export"
     TEST_RUNNER_STORE_MANIFEST="$manifest" TEST_RUNNER_STORE_DEVICE="$device" \
     TEST_RUNNER_STORE_LANGUAGE="$language" TEST_RUNNER_STORE_APPEARANCE="$appearance" \
-        xcodebuild test-without-building -project "$root/NineRings.xcodeproj" -scheme StoreShots \
+        xcodebuild test-without-building -project "$root/NineRings.xcodeproj" -scheme StoreShots -only-testing:StoreShots/StoreShots \
             -destination "platform=iOS Simulator,name=$simulator" -derivedDataPath "$build/app" \
             -resultBundlePath "$result" > "$result.log" 2>&1 \
         || { tail -30 "$result.log"; say "the StoreShots tests failed on $device (log: $result.log)"; return 1; }
@@ -236,8 +236,17 @@ page="$out/index.html"
     echo '<h1>Nine Rings: App Store pictures</h1><p>Each picture links to the file at full size.</p>'
     languages_found=(); for dir in "$out"/*/; do
         name="$(basename "$dir")"
-        case "$name" in captures|header) ;; *) languages_found+=("$name") ;; esac
+        case "$name" in captures|header|preview) ;; *) languages_found+=("$name") ;; esac
     done
+    if [ -d "$out/preview" ]; then
+        echo '<h2>Preview videos (made by scripts/store-preview.sh)</h2><table><tr>'
+        for dir in "$out"/preview/*/; do
+            name="$(basename "$dir")"
+            echo "<td>$name<br><video src=\"preview/$name/preview.mp4\" poster=\"preview/$name/poster.png\" controls loop muted style=\"max-height:640px;max-width:900px\"></video>"
+            echo "<br>poster frame at $(cat "$dir/poster-time.txt" 2>/dev/null) s: <a href=\"preview/$name/poster.png\">poster.png</a></td>"
+        done
+        echo '</tr></table>'
+    fi
     if [ -d "$out/header" ]; then
         echo '<h2>Product page header (3840 &times; 1646)</h2><table><tr>'
         for file in "$out"/header/*.png; do
