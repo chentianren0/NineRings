@@ -28,9 +28,23 @@ private struct AccessibilitySettings: ViewModifier {
             .environment(\.reducesMotion, reduceMotion || AccessibilityLaunchOptions.reducesMotion)
             .environment(\.differentiatesWithoutColor, differentiateWithoutColor || AccessibilityLaunchOptions.differentiatesWithoutColor)
             .environment(\.increasesContrast, contrast == .increased || AccessibilityLaunchOptions.increasesContrast)
-            #if DEBUG
-            .modifier(AccessibilityLaunchOptions.Overrides())
-            #endif
+            .debugOverrides()
+    }
+}
+
+extension View {
+    /// The debug build's forced settings, when a launch option asks for one (see ``AccessibilityLaunchOptions``).
+    @ViewBuilder
+    fileprivate func debugOverrides() -> some View {
+        #if DEBUG
+        if AccessibilityLaunchOptions.hasOverrides {
+            modifier(AccessibilityLaunchOptions.Overrides())
+        } else {
+            self
+        }
+        #else
+        self
+        #endif
     }
 }
 

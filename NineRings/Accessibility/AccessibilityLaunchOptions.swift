@@ -6,14 +6,18 @@ import AppKit
 /// Debug options for checking the app's accessibility from its own process, without VoiceOver and without touching
 /// the system's settings, which belong to the person using the computer. Every option is off in a release build.
 ///
-/// - `-reduce-motion`, `-differentiate-without-color` and `-increase-contrast` force those settings for this process:
-///   the app's own views follow them (see ``EnvironmentValues/reducesMotion``). On the Mac, `-increase-contrast` also
+/// Each option takes a value, even the switches (`-reduce-motion YES`): the system reads the arguments as name and value
+/// pairs, and a lone switch would take the next option as its value, leaving a stray word the Mac opens as a document,
+/// so that no window comes up.
+///
+/// - `-reduce-motion YES`, `-differentiate-without-color YES` and `-increase-contrast YES` force those settings for this
+///   process: the app's own views follow them (see ``EnvironmentValues/reducesMotion``). On the Mac, `-increase-contrast` also
 ///   gives the process the system's high-contrast appearance, so that the system's own controls follow it too.
 /// - `-dynamic-type accessibility3` sets the text size, by the names of `DynamicTypeSize` (`xSmall` to
 ///   `accessibility5`).
 /// - `-appearance dark` or `-appearance light` sets the appearance, on iPhone and iPad too (on the Mac the screens'
 ///   launch options do it).
-/// - `-log-announcements` writes each announcement to standard error, as it is posted.
+/// - `-log-announcements YES` writes each announcement to standard error, as it is posted.
 /// - `-print-accessibility-tree 4,10` writes the window's accessibility tree to standard error, 4 and 10 seconds
 ///   after launch: each element's role, label, value, hint and actions, as VoiceOver gets them. Mac only.
 /// - `-tap-rings 3,3,1` asks for those rings, one every 1.5 seconds, from 3 seconds after launch, as taps would.
@@ -30,10 +34,14 @@ enum AccessibilityLaunchOptions {
         (value(after: option) ?? "").split(separator: ",").compactMap { Double($0) }
     }
 
-    static let reducesMotion = arguments.contains("-reduce-motion")
-    static let differentiatesWithoutColor = arguments.contains("-differentiate-without-color")
-    static let increasesContrast = arguments.contains("-increase-contrast")
-    private static let logsAnnouncements = arguments.contains("-log-announcements")
+    private static func isOn(_ option: String) -> Bool {
+        value(after: option).map { ["YES", "yes", "1", "true"].contains($0) } ?? false
+    }
+
+    static let reducesMotion = isOn("-reduce-motion")
+    static let differentiatesWithoutColor = isOn("-differentiate-without-color")
+    static let increasesContrast = isOn("-increase-contrast")
+    private static let logsAnnouncements = isOn("-log-announcements")
     private static let treeTimes = numbers(after: "-print-accessibility-tree")
     private static let tappedRings = numbers(after: "-tap-rings").map(Int.init)
 
@@ -59,13 +67,16 @@ enum AccessibilityLaunchOptions {
         FileHandle.standardError.write(Data((line + "\n").utf8))
     }
 
-    /// The forced text size and appearance, and the timed checks.
+    /// Whether any option that changes the views or runs a timed check was given.
+    static var hasOverrides: Bool {
+        dynamicTypeSize != nil || colorScheme != nil || increasesContrast || !treeTimes.isEmpty
+    }
+
+    /// The forced text size and appearance, and the timed checks. Applied only when one of them is asked for: on the
+    /// Mac, an environment transform at the root kept a window launched behind another app from coming on screen.
     struct Overrides: ViewModifier {
         func body(content: Content) -> some View {
-            content
-                .transformEnvironment(\.dynamicTypeSize) { size in
-                    if let forced = dynamicTypeSize { size = forced }
-                }
+            sized(content)
                 #if os(iOS)
                 .preferredColorScheme(colorScheme)
                 #endif
@@ -82,6 +93,15 @@ enum AccessibilityLaunchOptions {
                     }
                     #endif
                 }
+        }
+
+        @ViewBuilder
+        private func sized(_ content: Content) -> some View {
+            if let dynamicTypeSize {
+                content.environment(\.dynamicTypeSize, dynamicTypeSize)
+            } else {
+                content
+            }
         }
     }
 

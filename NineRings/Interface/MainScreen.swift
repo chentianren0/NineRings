@@ -28,7 +28,7 @@ struct MainScreen: View {
             }
             .storeCapture(player: player, rig: rig)
             #if os(macOS)
-            .frame(minWidth: 360, minHeight: 420)
+            .frame(minHeight: 420)
             #endif
     }
 }

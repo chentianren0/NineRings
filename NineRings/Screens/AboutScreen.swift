@@ -1,9 +1,9 @@
 import SwiftUI
 
 #if os(iOS)
-/// About the app on iPhone and iPad: its icon, its name and its version, and what it is, in three sentences. Nothing
-/// else. It opens from the main screen's menu, beside Settings; on the Mac, About Nine Rings in the app menu shows the
-/// system's About panel with the same words.
+/// About the app on iPhone and iPad: its icon, its name and its version, what it is in three sentences, and links to
+/// support and the privacy policy. It opens from the main screen's menu, beside Settings. On the Mac, About Nine Rings
+/// in the app menu shows the system's About panel with the same words, and the links are in the Help menu.
 struct AboutScreen: View {
     @Environment(\.dismiss) private var dismiss
 
@@ -35,6 +35,15 @@ struct AboutScreen: View {
             Section {
                 Text("about.text", tableName: "Screens")
                     .fixedSize(horizontal: false, vertical: true)
+            }
+            // Where to ask for help, and the privacy policy: on the Mac, the Help menu holds them.
+            Section {
+                Link(destination: AppLinks.support) {
+                    Text("about.support", tableName: "Screens")
+                }
+                Link(destination: AppLinks.privacyPolicy) {
+                    Text("about.privacy", tableName: "Screens")
+                }
             }
         }
         .formStyle(.grouped)

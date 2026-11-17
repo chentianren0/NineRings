@@ -42,9 +42,21 @@ struct WelcomeSheet: View {
                 .multilineTextAlignment(.center)
                 .accessibilityAddTraits(.isHeader)
             VStack(alignment: .leading, spacing: 28) {
-                point(Self.moveSymbol, title: "welcome.move.title", detail: "welcome.move.detail")
-                point("text.bubble", title: "welcome.why.title", detail: "welcome.why.detail")
-                point("book", title: "welcome.learn.title", detail: "welcome.learn.detail")
+                point(
+                    Self.moveSymbol,
+                    title: LocalizedStringResource("welcome.move.title", table: "Screens"),
+                    detail: LocalizedStringResource("welcome.move.detail", table: "Screens")
+                )
+                point(
+                    "text.bubble",
+                    title: LocalizedStringResource("welcome.why.title", table: "Screens"),
+                    detail: LocalizedStringResource("welcome.why.detail", table: "Screens")
+                )
+                point(
+                    "book",
+                    title: LocalizedStringResource("welcome.learn.title", table: "Screens"),
+                    detail: LocalizedStringResource("welcome.learn.detail", table: "Screens")
+                )
             }
         }
         .padding(.horizontal, 40)
@@ -54,7 +66,8 @@ struct WelcomeSheet: View {
         .frame(maxWidth: .infinity)
     }
 
-    private func point(_ symbol: String, title: LocalizedStringKey, detail: LocalizedStringKey) -> some View {
+    /// One point. Its words come with their table named, so that Xcode files them in the screens' catalog.
+    private func point(_ symbol: String, title: LocalizedStringResource, detail: LocalizedStringResource) -> some View {
         HStack(alignment: .center, spacing: 16) {
             Image(systemName: symbol)
                 .font(.title)
@@ -62,9 +75,9 @@ struct WelcomeSheet: View {
                 .frame(width: symbolWidth)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text(title, tableName: "Screens")
+                Text(title)
                     .font(.headline)
-                Text(detail, tableName: "Screens")
+                Text(detail)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
