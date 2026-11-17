@@ -151,6 +151,7 @@ private struct ToyRealityView: View {
         RealityView { content in
             content.camera = .virtual
             content.renderingEffects.antialiasing = .multisample4X
+            Signposts.event("RealityView made")
             guard let scene = await SceneStore.shared.scene() else { return }
             let camera = Entity()
             camera.name = "camera"
@@ -161,7 +162,13 @@ private struct ToyRealityView: View {
             driver.step(by: 0)
             frameUpdates = content.subscribe(to: SceneEvents.Update.self) { event in
                 driver.step(by: event.deltaTime)
+                #if MEASURE && os(macOS)
+                MeasureLog.frame(delta: event.deltaTime)
+                #endif
             }
+            #if MEASURE && os(macOS)
+            MeasureScript.start(player: player, rig: rig)
+            #endif
         }
         .gesture(
             SpatialTapGesture()
@@ -188,10 +195,12 @@ final class SceneStore {
     func scene() async -> ToyScene? {
         if let making { return await making.value }
         let task = Task { () -> ToyScene? in
-            guard let scene = try? await ToyScene.make() else { return nil }
-            scene.setFloor(Framing.floor)
-            Self.makeTappable(scene.root)
-            return scene
+            await Signposts.interval("Scene") {
+                guard let scene = try? await ToyScene.make() else { return nil }
+                Signposts.interval("Floor") { scene.setFloor(Framing.floor) }
+                Signposts.interval("Tap shapes") { Self.makeTappable(scene.root) }
+                return scene
+            }
         }
         making = task
         return await task.value
@@ -228,6 +237,7 @@ private final class CanvasDriver {
     private var drawn: Player.PoseKey?
     private var drawnPose: ToyPose?
     private var drawnCamera = -1
+    private var frames = 0
 
     init(player: Player, rig: CameraRig, scene: ToyScene, camera: Entity) {
         self.player = player
@@ -237,6 +247,11 @@ private final class CanvasDriver {
     }
 
     func step(by seconds: TimeInterval) {
+        // The first update comes as the toy's first frame is drawn.
+        if frames < 2 {
+            frames += 1
+            if frames == 2 { Signposts.event("First frame") }
+        }
         player.update()
         rig.advance(by: seconds)
         // The pose depends on the move, the progress and the state alone, so it is drawn again only when one of

@@ -20,10 +20,10 @@ final class ToyScene {
     private let shadow: ModelEntity
 
     static func make() async throws -> ToyScene {
-        let meshes = try await ToyMeshes()
-        let light = try await Studio.light()
-        let shadow = try await Studio.shadow()
-        return ToyScene(meshes: meshes, light: light, shadow: shadow)
+        let meshes = try await Signposts.interval("Meshes") { try await ToyMeshes() }
+        let light = try await Signposts.interval("Light") { try await Studio.light() }
+        let shadow = try await Signposts.interval("Shadow") { try await Studio.shadow() }
+        return Signposts.interval("Entities") { ToyScene(meshes: meshes, light: light, shadow: shadow) }
     }
 
     private init(meshes: ToyMeshes, light: Entity, shadow: ModelEntity) {
