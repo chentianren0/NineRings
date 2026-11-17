@@ -41,6 +41,13 @@ struct LessonGuide {
         if player.lessonClosingJumps { cover(change) } else { change() }
     }
 
+    /// Closes the lesson at once, with no cover: for a lesson found open when its panel is already gone.
+    func closeNow() {
+        guard player.isInLesson, !isWanted() else { return }
+        player.closeLesson()
+        rig.flyBack()
+    }
+
     func goForward() {
         guard let page = player.lessonPage, page.canGoForward else { return }
         go(to: page.index + 1)
