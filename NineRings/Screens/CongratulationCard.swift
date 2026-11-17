@@ -1,4 +1,3 @@
-import Accessibility
 import Motion
 import Puzzle
 import SwiftUI
@@ -14,6 +13,7 @@ struct CongratulationCard: View {
     let onDone: () -> Void
 
     @State private var appeared = false
+    @Environment(\.reducesMotion) private var reducesMotion
 
     var body: some View {
         // One low row where the window is wide enough, so that it stays clear of the sword; stacked where it is not.
@@ -23,11 +23,15 @@ struct CongratulationCard: View {
         }
         .glassEffect(.regular, in: .rect(cornerRadius: 28))
         .accessibilityElement(children: .contain)
+        // Escape, or VoiceOver's two-finger scrub, closes it as Done does.
+        .accessibilityAction(.escape, onDone)
         .onAppear {
-            appeared = true
+            // The seal bounces once as the card appears; with Reduce Motion it stays still.
+            appeared = !reducesMotion
+            // It does not hold the toy, so it is said rather than given the focus: the person stays where they were.
             let title = String(localized: "congratulation.title", table: "Screens")
             let text = String(localized: "congratulation.text", table: "Screens")
-            AccessibilityNotification.Announcement("\(title). \(text)").post()
+            Announcer.say("\(title). \(text)")
         }
     }
 
@@ -78,7 +82,6 @@ struct CongratulationCard: View {
                 .foregroundStyle(.secondary)
         }
         .multilineTextAlignment(alignment == .center ? .center : .leading)
-        .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder
@@ -107,6 +110,7 @@ extension View {
 private struct CongratulationOverlay: ViewModifier {
     let player: Player
     let putBack: () -> Void
+    @Environment(\.reducesMotion) private var reducesMotion
 
     func body(content: Content) -> some View {
         content
@@ -120,7 +124,7 @@ private struct CongratulationOverlay: ViewModifier {
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 12)
-                    .transition(.blurReplace)
+                    .appearingOverToy(reducesMotion: reducesMotion)
                 }
             }
             .animation(.smooth(duration: 0.4), value: player.isCongratulating)

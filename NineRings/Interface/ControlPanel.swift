@@ -1,3 +1,4 @@
+import Motion
 import Session
 import SwiftUI
 
@@ -22,6 +23,7 @@ struct ControlPanel: View {
     @Bindable var player: Player
     let style: Style
     @State private var width: CGFloat = 0
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     /// The width the ring buttons take when they share a row with the controls.
     private static let ringsInRow: CGFloat = 356
@@ -30,9 +32,11 @@ struct ControlPanel: View {
     private static let rowSpacing: CGFloat = 20
     private static let padding: CGFloat = 16
 
-    /// Whether the panel is wide enough for the ring buttons and the controls in one row.
+    /// Whether the panel is wide enough for the ring buttons and the controls in one row. At the accessibility text
+    /// sizes the controls grow with the text, so they take a row of their own.
     private var isOneRow: Bool {
-        style == .floating && width >= Self.ringsInRow + Self.rowSpacing + Self.transportInRow + 2 * Self.padding
+        style == .floating && !dynamicTypeSize.isAccessibilitySize
+            && width >= Self.ringsInRow + Self.rowSpacing + Self.transportInRow + 2 * Self.padding
     }
 
     var body: some View {
@@ -64,16 +68,13 @@ struct ControlPanel: View {
         .padding(Self.padding)
         .frame(maxWidth: .infinity)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
-        .onChange(of: refusal) { _, refusal in
-            // A refusal comes after a tap with nothing moving, so say it aloud to someone who cannot see it.
-            if let refusal {
-                AccessibilityNotification.Announcement(String(localized: refusal)).post()
-            }
-        }
     }
 
+    /// The ring buttons; dimmed while the lesson holds the toy, since asking for a ring then does nothing. (What is said
+    /// aloud, a refusal among it, is the player's: see `Narration`.)
     private var rings: some View {
         RingButtons(markers: player.markers, diameter: style == .beside ? 52 : 40) { player.tap($0) }
+            .disabled(player.lessonHoldsToy)
     }
 
     /// Why the last ring asked for could not move, when that is the news.
@@ -88,7 +89,9 @@ struct ControlPanel: View {
     /// Floating, it goes on saying what it said while a refusal shows in the bubble above; beside the toy, it says the
     /// refusal itself.
     private func caption(lines: Int) -> some View {
-        ZStack(alignment: .topLeading) {
+        // At the accessibility text sizes a line holds fewer words: one more line, so that the sentence is not cut.
+        let lines = dynamicTypeSize.isAccessibilitySize ? lines + 1 : lines
+        return ZStack(alignment: .topLeading) {
             Text(verbatim: String(repeating: "\n", count: lines - 1) + " ").hidden().accessibilityHidden(true)
             if style == .beside, let refusal {
                 RefusalLabel(text: refusal)
@@ -136,6 +139,7 @@ struct ControlPanel: View {
             }
             .labelsHidden()
             .disabled(!player.hasMove)
+            .accessibilityValue(stageValue)
 
             Menu {
                 Picker(selection: $player.speed) {
@@ -154,6 +158,16 @@ struct ControlPanel: View {
             .menuIndicator(.hidden)
             .fixedSize()
             .accessibilityLabel(Text("Speed", comment: "Menu of the speeds moves play at."))
+            .accessibilityValue(Text(player.speed.spokenName))
+            .accessibilityAdjustableAction { direction in
+                let speeds = PlaybackSpeed.allCases
+                guard let index = speeds.firstIndex(of: player.speed) else { return }
+                switch direction {
+                case .increment: player.speed = speeds[min(index + 1, speeds.count - 1)]
+                case .decrement: player.speed = speeds[max(index - 1, 0)]
+                @unknown default: break
+                }
+            }
 
             Button(action: player.solve) {
                 Label { Text("Solve", comment: "Button that plays the moves left to take every ring off.") } icon: { Image(systemName: "forward.end.fill") }
@@ -164,6 +178,30 @@ struct ControlPanel: View {
         .buttonStyle(.borderless)
         .font(.title3)
         .controlSize(.large)
+    }
+}
+
+extension ControlPanel {
+    /// The slider's spoken value: the name of the stage it is in.
+    private var stageValue: Text {
+        let progress = player.progress
+        guard let stage = player.stages.last(where: { $0.start <= progress }) ?? player.stages.first else {
+            return Text(verbatim: "")
+        }
+        return Text(verbatim: Sentences.stageName(stage))
+    }
+}
+
+extension PlaybackSpeed {
+    /// The speed in words, as VoiceOver says it.
+    var spokenName: LocalizedStringResource {
+        switch self {
+        case .quarter: LocalizedStringResource("speed.quarter", table: "Accessibility")
+        case .half: LocalizedStringResource("speed.half", table: "Accessibility")
+        case .normal: LocalizedStringResource("speed.normal", table: "Accessibility")
+        case .double: LocalizedStringResource("speed.double", table: "Accessibility")
+        case .quadruple: LocalizedStringResource("speed.quadruple", table: "Accessibility")
+        }
     }
 }
 

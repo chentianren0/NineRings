@@ -1,5 +1,7 @@
 import Motion
+import Puzzle
 import RealityKit
+import Session
 import SwiftUI
 import Toy
 
@@ -8,7 +10,11 @@ import Toy
 ///
 /// The camera frames the toy in the part of the view nothing covers: the safe area's bars, and `cover`, the frame
 /// of controls floating over the toy, in the global coordinate space. With the setting to follow the move on, the
-/// picture widens while a move slides the sword, so as to keep the sword in view.
+/// picture widens while a move slides the sword, so as to keep the sword in view; with Reduce Motion it stays still,
+/// and the camera's flights cut instead of flying.
+///
+/// To VoiceOver the toy is one element, "Toy", whose value says which rings are on and which can move (see
+/// ``ToySummary``), after the status line's sentence while a move is in hand. The rings are moved by their buttons.
 struct ToyCanvas: View {
     let player: Player
     let rig: CameraRig
@@ -18,6 +24,7 @@ struct ToyCanvas: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.layoutDirection) private var layoutDirection
     @AppStorage(Framing.followsMoveKey) private var followsMove = false
+    @Environment(\.reducesMotion) private var reducesMotion
 
     var body: some View {
         GeometryReader { proxy in
@@ -28,8 +35,26 @@ struct ToyCanvas: View {
                 }
         }
         .background(Backdrop.color(for: colorScheme))
-        .onChange(of: followsMove, initial: true) { _, followsMove in
-            rig.followsMove = followsMove
+        .onChange(of: followsMove && !reducesMotion, initial: true) { _, follows in
+            rig.followsMove = follows
+        }
+        .onChange(of: reducesMotion, initial: true) { _, reduces in
+            rig.reducesMotion = reduces
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("toy.label", tableName: "Accessibility"))
+        .accessibilityValue(Text(verbatim: spokenValue))
+        .accessibilityAddTraits(.isImage)
+    }
+
+    /// The status line's sentence while a move is in hand, then which rings are on and which can move.
+    private var spokenValue: String {
+        let summary = Spoken.summary(ToySummary(player.shownState))
+        switch player.status {
+        case .playing, .paused:
+            return String(localized: "toy.valueWhileMoving \(String(localized: Sentences.status(player.status))) \(summary)", table: "Accessibility")
+        case .note, .resting:
+            return summary
         }
     }
 
@@ -70,6 +95,9 @@ private struct ToyRealityView: View {
     let tapRing: (Int) -> Void
 
     @State private var frameUpdates: EventSubscription?
+    /// With VoiceOver on, a double tap on the toy would land at its middle and ask for whichever ring is there: the
+    /// rings are moved by their buttons instead.
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
 
     var body: some View {
         RealityView { content in
@@ -94,7 +122,8 @@ private struct ToyRealityView: View {
                     if let ring = SceneStore.ring(of: value.entity) {
                         tapRing(ring)
                     }
-                }
+                },
+            isEnabled: !voiceOver
         )
         .cameraGestures(rig)
     }

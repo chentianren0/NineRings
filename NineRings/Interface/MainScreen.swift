@@ -20,6 +20,8 @@ struct MainScreen: View {
     var body: some View {
         PuzzleScreen(player: player, rig: rig)
             .welcomeOnFirstLaunch()
+            .accessibilityLaunchTaps(player)
+            .accessibilitySettings()
             .onChange(of: tallView, initial: true) { _, tallView in
                 rig.defaultAngles = Framing.defaultAngles(tallView: tallView)
                 rig.showDefault()
