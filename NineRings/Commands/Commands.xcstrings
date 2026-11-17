@@ -1,0 +1,258 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "menu.help" : {
+      "comment" : "Help menu item that opens the lesson, which is the app's help. 'Nine Rings' is the app's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nine Rings Help"
+          }
+        }
+      }
+    },
+    "menu.hideLesson" : {
+      "comment" : "Lesson menu item that closes the lesson.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide Lesson"
+          }
+        }
+      }
+    },
+    "menu.lesson" : {
+      "comment" : "Title of the menu bar menu with the lesson's commands.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lesson"
+          }
+        }
+      }
+    },
+    "menu.moveRing" : {
+      "comment" : "Puzzle menu: the submenu with one item per ring, each asking to move that ring.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move Ring"
+          }
+        }
+      }
+    },
+    "menu.nextStage" : {
+      "comment" : "Puzzle menu item that moves the slider on to the end of the move's stage.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next Stage"
+          }
+        }
+      }
+    },
+    "menu.nextStep" : {
+      "comment" : "Lesson menu item that goes to the lesson's next step.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next Step"
+          }
+        }
+      }
+    },
+    "menu.pause" : {
+      "comment" : "Puzzle menu item that stops the move part way.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause"
+          }
+        }
+      }
+    },
+    "menu.play" : {
+      "comment" : "Puzzle menu item that plays the move on the slider.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play"
+          }
+        }
+      }
+    },
+    "menu.playStepAgain" : {
+      "comment" : "Lesson menu item that plays the step's move again from its start.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play Step Again"
+          }
+        }
+      }
+    },
+    "menu.previousStage" : {
+      "comment" : "Puzzle menu item that moves the slider back to the start of the move's stage, or of the stage before. A move is written in named stages, such as 'Sword moves away'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous Stage"
+          }
+        }
+      }
+    },
+    "menu.previousStep" : {
+      "comment" : "Lesson menu item that goes to the lesson's step before.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous Step"
+          }
+        }
+      }
+    },
+    "menu.privacy" : {
+      "comment" : "Help menu item that opens the app's privacy policy in the browser.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacy Policy"
+          }
+        }
+      }
+    },
+    "menu.puzzle" : {
+      "comment" : "Title of the menu bar menu with the toy's commands: play, the stages of a move, the speed, moving a ring, solve and reset.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puzzle"
+          }
+        }
+      }
+    },
+    "menu.reset" : {
+      "comment" : "Puzzle menu item that puts every ring back on.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset"
+          }
+        }
+      }
+    },
+    "menu.ring %lld" : {
+      "comment" : "An item in the Move Ring submenu. The variable is the ring's number, 1 to 9.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ring %lld"
+          }
+        }
+      }
+    },
+    "menu.showLesson" : {
+      "comment" : "Lesson menu item that opens the lesson beside the toy.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Lesson"
+          }
+        }
+      }
+    },
+    "menu.solve" : {
+      "comment" : "Puzzle menu item that plays the moves left to take every ring off.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solve"
+          }
+        }
+      }
+    },
+    "menu.speed" : {
+      "comment" : "Puzzle menu: the submenu of speeds moves play at.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speed"
+          }
+        }
+      }
+    },
+    "menu.speed %@" : {
+      "comment" : "A speed in the Speed submenu: how many times the normal pace, such as 0.5× or 2×. The variable is the number, already formatted.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@×"
+          }
+        }
+      }
+    },
+    "menu.support" : {
+      "comment" : "Help menu item that opens, in the browser, the page where people ask for help or report a problem. 'Nine Rings' is the app's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nine Rings Support"
+          }
+        }
+      }
+    },
+    "menu.undo" : {
+      "comment" : "Edit menu item that takes back the last move of a ring, or runs the move in hand back.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo Move"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
