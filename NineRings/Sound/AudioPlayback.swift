@@ -58,7 +58,9 @@ nonisolated final class AudioPlayback: @unchecked Sendable {
     /// Renders every buffer one kind of tuning needs, ahead of the first sound.
     func prepare(notePerRing: Bool) {
         queue.async { [self] in
-            for voicing in Voicing.all(notePerRing: notePerRing) { _ = buffer(voicing) }
+            Signposts.interval("Voices") {
+                for voicing in Voicing.all(notePerRing: notePerRing) { _ = buffer(voicing) }
+            }
         }
     }
 

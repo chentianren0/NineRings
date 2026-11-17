@@ -17,7 +17,7 @@ final class ToySound {
         #if DEBUG
         if Capture.request != nil { return nil }
         #endif
-        return ToySound()
+        return Signposts.interval("Sound") { ToySound() }
     }()
 
     let playback = AudioPlayback()
@@ -35,7 +35,7 @@ final class ToySound {
 
     private init() {
         started = clock.now
-        Task.detached(priority: .utility) { Score.prepare() }
+        Task.detached(priority: .utility) { Signposts.interval("Score") { Score.prepare() } }
         playback.prepare(notePerRing: Self.notePerRing)
         if hapticsOn { haptics.prepare() }
     }
