@@ -1,12 +1,14 @@
 import Motion
 import RealityKit
 import SwiftUI
+import Toy
 
 /// The toy in 3D, filling the whole window behind the bars and controls. Each frame it moves the player and the
 /// camera on and draws what changed. A tap on a ring, its rod or its bead asks to move that ring.
 ///
 /// The camera frames the toy in the part of the view nothing covers: the safe area's bars, and `cover`, the frame
-/// of controls floating over the toy, in the global coordinate space.
+/// of controls floating over the toy, in the global coordinate space. With the setting to follow the move on, the
+/// picture widens while a move slides the sword, so as to keep the sword in view.
 struct ToyCanvas: View {
     let player: Player
     let rig: CameraRig
@@ -15,6 +17,7 @@ struct ToyCanvas: View {
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.layoutDirection) private var layoutDirection
+    @AppStorage(Framing.followsMoveKey) private var followsMove = false
 
     var body: some View {
         GeometryReader { proxy in
@@ -25,6 +28,9 @@ struct ToyCanvas: View {
                 }
         }
         .background(Backdrop.color(for: colorScheme))
+        .onChange(of: followsMove, initial: true) { _, followsMove in
+            rig.followsMove = followsMove
+        }
     }
 
     /// The whole view, and how much of each edge bars and controls cover.
@@ -143,6 +149,7 @@ private final class CanvasDriver {
     private let scene: ToyScene
     private let camera: Entity
     private var drawn: Player.PoseKey?
+    private var drawnPose: ToyPose?
     private var drawnCamera = -1
 
     init(player: Player, rig: CameraRig, scene: ToyScene, camera: Entity) {
@@ -158,12 +165,17 @@ private final class CanvasDriver {
         // The pose depends on the move, the progress and the state alone, so it is drawn again only when one of
         // them changes.
         let key = player.poseKey
+        var posed = false
         if key != drawn {
-            scene.apply(player.pose)
+            let pose = player.pose
+            scene.apply(pose)
             drawn = key
+            drawnPose = pose
+            posed = true
         }
-        if rig.revision != drawnCamera {
-            camera.transform = rig.camera.transform
+        // Following the move, the camera depends on the pose too.
+        if rig.revision != drawnCamera || (posed && rig.followsMove), let pose = drawnPose {
+            camera.transform = rig.camera(for: pose).transform
             drawnCamera = rig.revision
         }
     }

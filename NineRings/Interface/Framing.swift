@@ -32,6 +32,11 @@ enum Framing {
         return ToyBounds(poses)
     }()
 
+    /// The setting, kept under this key, that makes the picture follow the move: off at first, the picture stays still;
+    /// on, it widens while a move slides the sword, to keep in view the part of the sword it shows at rest. A launch
+    /// argument such as `-settings.followsMove YES` sets it.
+    static let followsMoveKey = "settings.followsMove"
+
     /// The shadow's height, just under the lowest the toy goes.
     static var floor: Float { rings.lower.y - 6 }
 
