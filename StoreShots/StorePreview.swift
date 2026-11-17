@@ -27,7 +27,8 @@ final class StorePreview: XCTestCase {
         let app = XCUIApplication(bundleIdentifier: "com.chentianren.PlayNineRings")
         defer { try? (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8) }
 
-        // Every ring on. Ring 1 comes off, then ring 3; ring 5 is refused, with the reason; then solve at 4x.
+        // Every ring on. Ring 1 comes off, then ring 3; ring 5 is refused, with the reason; then Solve, at 1x: Apple
+        // advises against fast motion in a preview.
         try launch(app, state: "111111111")
         let size = app.frame.size
         lines.append("screen 0 \(size.width) \(size.height)")
@@ -40,9 +41,6 @@ final class StorePreview: XCTestCase {
         pause(2.6)
         try tap(app.buttons["Ring 5"], "refuse")
         pause(3)
-        try tap(app.buttons["Speed"], "speed")
-        try tap(app.buttons["4×"], "speed4")
-        pause(1)
         try tap(app.buttons["Solve"], "solve")
         pause(8)
         mark("solving")

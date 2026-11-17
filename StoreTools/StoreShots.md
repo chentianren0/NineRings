@@ -80,11 +80,13 @@ script finds them by that exact name and stops if one is missing; make it with
 
 `scripts/store-preview.sh` (iPhone 6.3", 886 × 1920, and iPad 13", 1600 × 1200 landscape, in English) records the
 simulator's screen with `simctl io recordVideo` while `StorePreview.testPreview` plays the plan's sequence with the
-app's own buttons: ring 1 off, ring 3 off, ring 5 refused, Solve at 4×; then, launched again, the last ring off, the
+app's own buttons: ring 1 off, ring 3 off, ring 5 refused, Solve (at 1×: Apple advises against fast motion in a
+preview); then, launched again, the last ring off, the
 congratulation and Put Every Ring Back On, which brings back the first frame. The test writes the time of each tap and
 where it lands; the script cuts three pieces, joins them with half-second dissolves, draws a touch point at each tap,
-and writes H.264 at 30 frames a second with a silent stereo AAC track, and the poster frame (ring 3 going down through
-the slot). Measured on the iPhone recording: during a move a new frame comes at least every 1/30 s, but for one or two
+and writes H.264 at 30 frames a second with a silent stereo AAC track, the poster frame (ring 3 going down through
+the slot), and the same moment at the simulator's full size, upright, as `poster-full.png` (2752 × 2064 on the iPad),
+for other store pictures. Measured on the iPhone recording: during a move a new frame comes at least every 1/30 s, but for one or two
 repeated frames about every second or two.
 
 Found on the way: a tap returns at once and the app keeps a tap made during a move for when it ends, so the test's
