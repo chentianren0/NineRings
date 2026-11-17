@@ -3,36 +3,26 @@ import SwiftUI
 import CoreHaptics
 #endif
 
-/// The app's settings on iPhone and iPad: a switch for sounds, one for haptics where the device has them, and the way
-/// into About. Whoever shows it puts it in a navigation stack; as a sheet it has a close button.
+#if os(iOS)
+/// The app's settings on iPhone and iPad: a switch for sounds, and one for haptics where the device has them. It opens
+/// from the main screen's menu, as About does beside it, the same idea as the Mac's app menu.
 struct SettingsScreen: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.isPresented) private var isPresented
 
     var body: some View {
         Form {
             SettingsSwitches()
-            Section {
-                NavigationLink {
-                    AboutScreen()
-                } label: {
-                    Text("settings.about", tableName: "Screens")
-                }
-            }
         }
         .formStyle(.grouped)
         .navigationTitle(Text("settings.title", tableName: "Screens"))
-        #if os(iOS)
         .toolbar {
-            if isPresented {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(role: .close) { dismiss() }
-                }
+            ToolbarItem(placement: .confirmationAction) {
+                Button(role: .close) { dismiss() }
             }
         }
-        #endif
     }
 }
+#endif
 
 /// The switches, in a section of a form: Sounds, and Haptics where the device has haptics. Both are on at first.
 struct SettingsSwitches: View {
@@ -68,29 +58,15 @@ enum Haptics {
 }
 
 #if os(macOS)
-/// The Mac's Settings window: a General tab with the switches, and an About tab.
+/// The Mac's Settings window, opened by Settings… in the app menu: the switches alone, with no tabs, since there is
+/// one pane. About is the app menu's own item.
 struct SettingsWindow: View {
-    enum Tab: String { case general, about }
-
-    @State private var tab = ScreenLaunchOptions.settingsTab ?? .general
-
     var body: some View {
-        TabView(selection: $tab) {
-            SwiftUI.Tab(value: Tab.general) {
-                Form { SettingsSwitches() }
-                    .formStyle(.grouped)
-                    .scrollDisabled(true)
-                    .fixedSize(horizontal: false, vertical: true)
-            } label: {
-                Label { Text("settings.general", tableName: "Screens") } icon: { Image(systemName: "gearshape") }
-            }
-            SwiftUI.Tab(value: Tab.about) {
-                AboutScreen()
-            } label: {
-                Label { Text("settings.about", tableName: "Screens") } icon: { Image(systemName: "info.circle") }
-            }
-        }
-        .frame(width: 460)
+        Form { SettingsSwitches() }
+            .formStyle(.grouped)
+            .scrollDisabled(true)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(width: 420)
     }
 }
 #endif

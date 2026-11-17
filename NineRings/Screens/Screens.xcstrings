@@ -86,37 +86,13 @@
       }
     },
     "menu.about": {
-      "comment": "On the Mac, the app menu's item that shows the panel about the app.",
+      "comment": "The menu item that opens the page about the app: in the Mac's app menu, and in the main screen's menu on iPhone and iPad.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "About Nine Rings"
-          }
-        }
-      }
-    },
-    "settings.about": {
-      "comment": "In settings, the row that opens the page about the app; on the Mac, the settings window's tab with it.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "About"
-          }
-        }
-      }
-    },
-    "settings.general": {
-      "comment": "On the Mac, the settings window's tab with the switches.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "General"
           }
         }
       }
@@ -146,7 +122,7 @@
       }
     },
     "settings.title": {
-      "comment": "The title of the app's settings.",
+      "comment": "The title of the app's settings on iPhone and iPad.",
       "extractionState": "manual",
       "localizations": {
         "en": {

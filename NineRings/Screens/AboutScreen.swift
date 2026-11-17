@@ -1,7 +1,12 @@
 import SwiftUI
 
-/// About the app: its icon, its name and its version, and what it is, in three sentences. Nothing else.
+#if os(iOS)
+/// About the app on iPhone and iPad: its icon, its name and its version, and what it is, in three sentences. Nothing
+/// else. It opens from the main screen's menu, beside Settings; on the Mac, About Nine Rings in the app menu shows the
+/// system's About panel with the same words.
 struct AboutScreen: View {
+    @Environment(\.dismiss) private var dismiss
+
     var body: some View {
         Form {
             Section {
@@ -11,10 +16,8 @@ struct AboutScreen: View {
                             .resizable()
                             .scaledToFit()
                             .frame(width: 96, height: 96)
-                            #if os(iOS)
                             // The bundle's image is the square artwork; the system rounds it on the Home Screen.
                             .clipShape(.rect(cornerRadius: 22, style: .continuous))
-                            #endif
                             .accessibilityHidden(true)
                     }
                     Text(verbatim: AppInfo.name)
@@ -35,12 +38,14 @@ struct AboutScreen: View {
             }
         }
         .formStyle(.grouped)
-        .navigationTitle(Text("settings.about", tableName: "Screens"))
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button(role: .close) { dismiss() }
+            }
+        }
     }
 }
+#endif
 
 /// The app's name, version and icon, as the bundle has them.
 enum AppInfo {
@@ -59,12 +64,9 @@ enum AppInfo {
         return String(localized: "about.version \(version) \(build)", table: "Screens")
     }
 
-    /// The icon as the system draws it for this app.
+    #if os(iOS)
+    /// The icon, from the primary icon's name as the build writes it into the bundle's information.
     static var icon: Image? {
-        #if os(macOS)
-        return Image(nsImage: NSApplication.shared.applicationIconImage)
-        #else
-        // The primary icon's name, as the build writes it into the bundle's information.
         let icons = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any]
         let primary = icons?["CFBundlePrimaryIcon"] as? [String: Any]
         let names = [primary?["CFBundleIconName"] as? String] + ((primary?["CFBundleIconFiles"] as? [String])?.reversed().map { $0 } ?? [])
@@ -74,13 +76,13 @@ enum AppInfo {
             }
         }
         return nil
-        #endif
     }
+    #endif
 }
 
 #if os(macOS)
-/// The app menu's About item: the system's About panel, with the about text under the name and version, so that it
-/// says the same as the About tab in settings.
+/// The app menu's About item: the system's About panel, the Mac's own form for it, with the about text under the
+/// name and version.
 struct AboutCommand: Commands {
     var body: some Commands {
         CommandGroup(replacing: .appInfo) {

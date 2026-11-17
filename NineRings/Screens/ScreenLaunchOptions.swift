@@ -43,20 +43,10 @@ enum ScreenLaunchOptions {
         #endif
     }
 
-    #if os(macOS)
-    /// `-settings-tab about` opens the Mac's Settings window on that tab.
-    static var settingsTab: SettingsWindow.Tab? {
-        #if DEBUG
-        value(after: "-settings-tab").flatMap(SettingsWindow.Tab.init(rawValue:))
-        #else
-        nil
-        #endif
-    }
-    #endif
-
     #if DEBUG && os(macOS)
     /// For screenshots on the Mac: `-appearance light` or `-appearance dark` sets this process's appearance, whatever
-    /// the system's, and `-about-panel` shows the app menu's About panel. Call once, at launch.
+    /// the system's; `-about-panel` shows the app menu's About panel; `-show-app-menu` opens the app menu's items
+    /// over the window, since a menu in the menu bar opens only for the app in front. Call once, at launch.
     @MainActor
     static func applyToApp() {
         switch value(after: "-appearance") {
@@ -65,6 +55,15 @@ enum ScreenLaunchOptions {
         default: break
         }
         if arguments.contains("-about-panel") { AboutCommand.showPanel() }
+        if arguments.contains("-show-app-menu") {
+            Task {
+                try? await Task.sleep(for: .seconds(2))
+                guard let menu = NSApplication.shared.mainMenu?.items.first?.submenu,
+                      let view = NSApplication.shared.windows.first(where: { $0.isVisible && $0.contentView != nil })?.contentView
+                else { return }
+                menu.popUp(positioning: nil, at: NSPoint(x: 16, y: view.bounds.height - 16), in: view)
+            }
+        }
     }
     #endif
 }
