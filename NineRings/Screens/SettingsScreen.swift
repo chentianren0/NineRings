@@ -24,7 +24,8 @@ struct SettingsScreen: View {
 }
 #endif
 
-/// The switches, in a section of a form: Sounds, and Haptics where the device has haptics. Both are on at first.
+/// The switches, in a section of a form: Sounds, and Haptics where the device has haptics. Both are on at first. The
+/// view that follows the move has a section of its own below them.
 struct SettingsSwitches: View {
     @AppStorage(ScreenKey.sounds) private var sounds = true
     @AppStorage(ScreenKey.haptics) private var haptics = true
@@ -40,6 +41,7 @@ struct SettingsSwitches: View {
                 }
             }
         }
+        FollowMoveSetting()
     }
 }
 

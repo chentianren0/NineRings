@@ -2,7 +2,7 @@ name: Tools
 
 # Runs one of the package's tools on GitHub's machines instead of at home: a search or a scan that takes long,
 # or several copies of one side by side. A tool is a test that runs only when its environment variable is set
-# (see the README). It is started by hand, from the Actions tab or with `gh workflow run`, never by a push.
+# (see docs/motion.md). It is started by hand, from the Actions tab or with `gh workflow run`, never by a push.
 # What the tool prints, and any file it writes into tool-output/, is kept with the run.
 # One of these machines has 3 cores, so a single run is slower here than at home. The gain is running up to
 # five at once without keeping a Mac busy.
@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       filter:
-        description: "The test to run, as for swift test --filter, for example TuneTests"
+        description: "The test to run, as for swift test --filter, for example RingSearchTests"
         required: true
         type: string
       environment:

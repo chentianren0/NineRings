@@ -64,8 +64,10 @@ struct PairMoveOff: Sendable {
         "sword.height": [(0, 0), (0.16, -3), (0.20, -6), (0.26, -drop), (0.85, -drop), (0.90, -6), (0.93, -3), (1, 0)],
     ]
 
-    /// How far down the sword goes. Ring k must pass under ring k−1 to come off, which needs about 17 mm; with a ring
-    /// hanging behind, the sword and what rides on it can go down about 27 mm before coming within 0.3 mm of the bar.
+    /// How far down the sword goes. Ring k must pass under ring k−1 to come off. About 17 mm is an estimate of the least
+    /// that would do, measured by hand for an earlier trial of this move whose tip slid further forward for the drop;
+    /// nothing measures it for this move. With a ring hanging behind, the sword and what rides on it can go down about
+    /// 27 mm before coming within 0.3 mm of the bar (`RoomBelowTests` measures it).
     static let drop = 20.0
 
     /// Where the sword's tip is for the drop, for ring 2: 2.4 mm behind where rod k−2 hangs, 15 mm in front of ring

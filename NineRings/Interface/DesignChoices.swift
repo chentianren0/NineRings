@@ -55,6 +55,7 @@ struct DesignMenu: View {
             } label: {
                 Text(verbatim: "Tall window: first view")
             }
+            SoundBenchMenu()
         } label: {
             Label {
                 Text(verbatim: "Design")
