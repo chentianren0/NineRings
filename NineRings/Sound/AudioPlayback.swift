@@ -35,10 +35,13 @@ nonisolated final class AudioPlayback: @unchecked Sendable {
     private var buffers: [Voicing: AVAudioPCMBuffer] = [:]
     private var idleTimer: DispatchSourceTimer?
     private var engineObserver: NSObjectProtocol?
+    private var starts = EngineStarts()
 
     // Read from any thread.
     private let slide = SlideState()
     private let isAwake = Atomic<Bool>(false)
+    /// Whether a start is already on its way to the queue, so that frames asking for one do not queue one each.
+    private let startPending = Atomic<Bool>(false)
     private let lastActivity = Atomic<UInt64>(0)
     private var observers: [NSObjectProtocol] = []
 
@@ -62,9 +65,12 @@ nonisolated final class AudioPlayback: @unchecked Sendable {
     /// Plays `voicing` at `gain`, after `delay` seconds.
     func play(_ voicing: Voicing, gain: Float, delay: Double = 0) {
         touch()
+        let requested = Self.uptime()
         queue.async { [self] in
+            // A sound held up behind a failed start, or a busy queue, would come late: a wrong sound.
+            guard PlaybackRules.isFresh(requested: Self.seconds(requested), now: Self.seconds(Self.uptime())) else { return }
             guard let engine = running(), let buffer = buffer(voicing) else { return }
-            let now = DispatchTime.now().uptimeNanoseconds
+            let now = Self.uptime()
             guard let index = busyUntil.firstIndex(where: { $0 <= now }) else { return }
             let player = players[index]
             let length = Double(buffer.frameLength) / Voices.sampleRate
@@ -78,39 +84,60 @@ nonisolated final class AudioPlayback: @unchecked Sendable {
 
     /// The sword's speed now, in millimetres a second, which the slide follows.
     func setSlideSpeed(_ speed: Double) {
-        slide.speed.store(speed.bitPattern, ordering: .relaxed)
+        slide.set(speed)
         guard speed > 0 else { return }
         touch()
-        if !isAwake.load(ordering: .relaxed) {
-            queue.async { [self] in _ = running() }
+        if !isAwake.load(ordering: .relaxed),
+           startPending.compareExchange(expected: false, desired: true, ordering: .relaxed).exchanged {
+            queue.async { [self] in
+                _ = running()
+                startPending.store(false, ordering: .relaxed)
+            }
         }
     }
 
     /// Stops the engine, as when the app leaves the foreground.
     func stop() {
-        slide.speed.store(0, ordering: .relaxed)
+        slide.set(0)
         queue.async { [self] in halt() }
     }
 
     // MARK: - Inside, on the queue
 
     private func touch() {
-        lastActivity.store(DispatchTime.now().uptimeNanoseconds, ordering: .relaxed)
+        lastActivity.store(Self.uptime(), ordering: .relaxed)
     }
 
-    /// The engine, running: built if it has to be, started if it is not.
+    /// Nanoseconds since the Mac or device started, the clock every time here is read on. Safe on the audio thread.
+    static func uptime() -> UInt64 {
+        clock_gettime_nsec_np(CLOCK_UPTIME_RAW)
+    }
+
+    static func seconds(_ nanoseconds: UInt64) -> Double {
+        Double(nanoseconds) / 1e9
+    }
+
+    /// The engine, running: built if it has to be, started if it is not. After a failed start it waits before trying
+    /// again, and a second failure in a row builds it afresh (see `EngineStarts`).
     private func running() -> AVAudioEngine? {
-        if engine == nil { build() }
+        let now = Self.seconds(Self.uptime())
+        if engine == nil {
+            guard starts.mayTry(at: now) else { return nil }
+            build()
+        }
         guard let engine else { return nil }
         if !engine.isRunning {
+            guard starts.mayTry(at: now) else { return nil }
             #if os(iOS)
             try? AVAudioSession.sharedInstance().setActive(true)
             #endif
             do {
                 try engine.start()
             } catch {
+                if starts.failed(at: now) { tearDown() }
                 return nil
             }
+            starts.started()
             for player in players { try? player.playAudio() }
         }
         isAwake.store(true, ordering: .relaxed)
@@ -149,12 +176,17 @@ nonisolated final class AudioPlayback: @unchecked Sendable {
         busyUntil = Array(repeating: 0, count: players.count)
         engine.mainMixerNode.outputVolume = Self.masterVolume
         self.engine = engine
+        let posted = ObjectIdentifier(engine)
         engineObserver = NotificationCenter.default.addObserver(
             forName: .AVAudioEngineConfigurationChange, object: engine, queue: nil
         ) { [weak self] _ in
-            // The engine has stopped itself; build it again for the next sound, off this callback.
+            // The engine has stopped itself; build it again for the next sound, off this callback. A route change can
+            // post twice: the second must not tear down an engine built since for a new sound.
             guard let self else { return }
-            queue.async { self.tearDown() }
+            queue.async {
+                guard self.engine.map(ObjectIdentifier.init) == posted else { return }
+                self.tearDown()
+            }
         }
     }
 
@@ -163,6 +195,8 @@ nonisolated final class AudioPlayback: @unchecked Sendable {
         idleTimer = nil
         guard let engine, engine.isRunning else { return }
         players.forEach { $0.stop() }
+        // Stopped players are free at once, whatever they were playing.
+        busyUntil = Array(repeating: 0, count: players.count)
         engine.stop()
         isAwake.store(false, ordering: .relaxed)
         #if os(iOS)
@@ -201,8 +235,8 @@ nonisolated final class AudioPlayback: @unchecked Sendable {
         timer.schedule(deadline: .now() + 2, repeating: 2)
         timer.setEventHandler { [weak self] in
             guard let self else { return }
-            let quiet = Double(DispatchTime.now().uptimeNanoseconds - lastActivity.load(ordering: .relaxed)) / 1e9
-            if quiet > Self.idleTime && slide.speed.load(ordering: .relaxed) == 0 { halt() }
+            let quiet = Self.seconds(Self.uptime() - lastActivity.load(ordering: .relaxed))
+            if quiet > Self.idleTime && slide.heardSpeed(at: Self.uptime()) == 0 { halt() }
         }
         timer.resume()
         idleTimer = timer
@@ -231,18 +265,32 @@ nonisolated final class AudioPlayback: @unchecked Sendable {
 }
 
 /// The sword's slide, rendered as it plays: the speed the main thread sets, and the noise the audio thread renders
-/// from it (see `SlideNoise`).
+/// from it (see `SlideNoise`). A speed nobody has set for a quarter second is heard as none (see `PlaybackRules`), so
+/// that the slide falls silent, and the engine can idle, when frames stop with the sword moving.
 nonisolated final class SlideState: @unchecked Sendable {
-    /// The sword's speed in millimetres a second, as the bits of a Double.
-    let speed = Atomic<UInt64>(0)
+    /// The sword's speed in millimetres a second, as the bits of a Double, and when it was set.
+    private let speed = Atomic<UInt64>(0)
+    private let setAt = Atomic<UInt64>(0)
     /// Touched only by the audio thread, inside the render block.
     private var noise = SlideNoise()
 
+    func set(_ speed: Double) {
+        setAt.store(AudioPlayback.uptime(), ordering: .relaxed)
+        self.speed.store(speed.bitPattern, ordering: .relaxed)
+    }
+
+    /// The speed the slide hears at `now` (uptime nanoseconds).
+    func heardSpeed(at now: UInt64) -> Double {
+        let set = setAt.load(ordering: .relaxed)
+        let age = now >= set ? AudioPlayback.seconds(now - set) : 0
+        return PlaybackRules.slideSpeed(Double(bitPattern: speed.load(ordering: .relaxed)), age: age)
+    }
+
     func makeNode(format: AVAudioFormat) -> AVAudioSourceNode {
         unsafe AVAudioSourceNode(format: format) { [self] isSilence, _, frameCount, bufferList in
-            let speed = Double(bitPattern: self.speed.load(ordering: .relaxed))
-            let buffers = unsafe UnsafeMutableAudioBufferListPointer(bufferList)
-            guard let data = unsafe buffers.first?.mData?.assumingMemoryBound(to: Float.self) else { return noErr }
+            let speed = heardSpeed(at: AudioPlayback.uptime())
+            // The one buffer of the mono format, read directly: no generic collection on the audio thread.
+            guard let data = unsafe bufferList.pointee.mBuffers.mData?.assumingMemoryBound(to: Float.self) else { return noErr }
             var silent = true
             for index in 0..<Int(frameCount) {
                 let sample = noise.next(speed: speed)

@@ -17,6 +17,18 @@ final class ToyHaptics {
     static let isSupported = CHHapticEngine.capabilitiesForHardware().supportsHaptics
 
     private var engine: CHHapticEngine?
+    /// Whether the engine has to be started before the next pattern: at first, and after it stopped from outside (the
+    /// app suspended, a phone call, a server reset), when Core Haptics asks the app to start it again.
+    private var needsStart = true
+    private var isStarting = false
+    /// The pattern waiting for the engine to start: the latest only, so that a slow start never plays a burst.
+    private var waiting: CHHapticPattern?
+
+    /// Makes the engine and starts it, ahead of the first haptic.
+    func prepare() {
+        guard Self.isSupported, let engine = ready() else { return }
+        start(engine)
+    }
 
     /// One event of a move. The sword coming home is not felt.
     func play(_ event: Score.Event) {
@@ -52,10 +64,6 @@ final class ToyHaptics {
         play(events, curves: [fade])
     }
 
-    func stop() {
-        engine?.stop(completionHandler: nil)
-    }
-
     private func tap(at time: Double, intensity: Double, sharpness: Double) -> CHHapticEvent {
         CHHapticEvent(
             eventType: .hapticTransient,
@@ -68,23 +76,55 @@ final class ToyHaptics {
     }
 
     private func play(_ events: [CHHapticEvent], curves: [CHHapticParameterCurve] = []) {
-        guard Self.isSupported, let engine = ready() else { return }
+        guard Self.isSupported, let engine = ready(),
+              let pattern = try? CHHapticPattern(events: events, parameterCurves: curves) else { return }
+        if needsStart {
+            waiting = pattern
+            start(engine)
+            return
+        }
         do {
-            let pattern = try CHHapticPattern(events: events, parameterCurves: curves)
             try engine.makePlayer(with: pattern).start(atTime: CHHapticTimeImmediate)
         } catch {
-            // A haptic that cannot play is simply not felt.
+            // The engine stopped before its stopped handler reached here: start it, and play this once it runs.
+            needsStart = true
+            waiting = pattern
+            start(engine)
         }
     }
 
-    /// The engine, made on first use. It starts and stops itself: on a player's request, and when idle.
+    /// Starts the engine, without waiting for it, then plays the pattern waiting, if any.
+    private func start(_ engine: CHHapticEngine) {
+        guard !isStarting else { return }
+        isStarting = true
+        engine.start { @Sendable [weak self] error in
+            let started = error == nil
+            Task { @MainActor in self?.didStart(started) }
+        }
+    }
+
+    private func didStart(_ started: Bool) {
+        isStarting = false
+        let pattern = waiting
+        waiting = nil
+        guard started else { return }
+        needsStart = false
+        if let pattern { try? engine?.makePlayer(with: pattern).start(atTime: CHHapticTimeImmediate) }
+    }
+
+    /// The engine, made on first use. Idle, it stops itself; stopped from outside or reset, it is started again on the
+    /// next haptic. Its handlers run on Core Haptics' own queue, so they only hop to the main actor.
     private func ready() -> CHHapticEngine? {
         if let engine { return engine }
         guard let engine = try? CHHapticEngine() else { return nil }
         engine.playsHapticsOnly = true
         engine.isAutoShutdownEnabled = true
-        engine.resetHandler = { [weak engine] in try? engine?.start() }
-        engine.start(completionHandler: nil)
+        engine.stoppedHandler = { @Sendable [weak self] _ in
+            Task { @MainActor in self?.needsStart = true }
+        }
+        engine.resetHandler = { @Sendable [weak self] in
+            Task { @MainActor in self?.needsStart = true }
+        }
         self.engine = engine
         return engine
     }
@@ -93,6 +133,6 @@ final class ToyHaptics {
     func play(_ event: Score.Event) {}
     func refused() {}
     func solved() {}
-    func stop() {}
+    func prepare() {}
     #endif
 }
