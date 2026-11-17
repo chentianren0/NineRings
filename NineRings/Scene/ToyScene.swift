@@ -20,21 +20,26 @@ final class ToyScene {
     private let shadow: ModelEntity
 
     static func make() async throws -> ToyScene {
-        let meshes = try await Signposts.interval("Meshes") { try await ToyMeshes() }
-        let light = try await Signposts.interval("Light") { try await Studio.light() }
-        let shadow = try await Signposts.interval("Shadow") { try await Studio.shadow() }
-        return Signposts.interval("Entities") { ToyScene(meshes: meshes, light: light, shadow: shadow) }
+        // The three are made at the same time: RealityKit does part of each away from the main actor, so made one after
+        // another they wait for each other. This shortens the wait for the toy's first frame.
+        async let meshes = Signposts.interval("Meshes") { try await ToyMeshes() }
+        async let light = Signposts.interval("Light") { try await Studio.light() }
+        async let shadow = Signposts.interval("Shadow") { try await Studio.shadow() }
+        let parts = try await (meshes, light, shadow)
+        return Signposts.interval("Entities") { ToyScene(meshes: parts.0, light: parts.1, shadow: parts.2) }
     }
 
     private init(meshes: ToyMeshes, light: Entity, shadow: ModelEntity) {
         let wire = ToyMaterials.wire
+        // One material each, shared by every part that has it, rather than one per part.
+        let wood = ToyMaterials.wood
         rings = (1...9).map { number in
             let ring = ModelEntity(mesh: meshes.ring, materials: [wire])
             ring.name = "ring \(number)"
             return ring
         }
         rods = (1...9).map { number in
-            let rod = ModelEntity(mesh: meshes.rod, materials: [wire, ToyMaterials.wood])
+            let rod = ModelEntity(mesh: meshes.rod, materials: [wire, wood])
             rod.name = "rod \(number)"
             return rod
         }
