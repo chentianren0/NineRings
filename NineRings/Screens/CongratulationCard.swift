@@ -79,7 +79,7 @@ struct CongratulationCard: View {
                 .accessibilityAddTraits(.isHeader)
             Text("congratulation.text", tableName: "Screens")
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .supportingTextStyle()
         }
         .multilineTextAlignment(alignment == .center ? .center : .leading)
     }

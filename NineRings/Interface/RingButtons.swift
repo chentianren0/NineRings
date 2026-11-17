@@ -3,7 +3,8 @@ import SwiftUI
 
 /// Nine buttons, ring 1 on the left, on the tip's side as the toy is first seen. A filled disc is a ring that is
 /// on, an outline one that is off; a short bar under it marks a ring that can move now; an orange outline marks the
-/// ring in the way of the ring just refused. Pressing one, or its number key, asks to move its ring.
+/// ring in the way of the ring just refused. Pressing one, or its number key, asks to move its ring. The numbers and
+/// outlines meet the contrast Apple asks for: the off rings' in the primary colour, the on rings' bold.
 ///
 /// Nothing is told by colour alone: on and off are filled and outlined, and with Differentiate Without Color the ring
 /// in the way also wears the raised hand the refusal shows. VoiceOver hears the same: "Ring 3, on, can come off", with
@@ -52,14 +53,14 @@ private struct RingButton: View {
                     Circle()
                         .strokeBorder(outline, lineWidth: marker.isBlocking ? 3 : 2)
                     Text(marker.ring, format: .number)
-                        .font(.system(diameter > 44 ? .title3 : .callout, design: .rounded, weight: .semibold))
+                        .font(.system(numberStyle, design: .rounded, weight: .bold))
                         .monospacedDigit()
                         // The disc does not grow with the text: at the largest sizes the number shrinks to fit, and
                         // the Large Content Viewer shows it.
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
                         .padding(2)
-                        .foregroundStyle(marker.isOn ? AnyShapeStyle(.white) : offStyle)
+                        .foregroundStyle(marker.isOn ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
                 }
                 .aspectRatio(1, contentMode: .fit)
                 .frame(maxWidth: diameter)
@@ -70,6 +71,8 @@ private struct RingButton: View {
                             .foregroundStyle(.white, .orange)
                             .font(.system(size: diameter * 0.4))
                             .offset(x: diameter * 0.12, y: -diameter * 0.12)
+                            // A mark sized to the disc, not text: VoiceOver hears "in the way" in the button's value.
+                            .accessibilityHidden(true)
                     }
                 }
                 .scaleEffect(marker.isMoving && !reducesMotion ? 1.12 : 1)
@@ -99,9 +102,20 @@ private struct RingButton: View {
         return marker.isOn ? AnyShapeStyle(.tint) : offStyle
     }
 
-    /// The outline and number of a ring that is off: secondary, or primary with Increase Contrast.
+    /// The outline of a ring that is off: the primary colour softened, about 5:1 against the panel in light and dark,
+    /// or the primary colour itself with Increase Contrast. (The secondary colour gave 2.5:1 on the light panel.)
     private var offStyle: AnyShapeStyle {
-        increasesContrast ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary)
+        increasesContrast ? AnyShapeStyle(.primary) : AnyShapeStyle(.primary.opacity(0.6))
+    }
+
+    /// The number's text style. White on the tint measures about 3.2:1, which suffices for large text only (bold, 14 pt
+    /// and up), so the number is bold, and on the Mac, where the callout style is 12 pt, a size larger.
+    private var numberStyle: Font.TextStyle {
+        #if os(macOS)
+        .title3
+        #else
+        diameter > 44 ? .title3 : .callout
+        #endif
     }
 
     /// Whether the ring is on and can move, with a note after it when it is moving or in the way.

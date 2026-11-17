@@ -77,7 +77,7 @@ struct LessonPanel: View {
                     .accessibilityFocused($headingFocused)
                 Text(Self.place(page))
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .supportingTextStyle()
                     .monospacedDigit()
             }
             Spacer(minLength: 8)
