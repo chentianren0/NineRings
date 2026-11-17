@@ -55,6 +55,8 @@ final class Player {
     /// The person's toy as it was last published, so that each change to it can be seen whole.
     @ObservationIgnored private var published: PuzzleSession
     @ObservationIgnored private var congratulation = Congratulation()
+    /// Where the toy's sound and touch go (see `SoundListener`); silent while capturing frames.
+    @ObservationIgnored private let sound = SoundListener()
 
     /// How far through the move on the slider the toy is. Setting it is what dragging the slider does.
     var progress: Double {
@@ -119,6 +121,7 @@ final class Player {
     // MARK: Requests
 
     func tap(_ ring: Int) {
+        sound.tap(ring)
         session.tap(ring)
         publish()
     }
@@ -167,6 +170,7 @@ final class Player {
     func update() {
         let now = ContinuousClock.now
         defer { lastStep = session.isPlaying ? now : nil }
+        defer { sound.frame(session) }
         guard session.isPlaying, let lastStep else { return }
         let elapsed = now - lastStep
         // One frame's step is capped, so that after a pause in the frames, such as time in the background, the move
@@ -197,6 +201,7 @@ final class Player {
         }
         published = ownSession
         isCongratulating = congratulation.isShowing
+        sound.publish(session, isCongratulating: isCongratulating)
     }
 
     // MARK: Lesson
