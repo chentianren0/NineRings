@@ -2,7 +2,7 @@
   "sourceLanguage": "en",
   "strings": {
     "%@×": {
-      "comment": "The speed button's label: how many times the normal speed moves play at, such as 0.5×."
+      "comment": "A playing speed: how many times the normal pace, such as 0.5× or 2×.\nThe speed button's label: how many times the normal speed moves play at, such as 0.5×."
     },
     "All nine rings are on the sword. Click a ring to move it.": {
       "comment": "Status at the start, with every ring on, on the Mac. A ring is clicked in the 3D view or by its numbered button."
@@ -64,9 +64,6 @@
     "Put every ring back on": {
       "comment": "Tooltip on the Reset button."
     },
-    "Puzzle": {
-      "comment": "Tab with the toy."
-    },
     "Reset": {
       "comment": "Toolbar button that puts every ring back on."
     },
@@ -89,7 +86,7 @@
       "comment": "Spoken name of the row of nine ring buttons."
     },
     "Settings": {
-      "comment": "Tab with the app's settings."
+      "comment": "Menu item that opens the app's settings."
     },
     "Show how the puzzle works": {
       "comment": "Tooltip on the Lesson button."
