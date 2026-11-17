@@ -21,7 +21,7 @@ final class ToySound {
     }()
 
     let playback = AudioPlayback()
-    private let haptics = Haptics()
+    private let haptics = ToyHaptics()
     private var thinning = Thinning()
     private let clock = ContinuousClock()
     private let started: ContinuousClock.Instant
@@ -29,8 +29,8 @@ final class ToySound {
     private var lastFrame: (session: PuzzleSession, time: ContinuousClock.Instant)?
     /// Whether the sound bench is playing the slide on its own, which the frames then leave alone.
     private var isAuditioningSlide = false
-    /// A ring's move that ended with every ring off waits this long, in seconds, before the phrase, so that the ring
-    /// is heard coming to rest first.
+    /// The congratulation's phrase waits this long, in seconds, after the move that took the last ring off, so that
+    /// the ring is heard coming to rest first.
     static let solvedDelay = 0.25
 
     private init() {
@@ -41,8 +41,14 @@ final class ToySound {
 
     // MARK: Settings
 
-    var soundsOn: Bool { UserDefaults.standard.object(forKey: SoundKey.sounds) as? Bool ?? true }
-    var hapticsOn: Bool { Haptics.isSupported && (UserDefaults.standard.object(forKey: SoundKey.haptics) as? Bool ?? true) }
+    var soundsOn: Bool { Self.isOn(SoundKey.sounds) }
+    var hapticsOn: Bool { ToyHaptics.isSupported && Self.isOn(SoundKey.haptics) }
+
+    /// A switch's stored value, on when nothing is stored. `bool(forKey:)` also reads a launch argument such as
+    /// `-settings.sounds NO`, which arrives as text.
+    private static func isOn(_ key: String) -> Bool {
+        UserDefaults.standard.object(forKey: key) == nil || UserDefaults.standard.bool(forKey: key)
+    }
 
     /// Whether each ring has its own note, or all sound alike. A release build has a note per ring.
     static var notePerRing: Bool {
@@ -71,10 +77,12 @@ final class ToySound {
             if sounds { playback.play(.refusal, gain: 1) }
             if feels { haptics.refused() }
         }
-        if hearing.isSolved {
-            if sounds { playback.play(.solved, gain: 1, delay: Self.solvedDelay) }
-            if feels { haptics.solved() }
-        }
+    }
+
+    /// The congratulation's moment: the person's own move has taken the last ring off.
+    func congratulate() {
+        if soundsOn { playback.play(.solved, gain: 1, delay: Self.solvedDelay) }
+        if hapticsOn { haptics.solved() }
     }
 
     /// The session as it is drawn this frame: the sword's speed since the last frame, for its slide.
@@ -138,22 +146,27 @@ final class ToySound {
 }
 
 /// What the player passes on to the toy's sound, in one place: every change it publishes, the ring just tapped, and
-/// each frame. It keeps the session as last heard, so that each change is heard from where the last one left off.
+/// each frame. It keeps the session as last heard, so that each change is heard from where the last one left off,
+/// and plays the solved phrase when the congratulation appears (the person's own move took the last ring off; see
+/// `Congratulation`), never after Solve.
 @MainActor
 final class SoundListener {
     private var heard: PuzzleSession?
     private var tapped: Int?
+    private var wasCongratulating = false
 
     /// A ring was asked to move: asking twice for a ring the rule refuses is heard twice.
     func tap(_ ring: Int) {
         tapped = ring
     }
 
-    /// The session as the player publishes it.
-    func publish(_ session: PuzzleSession) {
+    /// The session as the player publishes it, and whether the congratulation is showing.
+    func publish(_ session: PuzzleSession, isCongratulating: Bool) {
         if let heard { ToySound.shared?.hear(Hearing(from: heard, to: session, tapped: tapped)) }
+        if isCongratulating && !wasCongratulating { ToySound.shared?.congratulate() }
         heard = session
         tapped = nil
+        wasCongratulating = isCongratulating
     }
 
     /// The session as it is drawn this frame.

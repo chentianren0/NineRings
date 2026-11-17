@@ -2,6 +2,7 @@ import Motion
 import Puzzle
 
 /// What is heard and felt as a session goes from one moment to the next: the one rule for when the toy sounds.
+/// (The congratulation's moment, and its phrase, follow `Congratulation`, not this.)
 ///
 /// An event of a move's score sounds when the progress crosses it (see ``Score/events(of:from:to:)``): playing at any
 /// speed, paused part way, or dragged with the slider either way. Between two moments of a session the move on the
@@ -21,8 +22,6 @@ public struct Hearing: Sendable, Equatable {
 
     /// The events crossed, in order.
     public var events: [Heard] = []
-    /// Whether a move ended with every ring off.
-    public var isSolved = false
     /// The ring whose move the rule just refused, if any.
     public var refused: Int?
     /// How far the sword travelled, in millimetres.
@@ -38,7 +37,6 @@ public struct Hearing: Sendable, Equatable {
         }
         // A different start is a jump to a chosen move; no move is a jump back to every ring on.
         guard after.start == before.start, let move = after.current else { return }
-        isSolved = after.state == .allOff && before.state != .allOff
         if move == before.current {
             add(move, from: before.progress, to: after.progress, in: after)
             return

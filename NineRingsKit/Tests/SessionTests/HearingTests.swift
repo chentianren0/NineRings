@@ -10,11 +10,11 @@ import Testing
     static let steps = [0.013, 0.05, 0.0007, 0.1, 0.031, 0.4, 0.002, 0.07]
 
     /// Solving from every ring on, played on in uneven steps, hears every event of every move made, once and in
-    /// order, solves once, and hears the sword travel its whole way.
+    /// order, and hears the sword travel its whole way.
     @Test func solvingHearsEveryEventOnce() {
         var session = PuzzleSession()
         session.solve()
-        var heard: [Hearing.Heard] = [], solved = 0, travel = 0.0
+        var heard: [Hearing.Heard] = [], travel = 0.0
         var step = 0
         while session.isPlaying {
             let before = session
@@ -23,7 +23,6 @@ import Testing
             let hearing = Hearing(from: before, to: session)
             heard += hearing.events
             travel += hearing.swordTravel
-            if hearing.isSolved { solved += 1 }
             #expect(hearing.refused == nil)
         }
         #expect(session.state == .allOff && session.moveCount == 341)
@@ -31,7 +30,6 @@ import Testing
             Score(move).events.enumerated().map { Hearing.Heard(event: $1, move: move, index: $0, moveNumber: number) }
         }
         #expect(heard == expected)
-        #expect(solved == 1)
         let whole = session.made.map { Score($0).totalSwordTravel }.reduce(0, +)
         #expect(abs(travel - whole) < 1e-6 * whole)
     }

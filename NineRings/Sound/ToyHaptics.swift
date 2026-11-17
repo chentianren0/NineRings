@@ -11,7 +11,7 @@ import CoreHaptics
 /// each pattern can follow its sound. Where the device has no haptics (an iPad, a Mac, the simulator) nothing
 /// happens and nothing fails.
 @MainActor
-final class Haptics {
+final class ToyHaptics {
     #if os(iOS)
     /// Whether this device can play haptics.
     static let isSupported = CHHapticEngine.capabilitiesForHardware().supportsHaptics
