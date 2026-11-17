@@ -42,6 +42,7 @@ struct PuzzleScreen: View {
                 }
                 .arrangementViewStyle(.overlay)
             }
+            .congratulation(player) { jump { player.reset() } }
             .navigationTitle(Text("Nine Rings", comment: "The window's title."))
             .toolbar(removing: .title)
             #if os(iOS)
@@ -53,7 +54,7 @@ struct PuzzleScreen: View {
             }
             #if os(iOS)
             .sheet(isPresented: $showsSettings) {
-                NavigationStack { SettingsPlaceholder() }
+                NavigationStack { SettingsScreen() }
             }
             #endif
         }

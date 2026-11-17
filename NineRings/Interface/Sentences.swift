@@ -26,7 +26,7 @@ enum Sentences {
             return blocked(ring, by: block)
         case .resting(let state):
             if state == .allOff {
-                return LocalizedStringResource("All rings are off. The puzzle is solved.", comment: "Status when every ring is off the sword.")
+                return LocalizedStringResource("All rings are off.", comment: "Status when every ring is off the sword. The congratulation says the rest.")
             }
             #if os(macOS)
             if state == .allOn {

@@ -10,8 +10,8 @@
     "All nine rings are on the sword. Tap a ring to move it.": {
       "comment": "Status at the start, with every ring on. A ring is tapped in the 3D view or by its numbered button."
     },
-    "All rings are off. The puzzle is solved.": {
-      "comment": "Status when every ring is off the sword."
+    "All rings are off.": {
+      "comment": "Status when every ring is off the sword. The congratulation says the rest."
     },
     "Click a ring to move it.": {
       "comment": "Status when nothing is moving, on the Mac. A ring is clicked in the 3D view or by its numbered button."

@@ -1,0 +1,270 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "about.name": {
+      "comment": "The app's name, shown on the page about the app under its icon. Usually kept as it is.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nine Rings"
+          }
+        }
+      }
+    },
+    "about.text": {
+      "comment": "On the page about the app: what the app is. The sword is the wire the rings sit on; a rod is the wire that hangs from each ring. Use the same words as in the rest of the app.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nine Rings shows how the nine linked rings puzzle works. The puzzle is a wire sword with nine rings on it, each held by a rod that links it to the next, and the aim is to take every ring off. The toy here plays every one of the puzzle’s 511 moves, each by the puzzle’s one rule."
+          }
+        }
+      }
+    },
+    "about.version %@ %@": {
+      "comment": "On the page about the app, under its name. The first variable is the version, such as 1.0; the second the build number, such as 12.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %1$@ (%2$@)"
+          }
+        }
+      }
+    },
+    "congratulation.done": {
+      "comment": "Button on the congratulation that closes it and leaves the toy as it is.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
+    },
+    "congratulation.putBack": {
+      "comment": "Button on the congratulation that puts every ring back on, to start again. Same action as the Reset button.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Put Every Ring Back On"
+          }
+        }
+      }
+    },
+    "congratulation.text": {
+      "comment": "Shown when the person's own move has taken the last ring off: the sentence under the title.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You took all nine rings off the sword. The puzzle is solved."
+          }
+        }
+      }
+    },
+    "congratulation.title": {
+      "comment": "Shown when the person's own move has taken the last ring off: its title.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All Rings Off"
+          }
+        }
+      }
+    },
+    "menu.about": {
+      "comment": "On the Mac, the app menu's item that shows the panel about the app.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About Nine Rings"
+          }
+        }
+      }
+    },
+    "settings.about": {
+      "comment": "In settings, the row that opens the page about the app; on the Mac, the settings window's tab with it.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About"
+          }
+        }
+      }
+    },
+    "settings.general": {
+      "comment": "On the Mac, the settings window's tab with the switches.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "General"
+          }
+        }
+      }
+    },
+    "settings.haptics": {
+      "comment": "A switch in settings that turns the vibrations the app makes on or off. Shown only on devices that can make them.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haptics"
+          }
+        }
+      }
+    },
+    "settings.sounds": {
+      "comment": "A switch in settings that turns the app's sounds on or off.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sounds"
+          }
+        }
+      }
+    },
+    "settings.title": {
+      "comment": "The title of the app's settings.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        }
+      }
+    },
+    "welcome.continue": {
+      "comment": "The welcome page's one button, which closes it for good.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        }
+      }
+    },
+    "welcome.learn.detail": {
+      "comment": "The welcome page, third point: one sentence under the heading. The lesson explains the puzzle's rule and its two moves.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A short lesson explains the rule and the two moves, whenever you want it."
+          }
+        }
+      }
+    },
+    "welcome.learn.title": {
+      "comment": "The welcome page, third point: a short heading.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Learn how it works"
+          }
+        }
+      }
+    },
+    "welcome.move.detail": {
+      "comment": "The welcome page, first point: one sentence under the heading. 'Tap' on iPhone and iPad, 'Click' on the Mac. A ring is tapped in the 3D view or by its numbered button.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "device": {
+              "mac": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Click a ring to take it off the sword or put it back on."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Tap a ring to take it off the sword or put it back on."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "welcome.move.title": {
+      "comment": "The welcome page, first point: a short heading.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move the rings"
+          }
+        }
+      }
+    },
+    "welcome.title": {
+      "comment": "The welcome page, shown once on first launch: its title.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome to Nine Rings"
+          }
+        }
+      }
+    },
+    "welcome.why.detail": {
+      "comment": "The welcome page, second point: one sentence under the heading.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When a ring can’t move, the app tells you which ring is in the way and why."
+          }
+        }
+      }
+    },
+    "welcome.why.title": {
+      "comment": "The welcome page, second point: a short heading.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See why"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

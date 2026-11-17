@@ -35,7 +35,7 @@ struct MainScreen: View {
                         Label { Text("Lesson", comment: "Tab with the lesson on how the puzzle works.") } icon: { Image(systemName: "book") }
                     }
                     Tab {
-                        NavigationStack { SettingsPlaceholder() }
+                        NavigationStack { SettingsScreen() }
                     } label: {
                         Label { Text("Settings", comment: "Tab with the app's settings.") } icon: { Image(systemName: "gear") }
                     }
@@ -43,6 +43,7 @@ struct MainScreen: View {
                 .tabViewStyle(.sidebarAdaptable)
             }
         }
+        .welcomeOnFirstLaunch()
         .onChange(of: tallView, initial: true) { _, tallView in
             rig.defaultAngles = Framing.defaultAngles(tallView: tallView)
             rig.showDefault()

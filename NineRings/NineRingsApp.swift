@@ -21,11 +21,13 @@ struct NineRingsApp: App {
             #endif
         }
         .defaultSize(width: 1100, height: 720)
+        #if os(macOS)
+        .commands { AboutCommand() }
+        #endif
 
         #if os(macOS)
         Settings {
-            SettingsPlaceholder()
-                .frame(width: 420, height: 280)
+            SettingsWindow()
         }
         #endif
     }
