@@ -81,7 +81,7 @@ struct PuzzleCommands: Commands {
     }
 
     var body: some Commands {
-        // One window: the toy is one, and a second window would be a second toy.
+        // One window: the toy is one, and a second window would be a second toy, heard over the first.
         CommandGroup(replacing: .newItem) {}
 
         CommandGroup(replacing: .undoRedo) {

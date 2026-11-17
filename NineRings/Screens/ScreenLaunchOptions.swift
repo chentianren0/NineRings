@@ -70,7 +70,10 @@ enum ScreenLaunchOptions {
         let start = value(after: "-perform-after").flatMap(Double.init) ?? 2
         Task {
             try? await Task.sleep(for: .seconds(start))
-            let window = NSApplication.shared.windows.first { $0.isVisible && $0.title == String(localized: "Nine Rings") }
+            // The toy's window: the largest one showing, larger than Settings or the About panel.
+            let window = NSApplication.shared.windows
+                .filter { $0.isVisible && $0.level == .normal }
+                .max { $0.frame.width < $1.frame.width }
             if let size, size.count == 2, let window {
                 window.setContentSize(NSSize(width: size[0], height: size[1]))
                 log("window content size: \(window.contentLayoutRect.size), minimum: \(window.contentMinSize)")

@@ -43,3 +43,7 @@ Every pull request that touches the code runs these tests on GitHub and builds t
 ## Where it stands
 
 The motion is done: every move of the puzzle is written and checked. The app around it is being made ready for the App Store, and is not there yet. What is left is in the issues, listed in the pinned one, [What is left before the App Store](https://github.com/chentianren0/new_nine_rings_nov/issues/34).
+
+## Privacy
+
+Nine Rings collects no data. Read the [privacy policy](docs/privacy.md).

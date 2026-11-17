@@ -1,171 +1,171 @@
 {
-  "sourceLanguage": "en",
-  "strings": {
-    "%@×": {
-      "comment": "A playing speed: how many times the normal pace, such as 0.5× or 2×.\nThe speed button's label: how many times the normal speed moves play at, such as 0.5×."
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@×" : {
+      "comment" : "A playing speed: how many times the normal pace, such as 0.5× or 2×.\nThe speed button's label: how many times the normal speed moves play at, such as 0.5×."
     },
-    "All nine rings are on the sword. Click a ring to move it.": {
-      "comment": "Status at the start, with every ring on, on the Mac. A ring is clicked in the 3D view or by its numbered button."
+    "All nine rings are on the sword. Click a ring to move it." : {
+      "comment" : "Status at the start, with every ring on, on the Mac. A ring is clicked in the 3D view or by its numbered button."
     },
-    "All nine rings are on the sword. Tap a ring to move it.": {
-      "comment": "Status at the start, with every ring on. A ring is tapped in the 3D view or by its numbered button."
+    "All nine rings are on the sword. Tap a ring to move it." : {
+      "comment" : "Status at the start, with every ring on. A ring is tapped in the 3D view or by its numbered button."
     },
-    "All rings are off.": {
-      "comment": "Status when every ring is off the sword. The congratulation says the rest."
+    "All rings are off." : {
+      "comment" : "Status when every ring is off the sword. The congratulation says the rest."
     },
-    "Back": {
-      "comment": "Lesson button that goes to the step before."
+    "Back" : {
+      "comment" : "Lesson button that goes to the step before."
     },
-    "Choose how fast moves play": {
-      "comment": "Tooltip on the speed button."
+    "can’t move while ring %lld is off" : {
+      "comment" : "Spoken hint on a ring button that cannot move. The variable is the ring just before it, which is off."
     },
-    "Click a ring to move it.": {
-      "comment": "Status when nothing is moving, on the Mac. A ring is clicked in the 3D view or by its numbered button."
+    "can’t move while ring %lld is on" : {
+      "comment" : "Spoken hint on a ring button that cannot move. The variable is a ring before it (a lower number) that is on."
     },
-    "Close": {
-      "comment": "Button that closes the lesson."
+    "Choose how fast moves play" : {
+      "comment" : "Tooltip on the speed button."
     },
-    "Close the lesson": {
-      "comment": "Tooltip on the lesson's Close button."
+    "Click a ring to move it." : {
+      "comment" : "Status when nothing is moving, on the Mac. A ring is clicked in the 3D view or by its numbered button."
     },
-    "Done": {
-      "comment": "Lesson button on the last step that closes the lesson."
+    "Close" : {
+      "comment" : "Button that closes the lesson."
     },
-    "Drag to go through the move": {
-      "comment": "Tooltip on the slider that runs through the move."
+    "Close the lesson" : {
+      "comment" : "Tooltip on the lesson's Close button."
     },
-    "Follow the Move": {
-      "comment": "A switch in settings. When on, the view of the toy widens while a ring moves, so that the sword stays in sight as it is drawn back."
+    "Done" : {
+      "comment" : "Lesson button on the last step that closes the lesson."
     },
-    "From Above": {
-      "comment": "View menu item: the toy seen from above."
+    "Drag to go through the move" : {
+      "comment" : "Tooltip on the slider that runs through the move."
     },
-    "From the Side": {
-      "comment": "View menu item: the toy seen from the side."
+    "Follow the Move" : {
+      "comment" : "A switch in settings. When on, the view of the toy widens while a ring moves, so that the sword stays in sight as it is drawn back."
     },
-    "From the Tip": {
-      "comment": "View menu item: the toy seen end on, from the sword's tip."
+    "From Above" : {
+      "comment" : "View menu item: the toy seen from above."
     },
-    "Lesson": {
-      "comment": "Toolbar button that shows or hides the lesson on how the puzzle works."
+    "From the Side" : {
+      "comment" : "View menu item: the toy seen from the side."
     },
-    "Move ring %lld": {
-      "comment": "Tooltip on a ring button. The variable is the ring's number."
+    "From the Tip" : {
+      "comment" : "View menu item: the toy seen end on, from the sword's tip."
     },
-    "Next": {
-      "comment": "Lesson button that goes to the next step."
+    "Lesson" : {
+      "comment" : "Title of the lesson's panel.\nToolbar button that shows or hides the lesson on how the puzzle works."
     },
-    "Nine Rings": {
-      "comment": "The window's title."
+    "Move ring %lld" : {
+      "comment" : "Tooltip on a ring button. The variable is the ring's number."
     },
-    "Off": {
-      "comment": "Spoken value of a ring button: the ring is off and cannot move now."
+    "Next" : {
+      "comment" : "Lesson button that goes to the next step."
     },
-    "Off, can go on": {
-      "comment": "Spoken value of a ring button: the ring is off and can go on now."
+    "Nine Rings" : {
+      "comment" : "The window's title."
     },
-    "On": {
-      "comment": "Spoken value of a ring button: the ring is on and cannot move now."
+    "Off" : {
+      "comment" : "Spoken value of a ring button: the ring is off and cannot move now."
     },
-    "On, can come off": {
-      "comment": "Spoken value of a ring button: the ring is on and can come off now."
+    "Off, can go on" : {
+      "comment" : "Spoken value of a ring button: the ring is off and can go on now."
     },
-    "Pause": {
-      "comment": "Button that stops the move part way."
+    "On" : {
+      "comment" : "Spoken value of a ring button: the ring is on and cannot move now."
     },
-    "Pause the move": {
-      "comment": "Tooltip on the Pause button."
+    "On, can come off" : {
+      "comment" : "Spoken value of a ring button: the ring is on and can come off now."
     },
-    "Paused: ring %lld coming off — %@": {
-      "comment": "Status while a ring's move is stopped part way. The first variable is the ring's number, the second the name of the stage."
+    "Pause" : {
+      "comment" : "Button that stops the move part way."
     },
-    "Paused: ring %lld going on — %@": {
-      "comment": "Status while a ring's move is stopped part way. The first variable is the ring's number, the second the name of the stage."
+    "Pause the move" : {
+      "comment" : "Tooltip on the Pause button."
     },
-    "Play": {
-      "comment": "Button that plays the move on the slider."
+    "Paused: ring %lld coming off — %@" : {
+      "comment" : "Status while a ring's move is stopped part way. The first variable is the ring's number, the second the name of the stage."
     },
-    "Play Again": {
-      "comment": "Lesson button that plays the step's move again from the start."
+    "Paused: ring %lld going on — %@" : {
+      "comment" : "Status while a ring's move is stopped part way. The first variable is the ring's number, the second the name of the stage."
     },
-    "Play the move": {
-      "comment": "Tooltip on the Play button."
+    "Play" : {
+      "comment" : "Button that plays the move on the slider."
     },
-    "Play the moves left to take every ring off": {
-      "comment": "Tooltip on the Solve button."
+    "Play Again" : {
+      "comment" : "Lesson button that plays the step's move again from the start."
     },
-    "Progress": {
-      "comment": "Spoken name of the slider that runs through the move."
+    "Play the move" : {
+      "comment" : "Tooltip on the Play button."
     },
-    "Put every ring back on": {
-      "comment": "Tooltip on the Reset button."
+    "Play the moves left to take every ring off" : {
+      "comment" : "Tooltip on the Solve button."
     },
-    "Reset": {
-      "comment": "Toolbar button that puts every ring back on."
+    "Progress" : {
+      "comment" : "Spoken name of the slider that runs through the move."
     },
-    "Ring %lld": {
-      "comment": "Spoken name of a ring button. The variable is the ring's number."
+    "Put every ring back on" : {
+      "comment" : "Tooltip on the Reset button."
     },
-    "Ring %lld can’t move while ring %lld is off: ring %lld’s rod runs through ring %lld, and that rod is out of the slot, so ring %lld can’t pass through the slot.": {
-      "comment": "Why a ring cannot move. The first, fourth and fifth variables are the ring tapped; the second and third the ring just before it, which is off. A ring's rod is the wire that holds it; the slot is the gap between the sword's two rails."
+    "Reset" : {
+      "comment" : "Toolbar button that puts every ring back on."
     },
-    "Ring %lld can’t move while ring %lld is on: ring %lld’s rod stands in the slot between ring %lld and the tip.": {
-      "comment": "Why a ring cannot move. The first and fourth variables are the ring tapped; the second and third a ring before it (a lower number) that is on. A ring's rod is the wire that holds it; the slot is the gap between the sword's two rails; the tip is the sword's rounded end."
+    "Ring %lld" : {
+      "comment" : "Spoken name of a ring button. The variable is the ring's number."
     },
-    "Ring %lld comes off — %@": {
-      "comment": "Status while a ring comes off. The first variable is the ring's number, the second the name of the stage the move is in."
+    "Ring %lld can’t move while ring %lld is off: ring %lld’s rod runs through ring %lld, and that rod is out of the slot, so ring %lld can’t pass through the slot." : {
+      "comment" : "Why a ring cannot move. The first, fourth and fifth variables are the ring tapped; the second and third the ring just before it, which is off. A ring's rod is the wire that holds it; the slot is the gap between the sword's two rails."
     },
-    "Ring %lld goes on — %@": {
-      "comment": "Status while a ring goes on. The first variable is the ring's number, the second the name of the stage the move is in."
+    "Ring %lld can’t move while ring %lld is on: ring %lld’s rod stands in the slot between ring %lld and the tip." : {
+      "comment" : "Why a ring cannot move. The first and fourth variables are the ring tapped; the second and third a ring before it (a lower number) that is on. A ring's rod is the wire that holds it; the slot is the gap between the sword's two rails; the tip is the sword's rounded end."
     },
-    "Rings": {
-      "comment": "Spoken name of the row of nine ring buttons."
+    "Ring %lld comes off — %@" : {
+      "comment" : "Status while a ring comes off. The first variable is the ring's number, the second the name of the stage the move is in."
     },
-    "Settings": {
-      "comment": "Menu item that opens the app's settings."
+    "Ring %lld goes on — %@" : {
+      "comment" : "Status while a ring goes on. The first variable is the ring's number, the second the name of the stage the move is in."
     },
-    "Show how the puzzle works": {
-      "comment": "Tooltip on the Lesson button."
+    "Rings" : {
+      "comment" : "Spoken name of the row of nine ring buttons."
     },
-    "Solve": {
-      "comment": "Button that plays the moves left to take every ring off."
+    "Settings" : {
+      "comment" : "Menu item that opens the app's settings."
     },
-    "Speed": {
-      "comment": "Menu of the speeds moves play at."
+    "Show how the puzzle works" : {
+      "comment" : "Tooltip on the Lesson button."
     },
-    "Standard View": {
-      "comment": "View menu item: back to the view the toy is first seen from."
+    "Solve" : {
+      "comment" : "Button that plays the moves left to take every ring off."
     },
-    "Step %lld of %lld": {
-      "comment": "Where the reader is in the lesson. The first variable is the step's number, the second how many steps there are."
+    "Speed" : {
+      "comment" : "Menu of the speeds moves play at."
     },
-    "Tap a ring to move it.": {
-      "comment": "Status when nothing is moving. A ring is tapped in the 3D view or by its numbered button."
+    "Standard View" : {
+      "comment" : "View menu item: back to the view the toy is first seen from."
     },
-    "Undo": {
-      "comment": "Button that takes back the last move."
+    "Step %lld of %lld" : {
+      "comment" : "Where the reader is in the lesson. The first variable is the step's number, the second how many steps there are."
     },
-    "Undo the last move": {
-      "comment": "Tooltip on the Undo button."
+    "Tap a ring to move it." : {
+      "comment" : "Status when nothing is moving. A ring is tapped in the 3D view or by its numbered button."
     },
-    "Undoing: ring %lld comes back off — %@": {
-      "comment": "Status while undoing a move that put a ring on. The first variable is the ring's number, the second the name of the stage the move is in."
+    "Undo" : {
+      "comment" : "Button that takes back the last move."
     },
-    "Undoing: ring %lld goes back on — %@": {
-      "comment": "Status while undoing a move that took a ring off. The first variable is the ring's number, the second the name of the stage the move is in."
+    "Undo the last move" : {
+      "comment" : "Tooltip on the Undo button."
     },
-    "View": {
-      "comment": "Toolbar menu of the places to see the toy from."
+    "Undoing: ring %lld comes back off — %@" : {
+      "comment" : "Status while undoing a move that put a ring on. The first variable is the ring's number, the second the name of the stage the move is in."
     },
-    "While a ring moves, the view widens to keep the sword in sight.": {
-      "comment": "The line under the Follow the Move switch in settings, saying what it does."
+    "Undoing: ring %lld goes back on — %@" : {
+      "comment" : "Status while undoing a move that took a ring off. The first variable is the ring's number, the second the name of the stage the move is in."
     },
-    "can’t move while ring %lld is off": {
-      "comment": "Spoken hint on a ring button that cannot move. The variable is the ring just before it, which is off."
+    "View" : {
+      "comment" : "Toolbar menu of the places to see the toy from."
     },
-    "can’t move while ring %lld is on": {
-      "comment": "Spoken hint on a ring button that cannot move. The variable is a ring before it (a lower number) that is on."
+    "While a ring moves, the view widens to keep the sword in sight." : {
+      "comment" : "The line under the Follow the Move switch in settings, saying what it does."
     }
   },
-  "version": "1.0"
+  "version" : "1.0"
 }
