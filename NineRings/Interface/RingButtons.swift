@@ -44,13 +44,20 @@ private struct RingButton: View {
     @Environment(\.reducesMotion) private var reducesMotion
     @Environment(\.differentiatesWithoutColor) private var differentiatesWithoutColor
     @Environment(\.increasesContrast) private var increasesContrast
+    @Environment(\.colorScheme) private var colorScheme
+
+    /// The disc of a ring that is on: the tint darkened, so that its white number reads. On iPhone the tint over the
+    /// glass measured #009DFF, 2.9:1 with white, and with Increase Contrast in dark a light blue, 1.9:1; darkened by
+    /// 30% they measure about 5.6:1 and 3.9:1. The bar that marks a ring that can move takes it in light, where the tint
+    /// itself measured 2.9:1 against the panel, and the tint in dark, where the tint is the lighter of the two.
+    private static let onFill = Color.accentColor.mix(with: .black, by: 0.3)
 
     var body: some View {
         Button(action: action) {
             VStack(spacing: 4) {
                 ZStack {
                     Circle()
-                        .fill(marker.isOn ? AnyShapeStyle(.tint) : AnyShapeStyle(.clear))
+                        .fill(marker.isOn ? AnyShapeStyle(Self.onFill) : AnyShapeStyle(.clear))
                     Circle()
                         .strokeBorder(outline, lineWidth: marker.isBlocking ? 3 : 2)
                     Text(marker.ring, format: .number)
@@ -78,7 +85,7 @@ private struct RingButton: View {
                 }
                 .scaleEffect(marker.isMoving && !reducesMotion ? 1.12 : 1)
                 Capsule()
-                    .fill(.tint)
+                    .fill(colorScheme == .dark ? AnyShapeStyle(.tint) : AnyShapeStyle(Self.onFill))
                     .frame(width: 12, height: 3)
                     .opacity(marker.canMove ? 1 : 0)
             }
@@ -102,7 +109,7 @@ private struct RingButton: View {
 
     private var outline: AnyShapeStyle {
         if marker.isBlocking { return AnyShapeStyle(.orange) }
-        return marker.isOn ? AnyShapeStyle(.tint) : offStyle
+        return marker.isOn ? AnyShapeStyle(Self.onFill) : offStyle
     }
 
     /// The outline of a ring that is off: the primary colour softened, about 5:1 against the panel in light and dark,
