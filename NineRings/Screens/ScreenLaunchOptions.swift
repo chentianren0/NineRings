@@ -34,7 +34,17 @@ enum ScreenLaunchOptions {
         #endif
     }
 
-    /// `-open-settings` opens settings on launch: the Settings window on the Mac.
+    /// `-about-panel` shows About on launch: the About panel on the Mac (see `applyToApp()`), the About sheet on iPhone
+    /// and iPad.
+    static var opensAbout: Bool {
+        #if DEBUG
+        arguments.contains("-about-panel")
+        #else
+        false
+        #endif
+    }
+
+    /// `-open-settings` opens settings on launch: the Settings window on the Mac, the settings sheet on iPhone and iPad.
     static var opensSettings: Bool {
         #if DEBUG
         arguments.contains("-open-settings")

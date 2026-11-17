@@ -44,7 +44,8 @@ struct LessonPanel: View {
         // A new step starts at the top of its text.
         .id(page.index)
         .scrollBounceBehavior(.basedOnSize)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        // A bar, so that text scrolled under the buttons fades under them rather than showing through.
+        .safeAreaBar(edge: .bottom, spacing: 0) {
             navigation(page)
                 .padding(.horizontal, 20)
                 .padding(.vertical, 12)

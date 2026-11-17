@@ -11,20 +11,41 @@ struct PuzzleScreen: View {
     let rig: CameraRig
 
     @State private var showsLesson = LessonLaunchOptions.opensAtLaunch
-    @State private var showsSettings = false
-    @State private var showsAbout = false
+    /// Whether the screen has appeared, after which the lesson opens only when asked.
+    @State private var hasAppeared = false
+    // In a debug build, `-open-settings` and `-about-panel` open these sheets at launch on iPhone and iPad too, to see
+    // them, as they open the Settings window and the About panel on the Mac.
+    @State private var showsSettings = ScreenLaunchOptions.opensSettings
+    @State private var showsAbout = ScreenLaunchOptions.opensAbout
     /// How much of the toy a plain cover hides, while the toy jumps to another state.
     @State private var cover = 0.0
     /// Where the floating controls are, in the global coordinate space, so that the toy is framed clear of them.
     @State private var panelFrame: CGRect = .null
+    /// Where the lesson's panel is, in the global coordinate space: a column beside the toy on a wide screen, a sheet
+    /// over the bottom of the toy on a phone.
+    @State private var lessonFrame: CGRect = .null
+    /// Whether the controls have a half of their own, as on a half-folded iPhone Duo.
+    @State private var isHalfFolded = false
     @Environment(\.colorScheme) private var colorScheme
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    /// The window's size: a half-folded Duo is held with the fold across, as a laptop, when the window is taller than
+    /// wide.
+    @State private var windowSize: CGSize = .zero
+    /// How high the lesson's sheet stands on a phone.
+    @State private var lessonDetent: PresentationDetent = .medium
+    #endif
 
     var body: some View {
         NavigationStack {
             ArrangementView {
-                Controls(player: player, panelFrame: $panelFrame)
+                Controls(player: player, panelFrame: $panelFrame, hasOwnHalf: $isHalfFolded, lessonSheet: lessonSheet,
+                         stepsAside: controlsStepAside) {
+                    jump { player.reset() }
+                }
             } secondary: {
-                ToyCanvas(player: player, rig: rig, cover: panelFrame) { player.tap($0) }
+                ToyCanvas(player: player, rig: rig, covers: [panelFrame, lessonFrame]) { player.tap($0) }
                     .overlay {
                         Backdrop.color(for: colorScheme)
                             .opacity(cover)
@@ -33,7 +54,6 @@ struct PuzzleScreen: View {
                     }
             }
             .arrangementViewStyle(.overlay)
-            .congratulation(player) { jump { player.reset() } }
             .navigationTitle(Text("Nine Rings", comment: "The window's title."))
             .toolbar(removing: .title)
             #if os(iOS)
@@ -43,19 +63,90 @@ struct PuzzleScreen: View {
             .inspector(isPresented: $showsLesson) {
                 LessonPanel(player: player, guide: lesson) { showsLesson = false }
                     .inspectorColumnWidth(min: 300, ideal: 360, max: 440)
+                    #if os(iOS)
+                    // On a phone the inspector is a sheet. It stops half way up, so that the toy the text speaks of
+                    // stays in view above it and can still be turned and tapped; it can be pulled up to read.
+                    .presentationDetents([tryingDetent, .medium, .large], selection: $lessonDetent)
+                    .presentationBackgroundInteraction(.enabled(upThrough: .medium))
+                    .presentationContentInteraction(.scrolls)
+                    // When the last step gives the toy back to try, the sheet steps down to leave room for it.
+                    .onChange(of: player.lessonHoldsToy, initial: true) { _, holds in
+                        lessonDetent = holds ? .medium : tryingDetent
+                    }
+                    .onChange(of: tryingDetent) { old, new in
+                        if lessonDetent == old { lessonDetent = new }
+                    }
+                    #endif
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { lessonFrame = $0 }
+                    .onDisappear { lessonFrame = .null }
             }
             .onChange(of: showsLesson, initial: true) { _, shows in
+                // The lesson never shows by default. The system restores an inspector's state from the last run, so a
+                // lesson left open would come back at launch: until the screen has appeared, keep it closed, unless a
+                // debug option asked for it.
+                guard hasAppeared || !shows || LessonLaunchOptions.opensAtLaunch else {
+                    showsLesson = false
+                    return
+                }
                 if shows { lesson.open() } else { lesson.close() }
             }
+            .onAppear { hasAppeared = true }
             #if os(iOS)
+            // Settings and About hold little: on a phone each stops at half height; on an iPad each is the system's
+            // form sheet.
             .sheet(isPresented: $showsSettings) {
                 NavigationStack { SettingsScreen() }
+                    .presentationDetents(lessonHasColumn ? [.large] : [.medium, .large])
             }
             .sheet(isPresented: $showsAbout) {
                 NavigationStack { AboutScreen() }
+                    .presentationDetents(lessonHasColumn ? [.large] : [.medium, .large])
             }
             #endif
         }
+        #if os(iOS)
+        // A phone held sideways is short but wide: there the lesson is a column beside the toy, as on an iPad, since a
+        // sheet in a short window stands the whole height and would hide the toy the lesson speaks of.
+        .environment(\.horizontalSizeClass, lessonHasColumn ? .regular : .compact)
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { windowSize = $0 }
+        #endif
+    }
+
+    #if os(iOS)
+    /// The sheet's height on the step that gives the toy back, low enough to leave room for the toy and its controls:
+    /// on a half-folded Duo held as a laptop, where the controls share the half below the fold with the sheet, just
+    /// the sheet's header and buttons; it can be pulled up to read.
+    private var tryingDetent: PresentationDetent {
+        isHalfFolded && windowSize.height > windowSize.width ? .height(150) : .height(300)
+    }
+
+    /// Whether the lesson is a column beside the toy rather than a sheet over it: on a wide screen, and on a phone held
+    /// sideways. On a half-folded Duo held as a laptop, a column would run across the fold, so the lesson is a sheet,
+    /// which the system keeps below the fold, under the toy.
+    private var lessonHasColumn: Bool {
+        if isHalfFolded, windowSize.height > windowSize.width { return false }
+        return horizontalSizeClass == .regular || verticalSizeClass == .compact
+    }
+    #endif
+
+    /// Whether the toy's controls step aside for the lesson: on a phone, while the lesson's steps show the toy, since
+    /// its controls do nothing then and the toy needs the room. They come back when the last step gives the toy back.
+    private var controlsStepAside: Bool {
+        #if os(iOS)
+        !lessonHasColumn && showsLesson && player.lessonHoldsToy
+        #else
+        false
+        #endif
+    }
+
+    /// The lesson's panel when it is a sheet over the bottom of the toy, as on a phone; null when it is a column beside
+    /// the toy, or closed.
+    private var lessonSheet: CGRect {
+        #if os(iOS)
+        !lessonHasColumn && showsLesson ? lessonFrame : .null
+        #else
+        .null
+        #endif
     }
 
     private var lesson: LessonGuide {
@@ -175,16 +266,51 @@ private struct Controls: View {
     let player: Player
     /// Where the floating panel is, in the global coordinate space, or null when the controls cover no part of the toy.
     @Binding var panelFrame: CGRect
+    /// Set to whether the controls have a half of their own, for the screen to place the lesson.
+    @Binding var hasOwnHalf: Bool
+    /// The lesson's sheet over the bottom of the toy, in the global coordinate space, or null.
+    let lessonSheet: CGRect
+    /// Whether the controls step aside for the lesson.
+    let stepsAside: Bool
+    /// Puts every ring back on, from the congratulation.
+    let putBack: () -> Void
     @Environment(\.overlayArrangementZIndex) private var zIndex
 
+    /// The congratulation goes with the controls: over the top of the whole window where they float over the toy, and
+    /// in the controls' own half above them on a half-folded Duo, clear of the fold and of the toy.
     var body: some View {
-        if hasOwnSpace {
-            ControlPanel(player: player, style: .beside)
-                .frame(maxWidth: 560)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        content
+            .congratulation(player, overlays: !hasOwnSpace, putBack: putBack)
+            .onChange(of: hasOwnSpace, initial: true) { _, own in hasOwnHalf = own }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if stepsAside {
+            // While the lesson's steps show the toy, the lesson takes the controls' place, where it is a sheet; they
+            // come back, above the sheet, when the last step gives the toy back.
+            Color.clear
                 .onAppear { panelFrame = .null }
+        } else if hasOwnSpace {
+            VStack(spacing: 20) {
+                if player.isCongratulating {
+                    CongratulationCard(player: player, putBack: putBack)
+                        .transition(.blurReplace)
+                }
+                ControlPanel(player: player, style: .beside)
+            }
+            .animation(.smooth(duration: 0.4), value: player.isCongratulating)
+            .frame(maxWidth: 560)
+            .padding(.horizontal, 16)
+            .padding(.top, lessonSheet.isNull ? 0 : 12)
+            // Above the lesson's sheet, where it shares the half.
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: lessonSheet.isNull ? .center : .top)
+            .onAppear { panelFrame = .null }
         } else {
-            floatingPanel
+            // The space is read from a geometry reader, which does not grow with the panel lifted inside it.
+            GeometryReader { space in
+                floatingPanel(lift: sheetOverlap(over: space.frame(in: .global)))
+            }
         }
     }
 
@@ -194,7 +320,15 @@ private struct Controls: View {
         zIndex == 0
     }
 
-    private var floatingPanel: some View {
+    /// How far the lesson's sheet reaches up over the controls' space, so that the panel can float above it, as
+    /// floating controls ride above a sheet in Apple's own apps. Never more than most of the space: a sheet pulled up
+    /// to the top covers the panel, as it covers the toy.
+    private func sheetOverlap(over space: CGRect) -> CGFloat {
+        guard !lessonSheet.isNull else { return 0 }
+        return min(max(0, space.maxY - lessonSheet.minY), space.height * 0.6)
+    }
+
+    private func floatingPanel(lift: CGFloat) -> some View {
         ControlPanel(player: player, style: .floating)
             .fixedSize(horizontal: false, vertical: true)
             .glassEffect(.regular, in: .rect(cornerRadius: 28))
@@ -214,7 +348,7 @@ private struct Controls: View {
             .animation(.snappy(duration: 0.25), value: ControlPanel.refusal(in: player.status) == nil)
             .frame(maxWidth: 720)
             .padding(.horizontal, 12)
-            .padding(.bottom, 8)
+            .padding(.bottom, 8 + lift)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
     }
 }

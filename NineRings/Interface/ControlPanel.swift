@@ -74,6 +74,8 @@ struct ControlPanel: View {
 
     private var rings: some View {
         RingButtons(markers: player.markers, diameter: style == .beside ? 52 : 40) { player.tap($0) }
+            // While the lesson's steps show the toy, a ring cannot be asked to move.
+            .disabled(player.lessonHoldsToy)
     }
 
     /// Why the last ring asked for could not move, when that is the news.
@@ -83,6 +85,16 @@ struct ControlPanel: View {
     }
 
     private var refusal: LocalizedStringResource? { Self.refusal(in: player.status) }
+
+    /// What the line says: the status, or, floating while a refusal shows in the bubble, what it said before. At rest
+    /// while the lesson's steps show the toy, it says so, rather than to tap a ring.
+    private var captionText: LocalizedStringResource {
+        let status = style == .floating && refusal != nil ? PuzzleSession.Status.resting(player.poseKey.state) : player.status
+        if player.lessonHoldsToy, case .resting = status {
+            return Sentences.lessonHoldsToy
+        }
+        return Sentences.status(status)
+    }
 
     /// The line that says what is happening, holding the place of `lines` lines, so that the panel keeps its height.
     /// Floating, it goes on saying what it said while a refusal shows in the bubble above; beside the toy, it says the
@@ -95,7 +107,7 @@ struct ControlPanel: View {
                     .lineLimit(lines)
                     .transition(.opacity)
             } else {
-                Text(style == .floating && refusal != nil ? Sentences.status(.resting(player.poseKey.state)) : Sentences.status(player.status))
+                Text(captionText)
                     .lineLimit(lines)
                     .contentTransition(.opacity)
                     .transition(.opacity)
@@ -135,7 +147,7 @@ struct ControlPanel: View {
                 if editing { player.pause() }
             }
             .labelsHidden()
-            .disabled(!player.hasMove)
+            .disabled(!player.hasMove || player.lessonHoldsToy)
 
             Menu {
                 Picker(selection: $player.speed) {

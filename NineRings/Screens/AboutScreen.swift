@@ -1,7 +1,7 @@
 import SwiftUI
 
 #if os(iOS)
-/// About the app on iPhone and iPad: its icon, its name and its version, and what it is, in three sentences. Nothing
+/// About the app on iPhone and iPad: its name and its version, and what it is, in three sentences. Nothing
 /// else. It opens from the main screen's menu, beside Settings; on the Mac, About Nine Rings in the app menu shows the
 /// system's About panel with the same words.
 struct AboutScreen: View {
@@ -11,15 +11,8 @@ struct AboutScreen: View {
         Form {
             Section {
                 VStack(spacing: 8) {
-                    if let icon = AppInfo.icon {
-                        icon
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 96, height: 96)
-                            // The bundle's image is the square artwork; the system rounds it on the Home Screen.
-                            .clipShape(.rect(cornerRadius: 22, style: .continuous))
-                            .accessibilityHidden(true)
-                    }
+                    // No icon: loading the app's icon by name crashes on iOS 27 with an icon made in Icon Composer
+                    // (UIKit asserts while building the image), and there is no other public way to get it.
                     Text(verbatim: AppInfo.name)
                         .font(.title2.bold())
                         .accessibilityAddTraits(.isHeader)
@@ -47,7 +40,7 @@ struct AboutScreen: View {
 }
 #endif
 
-/// The app's name, version and icon, as the bundle has them.
+/// The app's name and version, as the bundle has them.
 enum AppInfo {
     /// The name the bundle shows, or else the app's name as written. The bundle's own name is the product's,
     /// "NineRings", which is not the name to show.
@@ -64,20 +57,6 @@ enum AppInfo {
         return String(localized: "about.version \(version) \(build)", table: "Screens")
     }
 
-    #if os(iOS)
-    /// The icon, from the primary icon's name as the build writes it into the bundle's information.
-    static var icon: Image? {
-        let icons = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any]
-        let primary = icons?["CFBundlePrimaryIcon"] as? [String: Any]
-        let names = [primary?["CFBundleIconName"] as? String] + ((primary?["CFBundleIconFiles"] as? [String])?.reversed().map { $0 } ?? [])
-        for case let name? in names {
-            if let image = UIImage(named: name) {
-                return Image(uiImage: image)
-            }
-        }
-        return nil
-    }
-    #endif
 }
 
 #if os(macOS)

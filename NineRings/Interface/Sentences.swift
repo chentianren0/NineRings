@@ -5,6 +5,9 @@ import Session
 
 /// Every sentence the screen says about the puzzle, kept in the String Catalog.
 enum Sentences {
+    /// The line at rest while the lesson's steps show the toy, when its ring buttons and slider do nothing.
+    static let lessonHoldsToy = LocalizedStringResource("The lesson is showing the toy.", comment: "Status at rest while the lesson's steps show the toy. The ring buttons do nothing then; the lesson's last step gives the toy back.")
+
     static func status(_ status: PuzzleSession.Status) -> LocalizedStringResource {
         switch status {
         case .playing(let move, let stage, let undoing):

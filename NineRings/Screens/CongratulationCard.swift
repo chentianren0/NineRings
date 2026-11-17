@@ -98,29 +98,38 @@ struct CongratulationCard: View {
 
 extension View {
     /// Shows the congratulation over the top of this view while the player says so. `putBack` puts every ring back
-    /// on, covering the toy as Reset does.
-    func congratulation(_ player: Player, putBack: @escaping () -> Void) -> some View {
-        modifier(CongratulationOverlay(player: player, putBack: putBack))
+    /// on, covering the toy as Reset does. With `overlays` false the card is not drawn here, for a view that places
+    /// it itself with `CongratulationCard(player:putBack:)`.
+    func congratulation(_ player: Player, overlays: Bool = true, putBack: @escaping () -> Void) -> some View {
+        modifier(CongratulationOverlay(player: player, overlays: overlays, putBack: putBack))
+    }
+}
+
+extension CongratulationCard {
+    /// The card for `player`: Done closes it, and "Put Every Ring Back On" closes it and calls `putBack`.
+    init(player: Player, putBack: @escaping () -> Void) {
+        self.init {
+            player.dismissCongratulation()
+            putBack()
+        } onDone: {
+            player.dismissCongratulation()
+        }
     }
 }
 
 private struct CongratulationOverlay: ViewModifier {
     let player: Player
+    let overlays: Bool
     let putBack: () -> Void
 
     func body(content: Content) -> some View {
         content
             .overlay(alignment: .top) {
-                if player.isCongratulating {
-                    CongratulationCard {
-                        player.dismissCongratulation()
-                        putBack()
-                    } onDone: {
-                        player.dismissCongratulation()
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 12)
-                    .transition(.blurReplace)
+                if overlays, player.isCongratulating {
+                    CongratulationCard(player: player, putBack: putBack)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
+                        .transition(.blurReplace)
                 }
             }
             .animation(.smooth(duration: 0.4), value: player.isCongratulating)
