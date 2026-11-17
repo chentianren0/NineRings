@@ -1,8 +1,9 @@
 import os
 
 /// Marks for Instruments: the work of a launch, as intervals in the Points of Interest track, so that the time from
-/// launch to the toy's first frame, and where it goes, can be read on any device with the Time Profiler (the launch
-/// and idle hand-over tells how). A signpost nobody records costs a check, so they stay in a release build.
+/// launch to the toy's first frame, and where it goes, can be read on any device: record the app with the Time
+/// Profiler and read the Points of Interest track (subsystem NineRings). On the Mac, `MeasureScript.swift` says how to
+/// build a copy that prints the same marks. A signpost nobody records costs a check, so they stay in a release build.
 nonisolated enum Signposts {
     static let poster = OSSignposter(subsystem: "NineRings", category: .pointsOfInterest)
 

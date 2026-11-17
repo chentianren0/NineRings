@@ -247,7 +247,8 @@ private final class CanvasDriver {
     }
 
     func step(by seconds: TimeInterval) {
-        // The first update comes as the toy's first frame is drawn.
+        // The first call is the one the RealityView's make closure makes itself, before any frame; the second is the
+        // first frame's update, as the toy is first drawn. So the first frame is marked on the second call.
         if frames < 2 {
             frames += 1
             if frames == 2 { Signposts.event("First frame") }
