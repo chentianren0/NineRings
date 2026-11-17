@@ -13,6 +13,8 @@ struct PuzzleScreen: View {
     @State private var showsLesson = LessonLaunchOptions.opensAtLaunch
     /// Whether the screen has appeared, after which the lesson opens only when asked.
     @State private var hasAppeared = false
+    /// When the inspector's binding last set the lesson closed, to tell the system presenting it again from opening it.
+    @State private var inspectorClosedAt: ContinuousClock.Instant?
     // In a debug build, `-open-settings` and `-about-panel` open these sheets at launch on iPhone and iPad too, to see
     // them, as they open the Settings window and the About panel on the Mac.
     @State private var showsSettings = ScreenLaunchOptions.opensSettings
@@ -69,10 +71,20 @@ struct PuzzleScreen: View {
             .toolbarTitleDisplayMode(.inline)
             #endif
             .toolbar { toolbar }
-            // Only the person opens the lesson (the toolbar's button, the menu bar, Help): the inspector's own binding
-            // may close it, as a swipe down closes the sheet, but never open it, so that the system restoring an
-            // inspector's state from the last run cannot bring the lesson back by itself.
-            .inspector(isPresented: Binding(get: { showsLesson }, set: { if !$0 { showsLesson = false } })) {
+            // Only the person opens the lesson (the toolbar's button, the menu bar, Help). The inspector's own binding
+            // closes it, as a swipe down closes the sheet. It may set it open only straight after setting it closed,
+            // which is the system presenting it again in another form, as when a half-folded Duo turns the column
+            // into a sheet; a binding that opens it by itself, as the system restoring an inspector's state from the
+            // last run would, is refused.
+            .inspector(isPresented: Binding(get: { showsLesson }, set: { presented in
+                if presented {
+                    if let closed = inspectorClosedAt, closed.duration(to: .now) < .seconds(1) { showsLesson = true }
+                    inspectorClosedAt = nil
+                } else {
+                    inspectorClosedAt = .now
+                    showsLesson = false
+                }
+            })) {
                 LessonPanel(player: player, guide: lesson) { showsLesson = false }
                     .inspectorColumnWidth(min: 300, ideal: 360, max: 440)
                     #if os(iOS)
