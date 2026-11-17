@@ -219,25 +219,7 @@ struct ControlPanel: View {
                 ? Text("Pause the move", comment: "Tooltip on the Pause button.")
                 : Text("Play the move", comment: "Tooltip on the Play button."))
 
-            Slider(value: $player.progress, in: 0...1) {
-                Text("Progress", comment: "Spoken name of the slider that runs through the move.")
-            } onEditingChanged: { editing in
-                if editing { player.pause() }
-            }
-            .labelsHidden()
-            .disabled(!player.hasMove || player.lessonHoldsToy)
-            .help(Text("Drag to go through the move", comment: "Tooltip on the slider that runs through the move."))
-            // Its spoken value is the stage's name rather than a number, and a swipe goes to the next or the previous
-            // boundary between stages, as the menu bar's Next and Previous Stage do.
-            .accessibilityValue(stageValue)
-            .accessibilityAdjustableAction { direction in
-                let boundary = switch direction {
-                case .increment: ToyCommands.boundary(after: player.progress, in: player.stages)
-                case .decrement: ToyCommands.boundary(before: player.progress, in: player.stages)
-                @unknown default: Double?.none
-                }
-                if let boundary { player.progress = boundary }
-            }
+            MoveSlider(player: player)
 
             Menu {
                 Picker(selection: $player.speed) {
@@ -286,7 +268,33 @@ struct ControlPanel: View {
     }
 }
 
-extension ControlPanel {
+/// The slider through the move. It is a view of its own because the progress changes every frame while a move plays:
+/// only this view reads it, so the rest of the panel is not made again each frame.
+private struct MoveSlider: View {
+    @Bindable var player: Player
+
+    var body: some View {
+        Slider(value: $player.progress, in: 0...1) {
+            Text("Progress", comment: "Spoken name of the slider that runs through the move.")
+        } onEditingChanged: { editing in
+            if editing { player.pause() }
+        }
+        .labelsHidden()
+        .disabled(!player.hasMove || player.lessonHoldsToy)
+        .help(Text("Drag to go through the move", comment: "Tooltip on the slider that runs through the move."))
+        // Its spoken value is the stage's name rather than a number, and a swipe goes to the next or the previous
+        // boundary between stages, as the menu bar's Next and Previous Stage do.
+        .accessibilityValue(stageValue)
+        .accessibilityAdjustableAction { direction in
+            let boundary = switch direction {
+            case .increment: ToyCommands.boundary(after: player.progress, in: player.stages)
+            case .decrement: ToyCommands.boundary(before: player.progress, in: player.stages)
+            @unknown default: Double?.none
+            }
+            if let boundary { player.progress = boundary }
+        }
+    }
+
     /// The slider's spoken value: the name of the stage it is in.
     private var stageValue: Text {
         let progress = player.progress
