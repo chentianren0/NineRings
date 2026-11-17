@@ -2,170 +2,1600 @@
   "sourceLanguage" : "en",
   "strings" : {
     "%@×" : {
-      "comment" : "A playing speed: how many times the normal pace, such as 0.5× or 2×.\nThe speed button's label: how many times the normal speed moves play at, such as 0.5×."
+      "comment" : "A playing speed: how many times the normal pace, such as 0.5× or 2×.\nThe speed button's label: how many times the normal speed moves play at, such as 0.5×.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@×"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@×"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@×"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@×"
+          }
+        }
+      }
     },
     "All nine rings are on the sword. Click a ring to move it." : {
-      "comment" : "Status at the start, with every ring on, on the Mac. A ring is clicked in the 3D view or by its numbered button."
+      "comment" : "Status at the start, with every ring on, on the Mac. A ring is clicked in the 3D view or by its numbered button.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Les neuf anneaux sont sur la navette. Cliquez sur un anneau pour le déplacer."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "9つの輪がすべて枠にかかっています。輪をクリックすると動かせます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "九个环都在框架上。点按一个环来移动它。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "九個環都在劍上。按一下環即可移動。"
+          }
+        }
+      }
     },
     "All nine rings are on the sword. Tap a ring to move it." : {
-      "comment" : "Status at the start, with every ring on. A ring is tapped in the 3D view or by its numbered button."
+      "comment" : "Status at the start, with every ring on. A ring is tapped in the 3D view or by its numbered button.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Les neuf anneaux sont sur la navette. Touchez un anneau pour le déplacer."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "9つの輪がすべて枠にかかっています。輪をタップすると動かせます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "九个环都在框架上。轻点一个环来移动它。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "九個環都在劍上。點一下環即可移動。"
+          }
+        }
+      }
     },
     "All rings are off." : {
-      "comment" : "Status when every ring is off the sword. The congratulation says the rest."
+      "comment" : "Status when every ring is off the sword. The congratulation says the rest.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tous les anneaux sont descendus."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "すべての輪が外れています。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "所有环都已取下。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "所有環都已取下。"
+          }
+        }
+      }
     },
     "Back" : {
-      "comment" : "Lesson button that goes to the step before."
+      "comment" : "Lesson button that goes to the step before.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Précédent"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "戻る"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "返回"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "返回"
+          }
+        }
+      }
     },
     "can’t move while ring %lld is off" : {
-      "comment" : "Spoken hint on a ring button that cannot move. The variable is the ring just before it, which is off."
+      "comment" : "Spoken hint on a ring button that cannot move. The variable is the ring just before it, which is off.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ne peut pas bouger tant que l’anneau %lld est descendu"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld輪が外れているため動かせません"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld环已取下，不能移动"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld環已取下，所以不能移動"
+          }
+        }
+      }
     },
     "can’t move while ring %lld is on" : {
-      "comment" : "Spoken hint on a ring button that cannot move. The variable is a ring before it (a lower number) that is on."
+      "comment" : "Spoken hint on a ring button that cannot move. The variable is a ring before it (a lower number) that is on.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ne peut pas bouger tant que l’anneau %lld est monté"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld輪がかかっているため動かせません"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld环在框架上，不能移动"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld環還套著，所以不能移動"
+          }
+        }
+      }
     },
     "Choose how fast moves play" : {
-      "comment" : "Tooltip on the speed button."
+      "comment" : "Tooltip on the speed button.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisir la vitesse de lecture"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "再生速度を選択"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "选择播放速度"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "選擇播放速度"
+          }
+        }
+      }
     },
     "Click a ring to move it." : {
-      "comment" : "Status when nothing is moving, on the Mac. A ring is clicked in the 3D view or by its numbered button."
+      "comment" : "Status when nothing is moving, on the Mac. A ring is clicked in the 3D view or by its numbered button.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cliquez sur un anneau pour le déplacer."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "輪をクリックすると動かせます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "点按一个环来移动它。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "按一下環即可移動。"
+          }
+        }
+      }
     },
     "Close" : {
-      "comment" : "Button that closes the lesson."
+      "comment" : "Button that closes the lesson.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fermer"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "閉じる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "关闭"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "關閉"
+          }
+        }
+      }
     },
     "Close the lesson" : {
-      "comment" : "Tooltip on the lesson's Close button."
+      "comment" : "Tooltip on the lesson's Close button.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fermer la leçon"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "レッスンを閉じる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "关闭教程"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "關閉教學"
+          }
+        }
+      }
     },
     "Done" : {
-      "comment" : "Lesson button on the last step that closes the lesson."
+      "comment" : "Lesson button on the last step that closes the lesson.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "OK"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "完了"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "完成"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "完成"
+          }
+        }
+      }
     },
     "Drag to go through the move" : {
-      "comment" : "Tooltip on the slider that runs through the move."
+      "comment" : "Tooltip on the slider that runs through the move.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Faire glisser pour parcourir le mouvement"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ドラッグして動きを順に見る"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "拖移查看移动过程"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "拖移以查看這一步的過程"
+          }
+        }
+      }
     },
     "Follow the Move" : {
-      "comment" : "A switch in settings. When on, the view of the toy widens while a ring moves, so that the sword stays in sight as it is drawn back."
+      "comment" : "A switch in settings. When on, the view of the toy widens while a ring moves, so that the sword stays in sight as it is drawn back.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Suivre le mouvement"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "動きに合わせて視野を広げる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "视角跟随"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "視角跟隨"
+          }
+        }
+      }
     },
     "From Above" : {
-      "comment" : "View menu item: the toy seen from above."
+      "comment" : "View menu item: the toy seen from above.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vue de dessus"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "上から"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "从上方看"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "從上方看"
+          }
+        }
+      }
     },
     "From the Side" : {
-      "comment" : "View menu item: the toy seen from the side."
+      "comment" : "View menu item: the toy seen from the side.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vue de côté"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "横から"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "从侧面看"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "從側面看"
+          }
+        }
+      }
     },
     "From the Tip" : {
-      "comment" : "View menu item: the toy seen end on, from the sword's tip."
+      "comment" : "View menu item: the toy seen end on, from the sword's tip.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vue en bout"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "先端から"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "从前端看"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "從劍尖看"
+          }
+        }
+      }
     },
     "Lesson" : {
-      "comment" : "Title of the lesson's panel.\nToolbar button that shows or hides the lesson on how the puzzle works."
+      "comment" : "Title of the lesson's panel.\nToolbar button that shows or hides the lesson on how the puzzle works.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Leçon"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "レッスン"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "教程"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "教學"
+          }
+        }
+      }
     },
     "Move ring %lld" : {
-      "comment" : "Tooltip on a ring button. The variable is the ring's number."
+      "comment" : "Tooltip on a ring button. The variable is the ring's number.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Déplacer l’anneau %lld"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld輪を動かす"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "移动第%lld环"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "移動第%lld環"
+          }
+        }
+      }
     },
     "Next" : {
-      "comment" : "Lesson button that goes to the next step."
+      "comment" : "Lesson button that goes to the next step.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Suivant"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "次へ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "下一步"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "下一步"
+          }
+        }
+      }
     },
     "Nine Rings" : {
-      "comment" : "The window's title."
+      "comment" : "The window's title.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Neuf anneaux"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "九連環"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "九连环"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "九連環"
+          }
+        }
+      }
     },
     "Off" : {
-      "comment" : "Spoken value of a ring button: the ring is off and cannot move now."
+      "comment" : "Spoken value of a ring button: the ring is off and cannot move now.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descendu"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "外れている"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已取下"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已取下"
+          }
+        }
+      }
     },
     "Off, can go on" : {
-      "comment" : "Spoken value of a ring button: the ring is off and can go on now."
+      "comment" : "Spoken value of a ring button: the ring is off and can go on now.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descendu, peut monter"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "外れている、かけられる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已取下，可以套上"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已取下，可以套上"
+          }
+        }
+      }
     },
     "On" : {
-      "comment" : "Spoken value of a ring button: the ring is on and cannot move now."
+      "comment" : "Spoken value of a ring button: the ring is on and cannot move now.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Monté"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "かかっている"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已套上"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已套上"
+          }
+        }
+      }
     },
     "On, can come off" : {
-      "comment" : "Spoken value of a ring button: the ring is on and can come off now."
+      "comment" : "Spoken value of a ring button: the ring is on and can come off now.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Monté, peut descendre"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "かかっている、外せる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已套上，可以取下"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已套上，可以取下"
+          }
+        }
+      }
     },
     "Pause" : {
-      "comment" : "Button that stops the move part way."
+      "comment" : "Button that stops the move part way.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pause"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "一時停止"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "暂停"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "暫停"
+          }
+        }
+      }
     },
     "Pause the move" : {
-      "comment" : "Tooltip on the Pause button."
+      "comment" : "Tooltip on the Pause button.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mettre en pause"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "動きを一時停止"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "暂停播放"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "暫停播放"
+          }
+        }
+      }
     },
     "Paused: ring %lld coming off — %@" : {
-      "comment" : "Status while a ring's move is stopped part way. The first variable is the ring's number, the second the name of the stage."
+      "comment" : "Status while a ring's move is stopped part way. The first variable is the ring's number, the second the name of the stage.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "En pause : descente de l’anneau %lld — %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "一時停止中: 第%lld輪を外す途中（%@）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已暂停：取下第%lld环——%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已暫停：取下第%lld環（%@）"
+          }
+        }
+      }
     },
     "Paused: ring %lld going on — %@" : {
-      "comment" : "Status while a ring's move is stopped part way. The first variable is the ring's number, the second the name of the stage."
+      "comment" : "Status while a ring's move is stopped part way. The first variable is the ring's number, the second the name of the stage.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "En pause : montée de l’anneau %lld — %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "一時停止中: 第%lld輪をかける途中（%@）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已暂停：套上第%lld环——%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已暫停：套上第%lld環（%@）"
+          }
+        }
+      }
     },
     "Play" : {
-      "comment" : "Button that plays the move on the slider."
+      "comment" : "Button that plays the move on the slider.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lecture"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "再生"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "播放"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "播放"
+          }
+        }
+      }
     },
     "Play Again" : {
-      "comment" : "Lesson button that plays the step's move again from the start."
+      "comment" : "Lesson button that plays the step's move again from the start.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rejouer"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "もう一度再生"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "再次播放"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "再播放一次"
+          }
+        }
+      }
     },
     "Play the move" : {
-      "comment" : "Tooltip on the Play button."
+      "comment" : "Tooltip on the Play button.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lire le mouvement"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "動きを再生"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "播放这一步"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "播放這一步"
+          }
+        }
+      }
     },
     "Play the moves left to take every ring off" : {
-      "comment" : "Tooltip on the Solve button."
+      "comment" : "Tooltip on the Solve button.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Jouer les coups restants pour descendre tous les anneaux"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "残りの手を再生してすべての輪を外す"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "播放余下的步骤，取下全部环"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "播放剩下的每一步，取下所有環"
+          }
+        }
+      }
     },
     "Progress" : {
-      "comment" : "Spoken name of the slider that runs through the move."
+      "comment" : "Spoken name of the slider that runs through the move.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Progression"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "進行状況"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "进度"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "進度"
+          }
+        }
+      }
     },
     "Put every ring back on" : {
-      "comment" : "Tooltip on the Reset button."
+      "comment" : "Tooltip on the Reset button.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Remonter tous les anneaux"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "すべての輪をかけ直す"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "重新套上所有环"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "重新套上所有環"
+          }
+        }
+      }
     },
     "Reset" : {
-      "comment" : "Toolbar button that puts every ring back on."
+      "comment" : "Toolbar button that puts every ring back on.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Réinitialiser"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "リセット"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "复位"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "重置"
+          }
+        }
+      }
     },
     "Ring %lld" : {
-      "comment" : "Spoken name of a ring button. The variable is the ring's number."
+      "comment" : "Spoken name of a ring button. The variable is the ring's number.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anneau %lld"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld輪"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld环"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld環"
+          }
+        }
+      }
     },
     "Ring %lld can’t move while ring %lld is off: ring %lld’s rod runs through ring %lld, and that rod is out of the slot, so ring %lld can’t pass through the slot." : {
-      "comment" : "Why a ring cannot move. The first, fourth and fifth variables are the ring tapped; the second and third the ring just before it, which is off. A ring's rod is the wire that holds it; the slot is the gap between the sword's two rails."
+      "comment" : "Why a ring cannot move. The first, fourth and fifth variables are the ring tapped; the second and third the ring just before it, which is off. A ring's rod is the wire that holds it; the slot is the gap between the sword's two rails.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "L’anneau %1$lld ne peut pas bouger tant que l’anneau %2$lld est descendu : la tige de l’anneau %3$lld traverse l’anneau %4$lld et n’est plus dans la fente, si bien que l’anneau %5$lld ne peut pas passer par la fente."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%2$lld輪が外れているため、第%1$lld輪は動かせません。第%3$lld輪の棒は第%4$lld輪を通っていて、その棒がすき間の外にあるので、第%5$lld輪はすき間を通れません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%1$lld环现在不能移动，因为第%2$lld环已取下：第%3$lld环的直杆穿过第%4$lld环，而这根直杆已离开中缝，所以第%5$lld环无法穿过中缝。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%1$lld環現在不能移動，因為第%2$lld環已取下：第%3$lld環的直桿穿過第%4$lld環，而這根直桿已離開中縫，所以第%5$lld環無法穿過中縫。"
+          }
+        }
+      }
     },
     "Ring %lld can’t move while ring %lld is on: ring %lld’s rod stands in the slot between ring %lld and the tip." : {
-      "comment" : "Why a ring cannot move. The first and fourth variables are the ring tapped; the second and third a ring before it (a lower number) that is on. A ring's rod is the wire that holds it; the slot is the gap between the sword's two rails; the tip is the sword's rounded end."
+      "comment" : "Why a ring cannot move. The first and fourth variables are the ring tapped; the second and third a ring before it (a lower number) that is on. A ring's rod is the wire that holds it; the slot is the gap between the sword's two rails; the tip is the sword's rounded end.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "L’anneau %1$lld ne peut pas bouger tant que l’anneau %2$lld est monté : la tige de l’anneau %3$lld passe dans la fente, entre l’anneau %4$lld et le bout."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%2$lld輪がかかっているため、第%1$lld輪は動かせません。第%3$lld輪の棒が、第%4$lld輪と先端の間のすき間をふさいでいます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%1$lld环现在不能移动，因为第%2$lld环在框架上：第%3$lld环的直杆立在中缝里，挡在第%4$lld环和前端之间。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%1$lld環現在不能移動，因為第%2$lld環還套著：第%3$lld環的直桿立在中縫裡，擋在第%4$lld環和劍尖之間。"
+          }
+        }
+      }
     },
     "Ring %lld comes off — %@" : {
-      "comment" : "Status while a ring comes off. The first variable is the ring's number, the second the name of the stage the move is in."
+      "comment" : "Status while a ring comes off. The first variable is the ring's number, the second the name of the stage the move is in.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "L’anneau %lld descend — %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld輪を外しています（%@）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在取下第%lld环——%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在取下第%lld環（%@）"
+          }
+        }
+      }
     },
     "Ring %lld goes on — %@" : {
-      "comment" : "Status while a ring goes on. The first variable is the ring's number, the second the name of the stage the move is in."
+      "comment" : "Status while a ring goes on. The first variable is the ring's number, the second the name of the stage the move is in.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "L’anneau %lld monte — %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld輪をかけています（%@）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在套上第%lld环——%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在套上第%lld環（%@）"
+          }
+        }
+      }
     },
     "Rings" : {
-      "comment" : "Spoken name of the row of nine ring buttons."
+      "comment" : "Spoken name of the row of nine ring buttons.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anneaux"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "輪"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "圆环"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "環"
+          }
+        }
+      }
     },
     "Settings" : {
-      "comment" : "Menu item that opens the app's settings."
+      "comment" : "Menu item that opens the app's settings.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Réglages"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "設定"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "设置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "設定"
+          }
+        }
+      }
     },
     "Show how the puzzle works" : {
-      "comment" : "Tooltip on the Lesson button."
+      "comment" : "Tooltip on the Lesson button.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Voir comment fonctionne le baguenaudier"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "九連環のしくみを見る"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "了解九连环的原理"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "了解九連環的原理"
+          }
+        }
+      }
     },
     "Solve" : {
-      "comment" : "Button that plays the moves left to take every ring off."
+      "comment" : "Button that plays the moves left to take every ring off.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Résoudre"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "解く"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "解开"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "解開"
+          }
+        }
+      }
     },
     "Speed" : {
-      "comment" : "Menu of the speeds moves play at."
+      "comment" : "Menu of the speeds moves play at.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vitesse"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "速度"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "速度"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "速度"
+          }
+        }
+      }
     },
     "Standard View" : {
-      "comment" : "View menu item: back to the view the toy is first seen from."
+      "comment" : "View menu item: back to the view the toy is first seen from.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vue standard"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "標準の視点"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "标准视角"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "標準視角"
+          }
+        }
+      }
     },
     "Step %lld of %lld" : {
-      "comment" : "Where the reader is in the lesson. The first variable is the step's number, the second how many steps there are."
+      "comment" : "Where the reader is in the lesson. The first variable is the step's number, the second how many steps there are.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Étape %lld sur %lld"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ステップ%lld/%lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld页，共%lld页"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld頁，共%lld頁"
+          }
+        }
+      }
     },
     "Tap a ring to move it." : {
-      "comment" : "Status when nothing is moving. A ring is tapped in the 3D view or by its numbered button."
+      "comment" : "Status when nothing is moving. A ring is tapped in the 3D view or by its numbered button.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Touchez un anneau pour le déplacer."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "輪をタップすると動かせます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "轻点一个环来移动它。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "點一下環即可移動。"
+          }
+        }
+      }
     },
     "Undo" : {
-      "comment" : "Button that takes back the last move."
+      "comment" : "Button that takes back the last move.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Annuler"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "取り消す"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "撤销"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "還原"
+          }
+        }
+      }
     },
     "Undo the last move" : {
-      "comment" : "Tooltip on the Undo button."
+      "comment" : "Tooltip on the Undo button.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Annuler le dernier coup"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "直前の1手を取り消す"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "撤销上一步"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "還原上一步"
+          }
+        }
+      }
     },
     "Undoing: ring %lld comes back off — %@" : {
-      "comment" : "Status while undoing a move that put a ring on. The first variable is the ring's number, the second the name of the stage the move is in."
+      "comment" : "Status while undoing a move that put a ring on. The first variable is the ring's number, the second the name of the stage the move is in.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Annulation : l’anneau %lld redescend — %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "取り消し中: 第%lld輪を外しています（%@）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在撤销：第%lld环重新取下——%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在還原：重新取下第%lld環（%@）"
+          }
+        }
+      }
     },
     "Undoing: ring %lld goes back on — %@" : {
-      "comment" : "Status while undoing a move that took a ring off. The first variable is the ring's number, the second the name of the stage the move is in."
+      "comment" : "Status while undoing a move that took a ring off. The first variable is the ring's number, the second the name of the stage the move is in.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Annulation : l’anneau %lld remonte — %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "取り消し中: 第%lld輪をかけています（%@）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在撤销：第%lld环重新套上——%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在還原：重新套上第%lld環（%@）"
+          }
+        }
+      }
     },
     "View" : {
-      "comment" : "Toolbar menu of the places to see the toy from."
+      "comment" : "Toolbar menu of the places to see the toy from.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vue"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "視点"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "视角"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "視角"
+          }
+        }
+      }
     },
     "While a ring moves, the view widens to keep the sword in sight." : {
-      "comment" : "The line under the Follow the Move switch in settings, saying what it does."
+      "comment" : "The line under the Follow the Move switch in settings, saying what it does.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pendant qu’un anneau bouge, la vue s’élargit pour que la navette reste visible."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "輪が動いている間は表示範囲が広がり、枠が見えたままになります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "环移动时，视野会扩大，让框架始终留在画面中。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "環移動時，畫面會拉遠，讓整把劍都留在畫面中。"
+          }
+        }
+      }
     }
   },
-  "version" : "1.0"
+  "version" : "1.3"
 }

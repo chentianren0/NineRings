@@ -10,6 +10,30 @@
             "state" : "translated",
             "value" : "Back over the slot"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Retour au-dessus de la fente"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "すき間の上に戻る"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "回到中缝上方"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "回到中縫上方"
+          }
         }
       }
     },
@@ -21,6 +45,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Down through the slot"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Passage vers le bas par la fente"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "すき間を下りる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "从中缝落下"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "從中縫落下"
           }
         }
       }
@@ -34,6 +82,30 @@
             "state" : "translated",
             "value" : "Flatten"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mise à plat"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "水平になる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "放平"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "放平"
+          }
         }
       }
     },
@@ -45,6 +117,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hang"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anneau suspendu"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ぶら下がる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "垂下"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "垂下"
           }
         }
       }
@@ -58,6 +154,30 @@
             "state" : "translated",
             "value" : "Lean"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inclinaison"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "傾く"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "倾斜"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "傾斜"
+          }
         }
       }
     },
@@ -69,6 +189,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lift"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Levée"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "持ち上がる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "抬起"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "抬起"
           }
         }
       }
@@ -82,6 +226,30 @@
             "state" : "translated",
             "value" : "Out past the tip"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sortie par le bout"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "先端から外へ出る"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "从前端移出"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "移出劍尖"
+          }
         }
       }
     },
@@ -93,6 +261,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Over the tip"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Passage par-dessus le bout"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "先端を越える"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "越过前端"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "越過劍尖"
           }
         }
       }
@@ -106,6 +298,30 @@
             "state" : "translated",
             "value" : "Ring %lld hangs"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anneau %lld suspendu"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld輪がぶら下がる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld环垂下"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld環垂下"
+          }
         }
       }
     },
@@ -117,6 +333,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ring %lld lifts"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anneau %lld soulevé"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld輪が持ち上がる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld环抬起"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld環抬起"
           }
         }
       }
@@ -130,6 +370,30 @@
             "state" : "translated",
             "value" : "Ring %lld over the tip"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anneau %lld par-dessus le bout"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld輪が先端を越える"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld环越过前端"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld環越過劍尖"
+          }
         }
       }
     },
@@ -141,6 +405,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sword comes back"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Retour de la navette"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "枠が戻る"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "框架回位"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "劍回位"
           }
         }
       }
@@ -154,6 +442,30 @@
             "state" : "translated",
             "value" : "Sword moves away"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Recul de la navette"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "枠が離れる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "框架移开"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "劍移開"
+          }
         }
       }
     },
@@ -165,6 +477,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Turn"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rotation"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "向きを変える"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "转向"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "轉向"
           }
         }
       }
@@ -178,9 +514,33 @@
             "state" : "translated",
             "value" : "Up through the slot"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Passage vers le haut par la fente"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "すき間を上がる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "从中缝升起"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "從中縫升起"
+          }
         }
       }
     }
   },
-  "version" : "1.0"
+  "version" : "1.3"
 }

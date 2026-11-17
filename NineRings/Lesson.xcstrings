@@ -10,6 +10,30 @@
             "state" : "translated",
             "value" : "Ring 3 swings over the tip and goes down through the slot, round ring 2’s rod. It can do this only because ring 2 is on: ring 2’s rod runs through ring 3 and stands in the slot. Then the sword comes back."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "L’anneau 3 bascule par-dessus le bout et passe à travers la fente, autour de la tige de l’anneau 2. Ce n’est possible que parce que l’anneau 2 est monté : la tige de l’anneau 2 passe dans l’anneau 3 et dans la fente. Puis la navette revient."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第3輪は先端を越えて、第2輪の棒のまわりを通ってすき間を下ります。これができるのは第2輪がかかっているからです。第2輪の棒は第3輪を通り、すき間に立っています。そのあと、枠が戻ります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第3环越过前端，绕着第2环的直杆从中缝落下。它能这样走，是因为第2环在框架上：第2环的直杆穿过第3环，立在中缝里。然后框架回位。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第3環越過劍尖，繞著第2環的直桿從中縫落下。它能這樣走，是因為第2環還套著：第2環的直桿穿過第3環，立在中縫裡。接著劍回位。"
+          }
         }
       }
     },
@@ -21,6 +45,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ring 1 goes back on, along the same path it came off by, played backwards. Now ring 2 can come off, because ring 1 is on. It comes off the same way ring 3 did: ring 1 keeps still, and ring 2 goes down through the slot round ring 1’s rod."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "L’anneau 1 remonte en refaisant son chemin à l’envers. L’anneau 2 peut alors descendre, puisque l’anneau 1 est monté. Il procède comme l’anneau 3 : l’anneau 1 reste immobile et l’anneau 2 passe à travers la fente, autour de la tige de l’anneau 1."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第1輪が、外れたときと同じ道を逆にたどって、枠に戻ります。第1輪がかかったので、今度は第2輪を外せます。外し方は第3輪と同じです。第1輪は動かず、第2輪が第1輪の棒のまわりを通ってすき間を下ります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第1环沿着取下时的路线倒着走一遍，重新套上。现在第1环在框架上，所以第2环可以取下了。取下的方式和第3环一样：第1环不动，第2环绕着第1环的直杆从中缝落下。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第1環沿著取下時的路線倒著走一遍，重新套上。現在第1環套著，所以第2環可以取下了。取下的方式和第3環一樣：第1環不動，第2環繞著第1環的直桿從中縫落下。"
           }
         }
       }
@@ -34,6 +82,30 @@
             "state" : "translated",
             "value" : "Ring 1 can always move. It goes over the tip and down through the slot. A ring that is off hangs below the sword, and its bead hangs lower than the others."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "L’anneau 1 peut toujours bouger. Il passe par-dessus le bout et à travers la fente. Un anneau descendu pend sous la navette, et sa boule est plus basse que les autres."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第1輪はいつでも動かせます。先端を越えて、すき間を下ります。外れた輪は枠の下にぶら下がり、その玉はほかの玉より低い位置に下がります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第1环随时都能移动。它越过前端，从中缝落下。取下的环垂在框架下方，珠子也比其他的低。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第1環隨時都能移動。它越過劍尖，從中縫落下。取下的環掛在劍的下方，它的珠子也垂得比其他珠子低。"
+          }
         }
       }
     },
@@ -45,6 +117,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ring 1 comes off again. Now rings 1, 2 and 3 are off, so ring 4 is the first ring on the sword and ring 5 is the second."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "L’anneau 1 redescend. Les anneaux 1, 2 et 3 sont maintenant descendus : l’anneau 4 est donc le premier anneau sur la navette, et l’anneau 5 le deuxième."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第1輪をもう一度外します。これで第1〜3輪が外れたので、枠にかかっている最初の輪は第4輪、2番目は第5輪です。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第1环再次取下。现在第1、2、3环都已取下，所以第4环是框架上的第一个环，第5环是第二个。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第1環再次取下。現在第1、2、3環都已取下，所以第4環是劍上的第一個環，第5環是第二個。"
           }
         }
       }
@@ -58,6 +154,30 @@
             "state" : "translated",
             "value" : "A rod hangs from each ring, passes down through a hole in the bar, and ends in a bead. Every rod but the last also passes through the ring after it. This is what links the rings together."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sous chaque anneau pend une tige, qui traverse un trou de la barre et se termine par une boule. Chaque tige, sauf la dernière, passe aussi dans l’anneau suivant. C’est ce qui relie les anneaux entre eux."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "輪にはそれぞれ棒が付いていて、棒は板の穴を通って下に伸び、下の端に玉が付いています。最後の棒以外は、次の輪の中も通っています。こうして輪どうしがつながっています。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "每个环下面都连着一根直杆，直杆向下穿过横板上的一个孔，末端是一颗珠子。除了最后一根，每根直杆还穿过下一个环。九个环就是这样连在一起的。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "每個環下面都連著一根直桿，直桿向下穿過橫板上的一個孔，末端是一顆珠子。除了最後一根，每根直桿還會穿過下一個環。九個環就是這樣連在一起的。"
+          }
         }
       }
     },
@@ -69,6 +189,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "All the other rings follow one rule: a ring can move only when the ring just before it is on and every ring before that one is off. So ring 3 can move now, because ring 2 is on and ring 1 is off. Ring 2 can’t move, because ring 1 is off."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tous les autres anneaux suivent une seule règle : un anneau ne peut bouger que si l’anneau juste avant lui est monté et que tous les anneaux avant celui-là sont descendus. L’anneau 3 peut donc bouger maintenant, car l’anneau 2 est monté et l’anneau 1 descendu. L’anneau 2 ne peut pas bouger, car l’anneau 1 est descendu."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第1輪以外の輪には、ルールが1つだけあります。輪を動かせるのは、1つ前の輪がかかっていて、それより前の輪がすべて外れているときだけです。つまり今は、第2輪がかかっていて第1輪が外れているので、第3輪を動かせます。第2輪は、第1輪が外れているので動かせません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "其他环都遵循同一条规则：只有紧挨着的前一环在框架上、再往前的环全部取下时，一个环才能移动。所以现在第3环能动，因为第2环在框架上，第1环已取下。第2环不能动，因为第1环已取下。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "其他環都依照同一條規則：只有前一環套著、再前面的環全都取下時，這個環才能移動。所以現在第3環能動，因為第2環套著，第1環已取下。第2環不能動，因為第1環已取下。"
           }
         }
       }
@@ -82,6 +226,30 @@
             "state" : "translated",
             "value" : "Ring 5 can move, because ring 4 is on and rings 1 to 3 are off. It comes off the same way ring 3 did, round ring 4’s rod. Rings 6 to 9 only go down and up with the sword."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "L’anneau 5 peut bouger, car l’anneau 4 est monté et les anneaux 1 à 3 sont descendus. Il descend comme l’anneau 3, autour de la tige de l’anneau 4. Les anneaux 6 à 9 ne font que s’abaisser et se relever avec la navette."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第4輪がかかっていて第1〜3輪が外れているので、第5輪を動かせます。外し方は第3輪と同じで、第4輪の棒のまわりを通ります。第6〜9輪は、枠と一緒に下がって上がるだけです。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第5环可以移动，因为第4环在框架上，第1到第3环都已取下。取下的方式和第3环一样，绕着第4环的直杆落下。第6到第9环只是随框架下沉，再升回来。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第5環可以移動，因為第4環套著，第1到第3環都已取下。取下的方式和第3環一樣，繞著第4環的直桿落下。第6到第9環只是隨著劍下沉，再升回來。"
+          }
         }
       }
     },
@@ -93,6 +261,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Seen from above, the sword is one wire with two rails that meet at the tip. The narrow gap between the rails is the slot, and the rods stand in it. Ring 9 is nearest the other end, the grip."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vue de dessus, la navette est un seul fil dont les deux branches se rejoignent au bout. L’espace étroit entre les branches est la fente, et les tiges y passent. L’anneau 9 est le plus près de l’autre extrémité, la poignée."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "上から見ると、枠は1本の針金を折り曲げたもので、平行な2本の針金が先端でつながっています。2本の間の細いすき間に、棒が立っています。反対側の端は持ち手で、第9輪がいちばん近くにあります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "从上方看，框架由一根金属丝弯成，两条长边在前端相接。两边之间的窄缝就是中缝，直杆都立在中缝里。第9环离另一端的手柄最近。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "從上方看，劍是一根金屬線彎成的，兩股在劍尖相接。兩股之間的窄縫就是中縫，直桿都立在中縫裡。第9環離另一端的劍柄最近。"
           }
         }
       }
@@ -106,6 +298,30 @@
             "state" : "translated",
             "value" : "Watch ring 3 come off. Rings 1 and 2 keep still while the sword slides back toward the grip and goes down, away from ring 2. The sword can slide back past ring 1 because ring 1 is off, so its rod is out of the slot."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Regardez l’anneau 3 descendre. Les anneaux 1 et 2 restent immobiles pendant que la navette recule vers la poignée et s’abaisse en s’écartant de l’anneau 2. La navette peut reculer au-delà de l’anneau 1 parce qu’il est descendu : sa tige n’est plus dans la fente."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第3輪が外れるところを見てみましょう。第1輪と第2輪は動かず、枠が持ち手の方へ引かれて下に沈み、第2輪から離れます。枠を第1輪より奥まで引けるのは、第1輪が外れていて、その棒がすき間の外にあるからです。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "来看第3环是怎么取下的。第1环和第2环不动，框架向手柄方向后退并下沉，离开第2环。框架能退过第1环，是因为第1环已取下，它的直杆不在中缝里了。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "看看第3環怎麼取下。第1環和第2環不動，劍往劍柄的方向後退並下沉，離開第2環。劍能退過第1環，是因為第1環已取下，它的直桿不在中縫裡了。"
+          }
         }
       }
     },
@@ -118,6 +334,30 @@
             "state" : "translated",
             "value" : "This is the nine linked rings puzzle. Nine rings sit on a wire called the sword, with ring 1 nearest its tip. The aim is to take every ring off the sword."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Voici le baguenaudier, ou casse-tête des neuf anneaux. Neuf anneaux sont montés sur un fil appelé la navette, l’anneau 1 au plus près du bout. Le but est de descendre tous les anneaux de la navette."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "これは九連環というパズルです。9つの輪が、枠と呼ばれる細長いU字形の針金にかかっています。先端にいちばん近いのが第1輪です。すべての輪を枠から外せば完成です。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "这是九连环。九个环套在一个长长的金属框上，这个框叫作“框架”，第1环离框架的前端最近。目标是把所有环都从框架上取下来。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這就是九連環。九個環套在一根叫做「劍」的金屬線上，第1環離劍尖最近。目標是把所有環都從劍上取下來。"
+          }
         }
       }
     },
@@ -129,6 +369,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "So the puzzle has only two moves: ring 1’s move, and the move of the second ring on the sword, which is the same for rings 2 to 9. Even so, taking all nine rings off takes 341 moves. Before a ring far from the tip can move, the rings before it must be set as the rule asks, and setting them takes many moves of their own."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Le baguenaudier n’a donc que deux mouvements : celui de l’anneau 1, et celui du deuxième anneau sur la navette, le même pour les anneaux 2 à 9. Pourtant, il faut 341 coups pour descendre les neuf anneaux. Avant qu’un anneau éloigné du bout puisse bouger, les anneaux qui le précèdent doivent être placés comme le veut la règle, ce qui demande à son tour de nombreux coups."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "つまり、このパズルの動きは2種類しかありません。第1輪の動きと、先端から数えて2番目にかかっている輪の動きです。この動きは第2〜9輪のどれでも同じです。それでも、9つの輪をすべて外すには341手かかります。先端から遠い輪を動かすには、その前の輪をルールどおりに整えておく必要があり、そのためにも多くの手がかかるからです。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "所以九连环只有两种走法：一种是第1环的，另一种是框架上第二个环的，第2到第9环都用这一种。即便如此，取下全部九个环也需要341步。离前端较远的环要移动，它前面的环必须先按规则摆好，而摆好它们本身就要走很多步。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "所以九連環只有兩種走法：第1環的走法，以及劍上第二個環的走法，後者對第2到第9環都一樣。即使如此，取下全部九個環也需要341步。離劍尖較遠的環要移動，它前面的環必須先依規則擺好，而擺好它們本身就要走很多步。"
           }
         }
       }
@@ -154,9 +418,81 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "device" : {
+              "mac" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Les six coups de cette leçon sont les six premiers de ces 341. À vous de jouer : cliquez sur un anneau pour le déplacer. Si un anneau ne peut pas bouger, l’app vous indique pourquoi."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Les six coups de cette leçon sont les six premiers de ces 341. À vous de jouer : touchez un anneau pour le déplacer. Si un anneau ne peut pas bouger, l’app vous indique pourquoi."
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "variations" : {
+            "device" : {
+              "mac" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "このレッスンの6手は、その341手の最初の6手です。では、自分でやってみましょう。輪をクリックすると動かせます。輪が動かせないときは、その理由が表示されます。"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "このレッスンの6手は、その341手の最初の6手です。では、自分でやってみましょう。輪をタップすると動かせます。輪が動かせないときは、その理由が表示されます。"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "device" : {
+              "mac" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "本教程中的六步就是这341步中的前六步。现在你来试试：点按一个环来移动它。如果某个环不能动，App会告诉你原因。"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "本教程中的六步就是这341步中的前六步。现在你来试试：轻点一个环来移动它。如果某个环不能动，App会告诉你原因。"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hant" : {
+          "variations" : {
+            "device" : {
+              "mac" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "這個教學裡的六步，就是這341步中的前六步。現在換你試試：按一下環即可移動。如果某個環不能動，App會告訴你原因。"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "這個教學裡的六步，就是這341步中的前六步。現在換你試試：點一下環即可移動。如果某個環不能動，App會告訴你原因。"
+                }
+              }
+            }
+          }
         }
       }
     }
   },
-  "version" : "1.0"
+  "version" : "1.3"
 }
