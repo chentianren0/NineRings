@@ -1,0 +1,62 @@
+{
+  "moments": [
+    {
+      "id": "01",
+      "name": "A move under way: ring 5 going down through the slot",
+      "caption": "caption.move",
+      "captionOn": { "duo-inner": "caption.halfFold" },
+      "appearance": "light",
+      "arguments": ["-move", "5", "-start-progress", "0.55"]
+    },
+    {
+      "id": "02",
+      "name": "The toy at rest, every ring on",
+      "caption": "caption.rest",
+      "appearance": "light",
+      "arguments": ["-state", "111111111"]
+    },
+    {
+      "id": "03",
+      "name": "Why a ring can't move: ring 5 refused, ring 3 in the way",
+      "caption": "caption.why",
+      "appearance": "light",
+      "arguments": ["-refuse", "5"]
+    },
+    {
+      "id": "04",
+      "name": "The lesson: step 7, ring 3 part way down through the slot",
+      "caption": "caption.lesson",
+      "appearance": "light",
+      "arguments": ["-lesson-step", "7", "-start-progress", "0.6", "-paused"]
+    },
+    {
+      "id": "05",
+      "name": "Another view, in dark: three-quarter from above, ring 4 going down through the slot",
+      "caption": "caption.view",
+      "appearance": "dark",
+      "arguments": ["-move", "4", "-start-progress", "0.5", "-view", "-35:30"]
+    },
+    {
+      "id": "06",
+      "name": "Solved: every ring off, the congratulation",
+      "caption": "caption.solved",
+      "appearance": "light",
+      "arguments": ["-congratulation"]
+    }
+  ],
+  "devices": [
+    { "id": "mac", "class": "mac", "size": [2880, 1800], "capture": "mac-window", "window": [1280, 800] },
+    { "id": "iphone-6.3", "class": "iphone-6.3", "size": [1206, 2622], "capture": "simulator", "simulator": "iPhone 18 Pro", "cornerRadius": 165 },
+    { "id": "iphone-6.9", "class": "iphone-6.9", "size": [1320, 2868], "capture": "simulator", "simulator": "iPhone 18 Pro Max", "cornerRadius": 165 },
+    { "id": "ipad-13", "class": "ipad-13", "size": [2752, 2064], "capture": "simulator", "simulator": "iPad Pro 13-inch (M5)", "cornerRadius": 40 },
+    { "id": "duo-outer", "class": "duo-outer", "size": [1398, 2034], "capture": "simulator", "simulator": "iPhone Duo", "display": "outer", "hinge": "closed", "cornerRadius": 150 },
+    { "id": "duo-inner", "class": "duo-inner", "size": [2007, 2853], "capture": "simulator", "simulator": "iPhone Duo", "display": "inner", "hinge": "half-open", "cornerRadius": 120 }
+  ],
+  "header": {
+    "size": [3840, 1646],
+    "safeArea": [1097, 493, 1646, 661],
+    "move": 3,
+    "progress": 0.6,
+    "view": "side"
+  }
+}

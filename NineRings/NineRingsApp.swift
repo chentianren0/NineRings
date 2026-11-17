@@ -8,6 +8,7 @@ struct NineRingsApp: App {
         NSWindow.allowsAutomaticWindowTabbing = false
         #endif
         #if DEBUG
+        StoreCapture.prepare()
         if let request = Capture.request {
             Task { await Capture.run(request) }
         }

@@ -107,6 +107,30 @@ import Testing
         #expect(Hearing(from: made, to: chosen).events.isEmpty)
     }
 
+    /// At full speed every event sounds when heard as the app hears it: frame by frame, at 60 and 120 frames a second,
+    /// from eight phases of the frame, thinned by the frame's time, across the first forty moves of the solution.
+    @Test(arguments: [60.0, 120.0])
+    func atFullSpeedEveryEventSoundsFrameByFrame(fps: Double) {
+        var dropped: [String] = []
+        for phase in stride(from: 0.0, to: 1.0, by: 0.125) {
+            var session = PuzzleSession()
+            session.solve()
+            var thinning = Thinning()
+            var time = phase / fps
+            var moves = 0
+            while session.isPlaying && moves < 40 {
+                let before = session
+                session.advance(by: 1 / fps)
+                time += 1 / fps
+                for heard in Hearing(from: before, to: session).events where !thinning.admits(heard.event, at: time) {
+                    dropped.append("move \(heard.moveNumber) ring \(heard.move.ring): \(heard.event.what) (phase \(phase))")
+                }
+                if session.moveCount != before.moveCount { moves += 1 }
+            }
+        }
+        #expect(dropped.isEmpty, "\(dropped.count) dropped at \(Int(fps)) fps; first: \(dropped.prefix(4))")
+    }
+
     /// Plays on until the session stops, and returns what was heard.
     @discardableResult
     private func run(_ session: inout PuzzleSession) -> [Hearing.Heard] {

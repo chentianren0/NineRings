@@ -1,0 +1,90 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "caption.halfFold": {
+      "comment": "App Store picture caption, over the first picture on the half-folded iPhone Duo: the toy stands on the upper half, the controls lie on the lower half. One short line, a phrase rather than a sentence; keep it under about 30 characters.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Half fold it, and watch"
+          }
+        }
+      }
+    },
+    "caption.lesson": {
+      "comment": "App Store picture caption, over the lesson open beside the toy. The same words as the welcome page's \"Learn how it works\" (Screens catalog, welcome.learn.title); use the same translation. One short line.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Learn how it works"
+          }
+        }
+      }
+    },
+    "caption.move": {
+      "comment": "App Store picture caption, over the first picture: a ring part way through coming off the sword. The hero picture, seen first in search results. One short line, a phrase rather than a sentence; keep it under about 30 characters.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Watch every ring come off"
+          }
+        }
+      }
+    },
+    "caption.rest": {
+      "comment": "App Store picture caption, over the toy at rest with all nine rings on the sword. The one rule decides which ring may move. One short line.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nine rings. One rule."
+          }
+        }
+      }
+    },
+    "caption.solved": {
+      "comment": "App Store picture caption, over the solved toy, every ring off, with the congratulation showing. One short line.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Take every ring off"
+          }
+        }
+      }
+    },
+    "caption.view": {
+      "comment": "App Store picture caption, over the toy seen at an angle from above, in dark appearance: the toy can be turned and seen from any side. One short line.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Look from any side"
+          }
+        }
+      }
+    },
+    "caption.why": {
+      "comment": "App Store picture caption, over a ring that was tapped and cannot move: the app says why and outlines the ring in the way. Close to the welcome page's \"See why\" (Screens catalog, welcome.why.title). One short line.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See why a ring can’t move"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

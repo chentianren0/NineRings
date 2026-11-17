@@ -65,7 +65,7 @@ struct PuzzleScreen: View {
     }
 
     private var lesson: LessonGuide {
-        LessonGuide(player: player, rig: rig, cover: jump)
+        LessonGuide(player: player, rig: rig, cover: jump, isWanted: { showsLesson })
     }
 
     /// Where the puzzle's toolbar items go: the trailing end, on every device.
@@ -80,8 +80,10 @@ struct PuzzleScreen: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         #if DEBUG
-        ToolbarItem(placement: .navigation) {
-            DesignMenu()
+        if !StoreCapture.isActive {
+            ToolbarItem(placement: .navigation) {
+                DesignMenu()
+            }
         }
         #endif
         #if os(macOS)

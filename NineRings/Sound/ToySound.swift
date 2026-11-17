@@ -25,8 +25,8 @@ final class ToySound {
     private var thinning = Thinning()
     private let clock = ContinuousClock()
     private let started: ContinuousClock.Instant
-    /// The session at the last frame, and when that was, for the sword's speed.
-    private var lastFrame: (session: PuzzleSession, time: ContinuousClock.Instant)?
+    /// Each listener's sword speed, and when it was set: one listener per player, so per window.
+    private var slideSpeeds: [ObjectIdentifier: (speed: Double, time: ContinuousClock.Instant)] = [:]
     /// Whether the sound bench is playing the slide on its own, which the frames then leave alone.
     private var isAuditioningSlide = false
     /// The congratulation's phrase waits this long, in seconds, after the move that took the last ring off, so that
@@ -37,6 +37,7 @@ final class ToySound {
         started = clock.now
         Task.detached(priority: .utility) { Score.prepare() }
         playback.prepare(notePerRing: Self.notePerRing)
+        if hapticsOn { haptics.prepare() }
     }
 
     // MARK: Settings
@@ -85,22 +86,18 @@ final class ToySound {
         if hapticsOn { haptics.solved() }
     }
 
-    /// The session as it is drawn this frame: the sword's speed since the last frame, for its slide.
-    func frame(_ session: PuzzleSession) {
+    /// One listener's sword speed this frame, in millimetres a second. The slide follows the fastest that is still
+    /// fresh (see `PlaybackRules`), so that two windows, one still and one playing, do not fight over it.
+    func setSlideSpeed(_ speed: Double, from listener: SoundListener) {
         let now = clock.now
-        defer { lastFrame = (session, now) }
+        slideSpeeds[ObjectIdentifier(listener)] = (speed, now)
         if isAuditioningSlide { return }
-        guard let lastFrame, soundsOn else {
+        guard soundsOn else {
             playback.setSlideSpeed(0)
             return
         }
-        let elapsed = seconds(from: lastFrame.time, to: now)
-        // After a pause in the frames, such as time in the background, there is no speed to speak of.
-        guard elapsed > 0 && elapsed < 0.25 else {
-            playback.setSlideSpeed(0)
-            return
-        }
-        playback.setSlideSpeed(Hearing(from: lastFrame.session, to: session).swordTravel / elapsed)
+        slideSpeeds = slideSpeeds.filter { seconds(from: $0.value.time, to: now) < 1 }
+        playback.setSlideSpeed(PlaybackRules.slideSpeed(slideSpeeds.values.map { ($0.speed, seconds(from: $0.time, to: now)) }))
     }
 
     // MARK: The bench
@@ -145,32 +142,29 @@ final class ToySound {
     }
 }
 
-/// What the player passes on to the toy's sound, in one place: every change it publishes, the ring just tapped, and
-/// each frame. It keeps the session as last heard, so that each change is heard from where the last one left off,
-/// and plays the solved phrase when the congratulation appears (the person's own move took the last ring off; see
-/// `Congratulation`), never after Solve.
+/// What one player passes on to the toy's sound: what each change made heard, the congratulation's moment, and the
+/// sword's travel each frame. The rules for what is heard, jumps included, are the player's `PlayState`; this keeps
+/// only what belongs to its own window, the time of its last frame, so that two windows never mix their speeds.
 @MainActor
 final class SoundListener {
-    private var heard: PuzzleSession?
-    private var tapped: Int?
-    private var wasCongratulating = false
+    private let clock = ContinuousClock()
+    private var lastFrame: ContinuousClock.Instant?
 
-    /// A ring was asked to move: asking twice for a ring the rule refuses is heard twice.
-    func tap(_ ring: Int) {
-        tapped = ring
+    /// One change of the player's toy: what it made heard, and whether the congratulation has just appeared.
+    func publish(_ hearing: Hearing, congratulates: Bool) {
+        ToySound.shared?.hear(hearing)
+        if congratulates { ToySound.shared?.congratulate() }
     }
 
-    /// The session as the player publishes it, and whether the congratulation is showing.
-    func publish(_ session: PuzzleSession, isCongratulating: Bool) {
-        if let heard { ToySound.shared?.hear(Hearing(from: heard, to: session, tapped: tapped)) }
-        if isCongratulating && !wasCongratulating { ToySound.shared?.congratulate() }
-        heard = session
-        tapped = nil
-        wasCongratulating = isCongratulating
-    }
-
-    /// The session as it is drawn this frame.
-    func frame(_ session: PuzzleSession) {
-        ToySound.shared?.frame(session)
+    /// The sword's travel since the last frame, in millimetres, as the player's toy is drawn this frame.
+    func frame(travel: Double) {
+        let now = clock.now
+        defer { lastFrame = now }
+        guard let lastFrame else { return }
+        let elapsed = now - lastFrame
+        let seconds = Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18
+        // After a pause in the frames, such as time in the background, there is no speed to speak of.
+        let speed = seconds > 0 && seconds < PlaybackRules.speedLife ? travel / seconds : 0
+        ToySound.shared?.setSlideSpeed(speed, from: self)
     }
 }
