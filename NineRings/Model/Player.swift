@@ -52,6 +52,9 @@ final class Player {
             }
         }
     }
+    /// The person's toy as it was last published, so that each change to it can be seen whole.
+    @ObservationIgnored private var published: PuzzleSession
+    @ObservationIgnored private var congratulation = Congratulation()
 
     /// How far through the move on the slider the toy is. Setting it is what dragging the slider does.
     var progress: Double {
@@ -73,6 +76,9 @@ final class Player {
     /// Whether the slider may be dragged: there is a move on it, and the lesson, if open, leaves the toy free.
     private(set) var hasMove = false
     var speed: PlaybackSpeed = .normal
+    /// Whether the congratulation shows: the person's own move has just taken the last ring off, and nothing has
+    /// been done with the toy since.
+    private(set) var isCongratulating = false
 
     /// When playing was last moved on, so that the next step covers exactly the time since.
     @ObservationIgnored private var lastStep: ContinuousClock.Instant?
@@ -80,12 +86,14 @@ final class Player {
     /// A session with every ring on.
     init() {
         ownSession = PuzzleSession()
+        published = ownSession
         publish()
     }
 
     /// A session at the start of `move`, with that move on the slider at `progress`.
     init(move: Move, progress: Double = 0) {
         ownSession = PuzzleSession(at: move, progress: progress)
+        published = ownSession
         publish()
     }
 
@@ -149,6 +157,12 @@ final class Player {
         publish()
     }
 
+    /// Hides the congratulation, as its Done button does.
+    func dismissCongratulation() {
+        congratulation.dismiss()
+        isCongratulating = false
+    }
+
     /// Moves playing on to where the clock has reached. Called once a frame.
     func update() {
         let now = ContinuousClock.now
@@ -175,6 +189,14 @@ final class Player {
         canSolve = lesson?.canSolve ?? session.canSolve
         hasMove = lesson?.canScrub ?? !stages.isEmpty
         lessonPage = lesson?.page
+        // The congratulation follows the person's own toy, and is hidden while the lesson shows its own.
+        if lesson != nil {
+            congratulation.dismiss()
+        } else {
+            congratulation.update(from: published, to: ownSession)
+        }
+        published = ownSession
+        isCongratulating = congratulation.isShowing
     }
 
     // MARK: Lesson
