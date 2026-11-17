@@ -148,6 +148,9 @@
     "Tap a ring to move it." : {
       "comment" : "Status when nothing is moving. A ring is tapped in the 3D view or by its numbered button."
     },
+    "The lesson is showing the toy." : {
+      "comment" : "Status at rest while the lesson's steps show the toy. The ring buttons do nothing then; the lesson's last step gives the toy back."
+    },
     "Undo" : {
       "comment" : "Button that takes back the last move."
     },

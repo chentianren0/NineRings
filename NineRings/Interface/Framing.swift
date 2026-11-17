@@ -22,6 +22,10 @@ enum Framing {
         return ToyBounds.rings(poses)
     }()
 
+    /// The rings' box stretched to hold the whole sword at home, grip included: what the lesson's view from above
+    /// frames, since its text names the grip.
+    static let ringsAndSword: ToyBounds = rings.joined(with: .sword)
+
     /// The box around the whole toy, the sword drawn back included, over the moves of the first three rings, each from
     /// where it first comes off, and ring 3's with every ring behind it off. The capture mode frames its pictures on it.
     static let wholeToy: ToyBounds = {

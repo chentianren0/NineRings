@@ -39,6 +39,7 @@ private struct RingButton: View {
     let refused: Int?
     let diameter: CGFloat
     let action: () -> Void
+    @Environment(\.isEnabled) private var isEnabled
 
     @Environment(\.reducesMotion) private var reducesMotion
     @Environment(\.differentiatesWithoutColor) private var differentiatesWithoutColor
@@ -83,6 +84,8 @@ private struct RingButton: View {
             }
             .frame(maxWidth: .infinity, minHeight: 44)
             .contentShape(.rect)
+            // A plain button keeps its colours when it is disabled; fade it, as the system's buttons fade.
+            .opacity(isEnabled ? 1 : 0.4)
         }
         .buttonStyle(.plain)
         .keyboardShortcut(KeyEquivalent(Character(String(marker.ring))), modifiers: [])
