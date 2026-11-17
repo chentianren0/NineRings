@@ -1,5 +1,10 @@
 # Nine rings
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/toy-dark.png">
+  <img src="docs/images/toy-light.png" width="800" alt="The nine linked rings toy, as the app draws it, with every ring on. Nine wire rings stand in a row, each held at the top of its own rod; the rods pass down through holes in a flat bar and end in brown beads beneath it. A long loop of wire, the sword, runs through all nine rings, from its tip on the left to the grip loops on the right.">
+</picture>
+
 An app for iPhone, iPad and Mac that shows how the Chinese nine linked rings puzzle (the Baguenaudier) works.
 
 The puzzle is old. Nine rings hang on rods from a bar, and a long loop of wire, the sword, runs through them. One rule says which ring can move: ring 1 always can, and any other ring only when the ring just before it is on and every ring before that is off. The shortest way to take all nine off is 341 moves. The app draws the toy in 3D, and lets you make the moves yourself, or watch them, slowly, from any side.
