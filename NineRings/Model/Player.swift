@@ -244,4 +244,31 @@ final class Player {
 
     /// Whether closing the lesson moves the toy to another pose at once.
     var lessonClosingJumps: Bool { lesson?.closingJumps ?? false }
+
+    #if DEBUG
+    // MARK: Store pictures
+
+    /// A player over `session`, for the store-capture mode, which sets up states the other initializers do not.
+    init(session: PuzzleSession) {
+        ownSession = session
+        published = session
+        publish()
+    }
+
+    /// For the store-capture mode: plays lesson step `index` from its start at once, as far as `progress` through its
+    /// move, and holds it there, so that every launch gives the same picture.
+    func holdLessonStep(_ index: Int, at progress: Double) {
+        guard lesson != nil else { return }
+        lesson?.go(to: index)
+        // Going to a step that finishes a move toggles play: if the toy was already playing from that point, it stops.
+        if lesson?.toy.isPlaying == false { lesson?.togglePlay() }
+        var steps = 0
+        while let run = lesson, run.isShowing, run.toy.progress < progress, steps < 100_000 {
+            lesson?.advance(by: 1.0 / 600)
+            steps += 1
+        }
+        lesson?.pause()
+        publish()
+    }
+    #endif
 }
