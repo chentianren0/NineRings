@@ -125,8 +125,11 @@ func run() throws -> Bool {
                     throw ComposerError.wrongCaptureSize(input, size, expected: "\(window * 2), the window at the Mac's 2x scale")
                 }
             case .simulator:
-                if size != device.size, size != device.size.rotated {
-                    throw ComposerError.wrongCaptureSize(input, size, expected: "\(device.size), the simulator's screen")
+                // Turned is wrong too: the pixels of a turned device's screenshot, kept without their orientation. A
+                // pixel short is right: the UI test's screenshot of the Duo's inner display is 2006 x 2852 of its
+                // 2007 x 2853, and the capture is scaled into its place under the caption anyway.
+                if abs(size.width - device.size.width) > 1 || abs(size.height - device.size.height) > 1 {
+                    throw ComposerError.wrongCaptureSize(input, size, expected: "\(device.size), the simulator's screen, upright")
                 }
             }
             var caption: String?
