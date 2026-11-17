@@ -151,6 +151,11 @@ for device in "${device_list[@]}"; do
     if [ "$method" = "simulator" ] && [ "$compose_only" -eq 0 ]; then
         simulator="$(field "$device" simulator)"
         destination="platform=iOS Simulator,name=$simulator"
+        # The simulator by its exact name: "Review iPhone 18 Pro" is not "iPhone 18 Pro".
+        if ! xcrun simctl list devices available | grep -qF -- "    $simulator ("; then
+            say "no simulator named \"$simulator\"; make one (xcrun simctl create \"$simulator\" <device type>) or change Shots.json"
+            failures=$((failures + 1)); continue
+        fi
         if [ "$skip_build" -eq 0 ]; then
             say "building the app and StoreShots for $simulator"
             xcodebuild build -project "$root/NineRings.xcodeproj" -scheme NineRings -configuration Debug \
@@ -160,7 +165,7 @@ for device in "${device_list[@]}"; do
             || { tail -30 "$build-sim.log"; say "the build for $simulator failed"; failures=$((failures + 1)); continue; }
         fi
         # One simulator at a time: boot this one if it is not running, and shut down only what was booted here.
-        if ! xcrun simctl list devices booted | grep -q "$simulator ("; then
+        if ! xcrun simctl list devices booted | grep -qF -- "    $simulator ("; then
             xcrun simctl boot "$simulator"
             booted_here=1
         fi
@@ -219,6 +224,46 @@ if [ "$header" -eq 1 ] && [ "$compose_only" -eq 0 ]; then
         rm -f "$work.log"
     done
 fi
+
+# One page to look through every picture in OUT, made before and after this run: per device, one row per moment, a
+# column per language.
+page="$out/index.html"
+{
+    echo '<!doctype html><meta charset="utf-8"><title>Nine Rings: App Store pictures</title>'
+    echo '<style>body{font:14px -apple-system,sans-serif;margin:24px;background:#f5f5f7}h2{margin-top:40px}'
+    echo 'table{border-collapse:collapse}td,th{padding:8px;vertical-align:top;text-align:left}'
+    echo 'img{max-height:420px;max-width:640px;box-shadow:0 1px 4px #0003}td.id{font-weight:600}</style>'
+    echo '<h1>Nine Rings: App Store pictures</h1><p>Each picture links to the file at full size.</p>'
+    languages_found=(); for dir in "$out"/*/; do
+        name="$(basename "$dir")"
+        case "$name" in captures|header) ;; *) languages_found+=("$name") ;; esac
+    done
+    if [ -d "$out/header" ]; then
+        echo '<h2>Product page header (3840 &times; 1646)</h2><table><tr>'
+        for file in "$out"/header/*.png; do
+            echo "<td><a href=\"header/$(basename "$file")\"><img src=\"header/$(basename "$file")\"></a><br>$(basename "$file")</td>"
+        done
+        echo '</tr></table>'
+    fi
+    for device in $(compose devices --manifest "$manifest"); do
+        any=0; for language in ${languages_found[@]+"${languages_found[@]}"}; do [ -d "$out/$language/$device" ] && any=1; done
+        [ "$any" -eq 1 ] || continue
+        echo "<h2>$device ($(field "$device" size))</h2><table><tr><th></th>"
+        for language in "${languages_found[@]}"; do echo "<th>$language</th>"; done
+        echo '</tr>'
+        for picture in $(ls "$out"/*/"$device"/ 2>/dev/null | grep '\.png$' | sort -u); do
+            echo "<tr><td class=\"id\">${picture%.png}</td>"
+            for language in "${languages_found[@]}"; do
+                file="$language/$device/$picture"
+                if [ -f "$out/$file" ]; then echo "<td><a href=\"$file\"><img src=\"$file\" loading=\"lazy\"></a></td>"
+                else echo '<td>missing</td>'; fi
+            done
+            echo '</tr>'
+        done
+        echo '</table>'
+    done
+} > "$page"
+say "the pictures on one page: $page"
 
 if [ "$failures" -gt 0 ]; then
     say "$failures step(s) failed"

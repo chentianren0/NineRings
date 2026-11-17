@@ -17,6 +17,8 @@ import StoreComposer
 //       What App Store Connect would refuse in each file.
 //   store-compose captions --captions Captions.xcstrings --languages en,fr,ja
 //       Which captions each language still lacks.
+//   store-compose devices --manifest Shots.json
+//       The devices' ids, in the manifest's order, one per line.
 //   store-compose device --manifest Shots.json --device duo-inner
 //       The device's fields, one `name=value` per line, for the script.
 //   store-compose collect --from DIR --to DIR
@@ -171,6 +173,10 @@ func run() throws -> Bool {
             let missing = catalog.keys.filter { !catalog.isTranslated($0, into: language) }
             print(missing.isEmpty ? "\(language): every caption" : "\(language): lacks \(missing.joined(separator: ", ")) (falls back to \(catalog.sourceLanguage))")
         }
+        return true
+
+    case "devices":
+        for device in try Manifest(contentsOf: try options.url("manifest")).devices { print(device.id) }
         return true
 
     case "device":
