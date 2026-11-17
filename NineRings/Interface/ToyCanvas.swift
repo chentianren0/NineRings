@@ -8,17 +8,17 @@ import Toy
 /// The toy in 3D, filling the whole window behind the bars and controls. Each frame it moves the player and the
 /// camera on and draws what changed. A tap on a ring, its rod or its bead asks to move that ring.
 ///
-/// The camera frames the toy in the part of the view nothing covers: the safe area's bars, and `cover`, the frame
-/// of controls floating over the toy, in the global coordinate space. With the setting to follow the move on, the
-/// picture widens while a move slides the sword, so as to keep the sword in view; with Reduce Motion it stays still,
-/// and the camera's flights cut instead of flying.
+/// The camera frames the toy in the part of the view nothing covers: the safe area's bars, and `covers`, the frames
+/// of what floats over the toy (the controls, the lesson's sheet on a phone), in the global coordinate space. With the
+/// setting to follow the move on, the picture widens while a move slides the sword, so as to keep the sword in view;
+/// with Reduce Motion it stays still, and the camera's flights cut instead of flying.
 ///
 /// To VoiceOver the toy is one element, "Toy", whose value says which rings are on and which can move (see
 /// ``ToySummary``), after the status line's sentence while a move is in hand. The rings are moved by their buttons.
 struct ToyCanvas: View {
     let player: Player
     let rig: CameraRig
-    var cover: CGRect = .null
+    var covers: [CGRect] = []
     let tapRing: (Int) -> Void
 
     @Environment(\.colorScheme) private var colorScheme
@@ -26,14 +26,29 @@ struct ToyCanvas: View {
     @AppStorage(Framing.followsMoveKey) private var followsMove = false
     @Environment(\.reducesMotion) private var reducesMotion
 
+    /// The view's frame in the global coordinate space and its safe area, as the last layout left them. Read with
+    /// `onGeometryChange`, which reports every layout: a geometry reader's body was seen to miss a window growing on
+    /// the Mac with the lesson open, which left the toy framed for the old size and cut off.
+    @State private var space: Space?
+
+    private nonisolated struct Space: Equatable, Sendable {
+        var frame: CGRect
+        var safeArea: EdgeInsets
+    }
+
     var body: some View {
-        GeometryReader { proxy in
+        ZStack {
+            // Measured inside the safe area, as the 3D view behind it fills the whole window.
+            Color.clear
+                .onGeometryChange(for: Space.self) { proxy in
+                    Space(frame: proxy.frame(in: .global), safeArea: proxy.safeAreaInsets)
+                } action: { space = $0 }
             ToyRealityView(player: player, rig: rig, tapRing: tapRing)
                 .ignoresSafeArea()
                 .accessibilityHidden(true)
-                .onChange(of: viewport(proxy), initial: true) { _, viewport in
-                    rig.resize(to: viewport)
-                }
+        }
+        .onChange(of: space.map(viewport), initial: true) { _, viewport in
+            if let viewport { rig.resize(to: viewport) }
         }
         .background(Backdrop.color(for: colorScheme))
         .onChange(of: followsMove && !reducesMotion, initial: true) { _, follows in
@@ -49,32 +64,49 @@ struct ToyCanvas: View {
     }
 
     /// The whole view, and how much of each edge bars and controls cover.
-    private func viewport(_ proxy: GeometryProxy) -> Viewport {
-        let safe = proxy.safeAreaInsets
+    private func viewport(_ space: Space) -> Viewport {
+        let safe = space.safeArea
         let left = layoutDirection == .leftToRight ? safe.leading : safe.trailing
         let right = layoutDirection == .leftToRight ? safe.trailing : safe.leading
-        let inner = proxy.frame(in: .global)
+        let inner = space.frame
         let whole = CGRect(x: inner.minX - left, y: inner.minY - safe.top,
                            width: inner.width + left + right, height: inner.height + safe.top + safe.bottom)
         var viewport = Viewport(size: whole.size, topInset: safe.top, bottomInset: safe.bottom, leftInset: left, rightInset: right)
-        let covered = whole.intersection(cover)
-        guard !covered.isNull, covered.width > 1, covered.height > 1 else { return viewport }
         // Leave a little air between the toy and what covers it.
         let gap: CGFloat = 8
-        if covered.width > whole.width / 2 {
-            if covered.midY > whole.midY {
-                viewport.bottomInset = max(viewport.bottomInset, whole.maxY - covered.minY + gap)
-            } else {
-                viewport.topInset = max(viewport.topInset, covered.maxY - whole.minY + gap)
-            }
-        } else if covered.height > whole.height / 3 {
-            if covered.midX > whole.midX {
-                viewport.rightInset = max(viewport.rightInset, whole.maxX - covered.minX + gap)
-            } else {
-                viewport.leftInset = max(viewport.leftInset, covered.maxX - whole.minX + gap)
+        for covered in Self.blocks(covers.map { whole.intersection($0) }, across: whole.width) {
+            if covered.width > whole.width / 2 {
+                if covered.midY > whole.midY {
+                    viewport.bottomInset = max(viewport.bottomInset, whole.maxY - covered.minY + gap)
+                } else {
+                    viewport.topInset = max(viewport.topInset, covered.maxY - whole.minY + gap)
+                }
+            } else if covered.height > whole.height / 3 {
+                if covered.midX > whole.midX {
+                    viewport.rightInset = max(viewport.rightInset, whole.maxX - covered.minX + gap)
+                } else {
+                    viewport.leftInset = max(viewport.leftInset, covered.maxX - whole.minX + gap)
+                }
             }
         }
         return viewport
+    }
+
+    /// The parts of the view that are covered, with covers that span the view and stand one on another, such as
+    /// controls floating on top of a sheet, joined into one block, so that the block is seen to rise from the bottom.
+    private static func blocks(_ covered: [CGRect], across width: CGFloat) -> [CGRect] {
+        let parts = covered.filter { !$0.isNull && $0.width > 1 && $0.height > 1 }
+        var wide = parts.filter { $0.width > width / 2 }.sorted { $0.minY < $1.minY }
+        var joined: [CGRect] = []
+        while let next = wide.first {
+            wide.removeFirst()
+            if let last = joined.last, next.minY - last.maxY <= 24 {
+                joined[joined.count - 1] = last.union(next)
+            } else {
+                joined.append(next)
+            }
+        }
+        return joined + parts.filter { $0.width <= width / 2 }
     }
 }
 

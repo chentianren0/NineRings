@@ -75,7 +75,7 @@ struct LessonGuide {
             return
         }
         switch page.view {
-        case .top: rig.show(.top, framing: Framing.rings)
+        case .top: rig.show(.top, framing: Framing.ringsAndSword)
         case .side: rig.showDefault()
         }
     }

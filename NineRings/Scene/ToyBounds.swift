@@ -71,6 +71,11 @@ struct ToyBounds {
         return box
     }
 
+    /// The box around this one and `other`.
+    func joined(with other: ToyBounds) -> ToyBounds {
+        ToyBounds(lower: simd_min(lower, other.lower), upper: simd_max(upper, other.upper))
+    }
+
     /// A cube of side `size` around `center`.
     init(center: SIMD3<Float>, size: Float) {
         self.init(lower: center - size / 2, upper: center + size / 2)
