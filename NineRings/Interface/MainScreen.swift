@@ -13,7 +13,7 @@ struct MainScreen: View {
     #endif
 
     init() {
-        player = LaunchOptions.move.map { Player(move: $0, progress: LaunchOptions.startProgress ?? 0) } ?? Player()
+        player = StoreCapture.player() ?? LaunchOptions.move.map { Player(move: $0, progress: LaunchOptions.startProgress ?? 0) } ?? Player()
         rig = CameraRig(framing: Framing.rings)
     }
 
@@ -23,9 +23,10 @@ struct MainScreen: View {
             .accessibilityLaunchTaps(player)
             .accessibilitySettings()
             .onChange(of: tallView, initial: true) { _, tallView in
-                rig.defaultAngles = Framing.defaultAngles(tallView: tallView)
+                rig.defaultAngles = StoreCapture.defaultAngles ?? Framing.defaultAngles(tallView: tallView)
                 rig.showDefault()
             }
+            .storeCapture(player: player, rig: rig)
             #if os(macOS)
             .frame(minWidth: 360, minHeight: 420)
             #endif

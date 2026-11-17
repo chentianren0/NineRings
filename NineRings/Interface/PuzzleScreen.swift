@@ -77,8 +77,10 @@ struct PuzzleScreen: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         #if DEBUG
-        ToolbarItem(placement: .navigation) {
-            DesignMenu()
+        if !StoreCapture.isActive {
+            ToolbarItem(placement: .navigation) {
+                DesignMenu()
+            }
         }
         #endif
         #if os(macOS)
