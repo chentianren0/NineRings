@@ -144,35 +144,53 @@ struct ControlPanel: View {
             }
     }
 
-    /// Every ring on, every ring off: the two arrangements a person most often starts from.
+    /// Every ring on, every ring off: the two arrangements a person most often starts from. Each is a capsule of its
+    /// own, drawn here rather than by the bordered style, whose fill does not show on the glass panel on iPhone; the
+    /// title is in the primary colour, since the tint, at this size, is under the contrast text needs.
     private var settingButtons: some View {
         HStack(spacing: 12) {
-            Button {
-                player.setRings(to: .allOn)
-            } label: {
-                Text("All On", comment: "Button, while the rings are set by hand, that puts every ring on at once.")
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                    .frame(maxWidth: .infinity)
-            }
-            .disabled(player.shownState == .allOn)
-            .help(Text("Put every ring on", comment: "Tooltip on the All On button, while the rings are set by hand."))
-
-            Button {
-                player.setRings(to: .allOff)
-            } label: {
-                Text("All Off", comment: "Button, while the rings are set by hand, that takes every ring off at once.")
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                    .frame(maxWidth: .infinity)
-            }
-            .disabled(player.shownState == .allOff)
-            .help(Text("Take every ring off", comment: "Tooltip on the All Off button, while the rings are set by hand."))
+            settingButton(
+                Text("All On", comment: "Button, while the rings are set by hand, that puts every ring on at once."),
+                help: Text("Put every ring on", comment: "Tooltip on the All On button, while the rings are set by hand."),
+                to: .allOn
+            )
+            settingButton(
+                Text("All Off", comment: "Button, while the rings are set by hand, that takes every ring off at once."),
+                help: Text("Take every ring off", comment: "Tooltip on the All Off button, while the rings are set by hand."),
+                to: .allOff
+            )
         }
-        .buttonStyle(.bordered)
-        .buttonBorderShape(.capsule)
-        .controlSize(.large)
         .font(.subheadline.weight(.semibold))
+    }
+
+    private func settingButton(_ title: Text, help: Text, to state: PuzzleState) -> some View {
+        Button {
+            player.setRings(to: state)
+        } label: {
+            title
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                // The colour itself: inside a button, `.primary` is the button's own first level, the tint.
+                .foregroundStyle(Color.primary)
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, minHeight: Self.settingButtonHeight)
+                .background(.fill.secondary, in: .capsule)
+                .contentShape(.capsule)
+                // A borderless button keeps an explicit colour when it is disabled; fade it, as the system fades its own.
+                .opacity(player.shownState == state ? 0.4 : 1)
+        }
+        .buttonStyle(.borderless)
+        .disabled(player.shownState == state)
+        .help(help)
+    }
+
+    /// As tall as the row of controls it takes the place of.
+    private static var settingButtonHeight: CGFloat {
+        #if os(iOS)
+        40
+        #else
+        28
+        #endif
     }
 
     private var transport: some View {
