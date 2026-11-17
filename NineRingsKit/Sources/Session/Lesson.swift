@@ -5,7 +5,8 @@ import Puzzle
 ///
 /// The lesson plays the first six moves of the shortest way from every ring on to every ring off, so each step
 /// starts where the last one ended and the toy never jumps: ring 1 off, ring 3 off, ring 1 on, ring 2 off, ring 1 off,
-/// ring 5 off. Ring 3's move is held after the sword has moved away, where the reason for the rule can be seen.
+/// ring 5 off. Ring 3's move is held after the sword has moved away, where the reason for the rule can be seen. The last
+/// step, "your turn", gives the person's own toy back, as it was before the lesson, to play with while its text is up.
 ///
 /// The words are not here. Each step names its text by a key in the app's `Lesson` String Catalog, where the English
 /// and its translations live.
@@ -22,7 +23,7 @@ public enum Lesson {
         LessonStep(key: "lesson.ringOneOffAgain", show: .play([move(1, from: "100111111")])),
         LessonStep(key: "lesson.sameMoveFurtherAlong", show: .play([move(5, from: "000111111")])),
         LessonStep(key: "lesson.twoMoves", show: .rest(state("000101111"))),
-        LessonStep(key: "lesson.yourTurn", show: .rest(state("000101111"))),
+        LessonStep(key: "lesson.yourTurn", show: .givenBack),
     ]
 
     private static func state(_ text: String) -> PuzzleState {
@@ -48,6 +49,9 @@ public struct LessonStep: Sendable, Equatable {
         case hold(Move, afterStage: String)
         /// The rest of a move held at the end of the stage named by `afterStage`, played from there to its end.
         case finish(Move, afterStage: String)
+        /// The person's own toy, given back as it was before the lesson, with its history, theirs to play with: the
+        /// lesson shows nothing of its own.
+        case givenBack
     }
 
     /// Where the toy is seen from. The app's camera has a preset for each.
@@ -67,22 +71,26 @@ public struct LessonStep: Sendable, Equatable {
         self.view = view
     }
 
-    /// The state the toy is in when the step begins. A held move has not been made yet.
-    public var start: PuzzleState {
+    /// The state the toy is in when the step begins. A held move has not been made yet. Nil when the step gives the
+    /// person's own toy back, which may be in any state.
+    public var start: PuzzleState? {
         switch show {
         case .rest(let state): state
         case .play(let moves): moves[0].from
         case .hold(let move, _), .finish(let move, _): move.from
+        case .givenBack: nil
         }
     }
 
     /// The state the toy is in when the step's showing is over. A held move is not made, so it is still its start.
-    public var end: PuzzleState {
+    /// Nil when the step gives the person's own toy back.
+    public var end: PuzzleState? {
         switch show {
         case .rest(let state): state
         case .play(let moves): moves[moves.count - 1].to
         case .hold(let move, _): move.from
         case .finish(let move, _): move.to
+        case .givenBack: nil
         }
     }
 
@@ -94,7 +102,7 @@ public struct LessonStep: Sendable, Equatable {
     /// is held after.
     public var heldProgress: Double? {
         switch show {
-        case .rest, .play:
+        case .rest, .play, .givenBack:
             return nil
         case .hold(let move, let key), .finish(let move, let key):
             guard let stage = MoveMotion(move).stages.first(where: { $0.key == key }) else { return nil }
