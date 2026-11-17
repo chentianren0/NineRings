@@ -36,6 +36,11 @@ final class Player {
     static let moves = MoveMotion.written
 
     @ObservationIgnored private var session: PuzzleSession
+    /// Where the toy's sound and touch go (none while capturing frames), the session as last heard, and the ring just
+    /// tapped, if that is what changed it.
+    @ObservationIgnored private let sound = ToySound.shared
+    @ObservationIgnored private var heard: PuzzleSession
+    @ObservationIgnored private var tapped: Int?
 
     /// How far through the move on the slider the toy is. Setting it is what dragging the slider does.
     var progress: Double {
@@ -62,12 +67,14 @@ final class Player {
     /// A session with every ring on.
     init() {
         session = PuzzleSession()
+        heard = session
         publish()
     }
 
     /// A session at the start of `move`, with that move on the slider at `progress`.
     init(move: Move, progress: Double = 0) {
         session = PuzzleSession(at: move, progress: progress)
+        heard = session
         publish()
     }
 
@@ -95,6 +102,7 @@ final class Player {
     // MARK: Requests
 
     func tap(_ ring: Int) {
+        tapped = ring
         session.tap(ring)
         publish()
     }
@@ -136,6 +144,7 @@ final class Player {
     func update() {
         let now = ContinuousClock.now
         defer { lastStep = session.isPlaying ? now : nil }
+        defer { sound?.frame(session) }
         guard session.isPlaying, let lastStep else { return }
         let elapsed = now - lastStep
         // One frame's step is capped, so that after a pause in the frames, such as time in the background, the move
@@ -148,6 +157,9 @@ final class Player {
     /// Copies what the views read out of the session. Each property is Equatable, so setting it to the value it
     /// already has notifies nobody.
     private func publish() {
+        sound?.hear(Hearing(from: heard, to: session, tapped: tapped))
+        heard = session
+        tapped = nil
         shownProgress = session.progress
         isPlaying = session.isPlaying
         markers = session.markers
