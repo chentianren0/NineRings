@@ -15,8 +15,8 @@ import AppKit
 /// this way for each moment of the series.
 ///
 /// In the mode, the app:
-/// - keeps the welcome page away, makes no sound and no haptics, and takes the release build's choice of each design
-///   alternative, for this process only (the launch arguments' own domain, which nothing writes to disk);
+/// - keeps the welcome page away, makes no sound and no haptics, keeps the picture still (the follow-the-move setting
+///   at its default, off), and takes the release build's choice of each design alternative, for this process only (the launch arguments' own domain, which nothing writes to disk);
 /// - hides the debug build's Design menu;
 /// - opens in the state the arguments ask for, and holds it;
 /// - on the Mac, sizes its window and draws it as the window in front, as it is when someone uses it;
@@ -55,6 +55,8 @@ enum StoreCapture {
             ScreenKey.welcomeSeen: true,
             SoundKey.sounds: false,
             SoundKey.haptics: false,
+            // Off is the setting's default: a copy of the app on this Mac or simulator may have it on.
+            Framing.followsMoveKey: false,
             DesignKey.tallView: TallViewDesign.standard.rawValue,
             RingTuningDesign.key: RingTuningDesign.notePerRing.rawValue,
         ]
