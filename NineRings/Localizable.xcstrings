@@ -28,6 +28,9 @@
     "Done": {
       "comment": "Lesson button on the last step that closes the lesson."
     },
+    "Follow the Move": {
+      "comment": "A switch in settings. When on, the view of the toy widens while a ring moves, so that the sword stays in sight as it is drawn back."
+    },
     "From Above": {
       "comment": "View menu item: the toy seen from above."
     },
@@ -135,6 +138,9 @@
     },
     "View": {
       "comment": "Toolbar menu of the places to see the toy from."
+    },
+    "While a ring moves, the view widens to keep the sword in sight.": {
+      "comment": "The line under the Follow the Move switch in settings, saying what it does."
     },
     "can’t move while ring %lld is off": {
       "comment": "Spoken hint on a ring button that cannot move. The variable is the ring just before it, which is off."

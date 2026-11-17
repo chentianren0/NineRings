@@ -157,6 +157,89 @@ struct OrbitCamera: Equatable {
         distance = min(max(distance / Float(factor), Self.closest), 5_000)
     }
 
+    // MARK: Following
+
+    /// The middle of the uncovered part of `viewport` at the target's distance, as offsets from the target along the
+    /// camera's right and up, and how far the view reaches from that middle there, sideways and up. All in millimetres,
+    /// and all in proportion to `distance`.
+    private func window(in viewport: Viewport) -> (right: Float, up: Float, halfWidth: Float, halfHeight: Float) {
+        let perPoint = distance * tan(Self.fieldOfView / 2) / Float(viewport.size.height)
+        return (
+            right: Float(viewport.leftInset - viewport.rightInset) * perPoint,
+            up: Float(viewport.bottomInset - viewport.topInset) * perPoint,
+            halfWidth: Float(viewport.size.width - viewport.leftInset - viewport.rightInset) * perPoint,
+            halfHeight: Float(viewport.size.height - viewport.topInset - viewport.bottomInset) * perPoint
+        )
+    }
+
+    /// Where `point` falls on the plane through the target that faces the camera, seen from the camera, along its
+    /// right and up from the middle of the uncovered part; nil when it is behind the camera.
+    private func projection(of point: SIMD3<Float>, window: (right: Float, up: Float, halfWidth: Float, halfHeight: Float)) -> SIMD2<Float>? {
+        let fromEye = point - position
+        let depth = -simd_dot(fromEye, rotation.act([0, 0, 1]))
+        guard depth > Self.near else { return nil }
+        let scale = distance / depth
+        return SIMD2(simd_dot(fromEye, rotation.act([1, 0, 0])) * scale - window.right,
+                     simd_dot(fromEye, rotation.act([0, 1, 0])) * scale - window.up)
+    }
+
+    /// How much room a point held in view keeps from the edges of the uncovered part: it stays within the part
+    /// shrunk by this factor about its middle.
+    static let holdingMargin: Float = 1.04
+
+    /// Whether `point` is in the uncovered part of `viewport`, clear of its edges by `holdingMargin`.
+    func holds(_ point: SIMD3<Float>, in viewport: Viewport) -> Bool {
+        guard !viewport.isEmpty else { return false }
+        let window = window(in: viewport)
+        guard let spot = projection(of: point, window: window) else { return false }
+        return abs(spot.x) * Self.holdingMargin <= window.halfWidth && abs(spot.y) * Self.holdingMargin <= window.halfHeight
+    }
+
+    /// The camera looking the same way, moved back and over just enough that the uncovered part of `viewport` holds
+    /// all it holds now and `points` as well, clear of its edges by `holdingMargin`. It is this camera itself when
+    /// `points` are already held, and it changes smoothly as they move.
+    ///
+    /// The part of the view seen now is kept whole, and the new view is centred on it and the points together, so the
+    /// toy moves over only as far as the points ask.
+    func holding(_ points: [SIMD3<Float>], in viewport: Viewport) -> OrbitCamera {
+        guard !viewport.isEmpty else { return self }
+        let window = window(in: viewport)
+        var lower = SIMD2(-window.halfWidth, -window.halfHeight)
+        var upper = -lower
+        for point in points {
+            // A point behind the camera cannot be brought into view by moving back along the same direction alone, but
+            // the camera is far from the toy, so this does not happen.
+            guard let spot = projection(of: point, window: window) else { continue }
+            lower = simd_min(lower, spot * Self.holdingMargin)
+            upper = simd_max(upper, spot * Self.holdingMargin)
+        }
+        let needed = (upper - lower) / SIMD2(2 * window.halfWidth, 2 * window.halfHeight)
+        let scale = max(needed.x, needed.y)
+        guard scale > 1.000_01 else { return self }
+        let right = rotation.act([1, 0, 0]), up = rotation.act([0, 1, 0]), back = rotation.act([0, 0, 1])
+        let middle = (lower + upper) / 2
+        // The middle of the uncovered part, on the target's plane: kept on that plane, moved over to the new middle.
+        let centre = target + right * (window.right + middle.x) + up * (window.up + middle.y)
+        var camera = self
+        camera.distance = distance * scale
+        // Seen from the new place, a point nearer or farther than the target's plane may fall a little differently
+        // than it did from here: move back further if one would still be cut.
+        // The middle of the uncovered part is off the camera's axis by a share of the distance, which shifts how a
+        // point nearer than the plane falls.
+        let tangentX = window.halfWidth / distance, tangentY = window.halfHeight / distance
+        let shareX = window.right / distance, shareY = window.up / distance
+        for point in points {
+            let offset = point - centre
+            let toward = simd_dot(offset, back)
+            camera.distance = max(camera.distance,
+                                  abs(simd_dot(offset, right) + shareX * toward) * Self.holdingMargin / tangentX + toward,
+                                  abs(simd_dot(offset, up) + shareY * toward) * Self.holdingMargin / tangentY + toward)
+        }
+        let grown = camera.distance / distance
+        camera.target = centre - right * window.right * grown - up * window.up * grown
+        return camera
+    }
+
     // MARK: Blending
 
     /// The camera a fraction `t` of the way from this one to `other`, turning the short way round.
