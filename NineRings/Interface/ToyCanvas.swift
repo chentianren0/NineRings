@@ -19,26 +19,38 @@ struct ToyCanvas: View {
     @Environment(\.layoutDirection) private var layoutDirection
     @AppStorage(Framing.followsMoveKey) private var followsMove = false
 
+    /// The view's frame in the global coordinate space and its safe area, as the last layout left them. Read with
+    /// `onGeometryChange`, which reports every layout: a geometry reader's body was seen to miss a window growing on
+    /// the Mac with the lesson open, which left the toy framed for the old size and cut off.
+    @State private var space: Space?
+
+    private nonisolated struct Space: Equatable, Sendable {
+        var frame: CGRect
+        var safeArea: EdgeInsets
+    }
+
     var body: some View {
-        GeometryReader { proxy in
-            ToyRealityView(player: player, rig: rig, tapRing: tapRing)
-                .ignoresSafeArea()
-                .onChange(of: viewport(proxy), initial: true) { _, viewport in
-                    rig.resize(to: viewport)
-                }
-        }
-        .background(Backdrop.color(for: colorScheme))
+        ToyRealityView(player: player, rig: rig, tapRing: tapRing)
+            .ignoresSafeArea()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onGeometryChange(for: Space.self) { proxy in
+                Space(frame: proxy.frame(in: .global), safeArea: proxy.safeAreaInsets)
+            } action: { space = $0 }
+            .onChange(of: space.map(viewport), initial: true) { _, viewport in
+                if let viewport { rig.resize(to: viewport) }
+            }
+            .background(Backdrop.color(for: colorScheme))
         .onChange(of: followsMove, initial: true) { _, followsMove in
             rig.followsMove = followsMove
         }
     }
 
     /// The whole view, and how much of each edge bars and controls cover.
-    private func viewport(_ proxy: GeometryProxy) -> Viewport {
-        let safe = proxy.safeAreaInsets
+    private func viewport(_ space: Space) -> Viewport {
+        let safe = space.safeArea
         let left = layoutDirection == .leftToRight ? safe.leading : safe.trailing
         let right = layoutDirection == .leftToRight ? safe.trailing : safe.leading
-        let inner = proxy.frame(in: .global)
+        let inner = space.frame
         let whole = CGRect(x: inner.minX - left, y: inner.minY - safe.top,
                            width: inner.width + left + right, height: inner.height + safe.top + safe.bottom)
         var viewport = Viewport(size: whole.size, topInset: safe.top, bottomInset: safe.bottom, leftInset: left, rightInset: right)
