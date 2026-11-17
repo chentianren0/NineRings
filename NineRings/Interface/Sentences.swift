@@ -8,6 +8,16 @@ enum Sentences {
     /// The line at rest while the lesson's steps show the toy, when its ring buttons and slider do nothing.
     static let lessonHoldsToy = LocalizedStringResource("The lesson is showing the toy.", comment: "Status at rest while the lesson's steps show the toy. The ring buttons do nothing then; the lesson's last step gives the toy back.")
 
+    /// The line while the person sets the rings by hand. Every arrangement is a position the moves reach, so the rule
+    /// forbids none.
+    static var settingRings: LocalizedStringResource {
+        #if os(macOS)
+        LocalizedStringResource("Click a ring to put it on or take it off.", comment: "Status while the person sets the rings by hand, on the Mac: a click puts a ring on or takes it off at once, with no move and no rule. A ring is clicked in the 3D view or by its numbered button.")
+        #else
+        LocalizedStringResource("Tap a ring to put it on or take it off.", comment: "Status while the person sets the rings by hand: a tap puts a ring on or takes it off at once, with no move and no rule. A ring is tapped in the 3D view or by its numbered button.")
+        #endif
+    }
+
     static func status(_ status: PuzzleSession.Status) -> LocalizedStringResource {
         switch status {
         case .playing(let move, let stage, let undoing):

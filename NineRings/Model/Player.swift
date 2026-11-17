@@ -68,6 +68,9 @@ final class Player {
     /// Whether the congratulation shows: the person's own move has just taken the last ring off, and nothing has
     /// been done with the toy since.
     private(set) var isCongratulating = false
+    /// Whether the person is setting the rings by hand: a ring asked for goes on or comes off at once, and nothing else
+    /// moves the toy.
+    private(set) var isSettingRings = false
 
     /// When playing was last moved on, so that the next step covers exactly the time since.
     @ObservationIgnored private var lastStep: ContinuousClock.Instant?
@@ -151,6 +154,37 @@ final class Player {
         publish()
     }
 
+    // MARK: Setting the rings
+
+    /// Starts setting the rings by hand, from the rings the toy has now. When a move is in hand the toy goes to rest at
+    /// once, and the screen covers it (see `settingRingsStartJumps`).
+    func startSettingRings() {
+        play.startSettingRings()
+        publish()
+    }
+
+    /// Sets the rings to `state` at once, while they are being set.
+    func setRings(to state: PuzzleState) {
+        play.setRings(to: state)
+        publish()
+    }
+
+    /// Makes the rings as set the toy, resting there with no move made.
+    func finishSettingRings() {
+        play.finishSettingRings()
+        publish()
+    }
+
+    /// Gives the toy back as it was before the rings were set. The screen covers it when it jumps (see
+    /// `settingRingsCancelJumps`).
+    func cancelSettingRings() {
+        play.cancelSettingRings()
+        publish()
+    }
+
+    var settingRingsStartJumps: Bool { play.settingRingsStartJumps }
+    var settingRingsCancelJumps: Bool { play.settingRingsCancelJumps }
+
     /// Hides the congratulation, as its Done button does.
     func dismissCongratulation() {
         play.dismissCongratulation()
@@ -181,10 +215,11 @@ final class Player {
         stages = session.stages
         canPlay = lesson?.canPlay ?? session.canPlay
         canUndo = lesson?.canUndo ?? session.canUndo
-        canSolve = lesson?.canSolve ?? session.canSolve
+        canSolve = !play.isSettingRings && (lesson?.canSolve ?? session.canSolve)
         hasMove = lesson?.canScrub ?? !stages.isEmpty
         lessonPage = lesson?.page
         isCongratulating = play.isCongratulating
+        isSettingRings = play.isSettingRings
         sound.publish(play.hearing, congratulates: play.congratulates)
         Announcer.say(play.narration)
     }

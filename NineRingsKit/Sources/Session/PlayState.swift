@@ -24,11 +24,20 @@ import Puzzle
 ///   while the screen covers the toy, says nothing either: what the jump says is the news.
 /// - A request that changes nothing, such as going to a step with the lesson closed, is heard and said as nothing:
 ///   what the last change said is not said again.
+/// - The person can set the rings by hand, to any of the 512 arrangements: they lie on one line of moves, so each is a
+///   real position of the puzzle, and the rule forbids none. While they set them, a
+///   ring asked for goes on or comes off at once, with no move and no rule, and every request that would move the toy
+///   does nothing. Their toy waits as it was. Done makes the arrangement their toy, resting there with no move made,
+///   so that play, undo and Solve go on from it; Cancel gives their toy back as it was. Every change of the
+///   arrangement is a jump, silent, and says nothing: the ring's own button says its new value. Starting says how to
+///   set them; Done and Cancel say what the toy now is. The lesson stays closed meanwhile.
 public struct PlayState: Sendable, Equatable {
     /// The person's own toy. While the lesson is open it waits, and the lesson's toy is shown instead.
     public private(set) var own: PuzzleSession
     /// The lesson, while it is open.
     public private(set) var lesson: LessonRun?
+    /// The arrangement the person is setting the rings to, while they set them.
+    public private(set) var settingRings: PuzzleState?
     public private(set) var congratulation = Congratulation()
     /// What the last change made heard.
     public private(set) var hearing = Hearing()
@@ -50,22 +59,33 @@ public struct PlayState: Sendable, Equatable {
         framed = toy
     }
 
-    /// The toy as it is shown: the lesson's while the lesson is open.
-    public var toy: PuzzleSession { lesson?.toy ?? own }
+    /// The toy as it is shown: resting in the arrangement being set, the lesson's while the lesson is open, or the
+    /// person's own.
+    public var toy: PuzzleSession {
+        if let settingRings { return PuzzleSession(resting: settingRings) }
+        return lesson?.toy ?? own
+    }
+
+    public var isSettingRings: Bool { settingRings != nil }
 
     public var isCongratulating: Bool { congratulation.isShowing }
 
     /// The person's toy, where it is shown: their own, or on the lesson's last step the toy it gives back; nil on the
     /// lesson's other steps.
     private var persons: PuzzleSession? {
+        if isSettingRings { return nil }
         guard let lesson else { return own }
         return lesson.givesToyBack ? lesson.toy : nil
     }
 
     // MARK: - Changes that move the toy on
 
-    /// A ring asked to move.
+    /// A ring asked to move; while the rings are being set, put on or taken off at once.
     public mutating func tap(_ ring: Int) {
+        precondition(PuzzleState.rings.contains(ring), "rings are numbered 1 to 9")
+        if let settingRings {
+            return setRings(to: PuzzleState(bits: settingRings.bits ^ 1 << (ring - 1)))
+        }
         useToy { $0.tap(ring) }
         settle(tapped: ring)
     }
@@ -87,18 +107,21 @@ public struct PlayState: Sendable, Equatable {
     }
 
     public mutating func togglePlay() {
+        guard !isSettingRings else { return nothingChanged() }
         if lesson != nil { lesson?.togglePlay() } else { own.togglePlay() }
         settle()
     }
 
     /// Stops the move part way. A `quiet` pause says nothing, as the one before a jump does.
     public mutating func pause(quiet: Bool = false) {
+        guard !isSettingRings else { return nothingChanged() }
         if lesson != nil { lesson?.pause() } else { own.pause() }
         settle(quiet: quiet)
     }
 
     /// The clock: `seconds` of the move's own time, at the playing speed.
     public mutating func advance(by seconds: Double) {
+        guard !isSettingRings else { return nothingChanged() }
         if lesson != nil { lesson?.advance(by: seconds) } else { own.advance(by: seconds) }
         settle()
     }
@@ -110,8 +133,10 @@ public struct PlayState: Sendable, Equatable {
 
     // MARK: - Jumps
 
-    /// Every ring on, at once: the toy's Reset, or on the lesson's steps but the last, back to its first step.
+    /// Every ring on, at once: the toy's Reset, or on the lesson's steps but the last, back to its first step. While the
+    /// rings are being set, every ring goes on in the arrangement.
     public mutating func reset() {
+        if isSettingRings { return setRings(to: .allOn) }
         if lesson != nil { lesson?.reset() } else { own.reset() }
         settle(jump: true, sayingWhereItRests: true)
     }
@@ -119,6 +144,7 @@ public struct PlayState: Sendable, Equatable {
     /// The toy set where `move` begins, playing it, with the lesson closed.
     public mutating func begin(at move: Move) {
         lesson = nil
+        settingRings = nil
         own = PuzzleSession(at: move)
         own.togglePlay()
         settle(jump: true, rebase: true)
@@ -126,7 +152,7 @@ public struct PlayState: Sendable, Equatable {
 
     /// Opens the lesson at step `index`, counted from 0, keeping the toy as it is to give back on closing.
     public mutating func openLesson(at index: Int = 0) {
-        guard lesson == nil else { return nothingChanged() }
+        guard lesson == nil, !isSettingRings else { return nothingChanged() }
         lesson = LessonRun(opening: own, at: index)
         settle(jump: true, rebase: true)
     }
@@ -144,6 +170,56 @@ public struct PlayState: Sendable, Equatable {
         guard lesson != nil else { return nothingChanged() }
         lesson?.go(to: index)
         settle(jump: true, rebase: true)
+    }
+
+    // MARK: - Setting the rings
+
+    /// Starts setting the rings by hand, from the arrangement the person's toy is in, or was in when the move in hand
+    /// began. The move stops; their toy waits as it is, for Cancel.
+    public mutating func startSettingRings() {
+        guard lesson == nil, !isSettingRings else { return nothingChanged() }
+        own.pause()
+        settingRings = own.state
+        settle(jump: true, rebase: true)
+        narration = Narration([.settingRings])
+    }
+
+    /// Sets the arrangement being set to `state`, at once.
+    public mutating func setRings(to state: PuzzleState) {
+        guard let settingRings, state != settingRings else { return nothingChanged() }
+        self.settingRings = state
+        settle(jump: true, quiet: true)
+    }
+
+    /// Makes the arrangement the person's toy: resting there, with no move made, so that play, undo and Solve go on from
+    /// it.
+    public mutating func finishSettingRings() {
+        guard let settingRings else { return nothingChanged() }
+        own = PuzzleSession(resting: settingRings)
+        self.settingRings = nil
+        congratulation.set(settingRings)
+        settle(jump: true, rebase: true, sayingWhereItRests: true)
+    }
+
+    /// Stops setting the rings and gives the person's toy back as it was.
+    public mutating func cancelSettingRings() {
+        guard isSettingRings else { return nothingChanged() }
+        settingRings = nil
+        settle(jump: true, rebase: true, sayingWhereItRests: !own.isPartWay)
+        if own.isPartWay { narration = Narration([.paused(own.status)]) }
+    }
+
+    /// Whether starting to set the rings moves the toy to another pose at once, so that the screen should cover it: a
+    /// move is in hand, and the toy goes to rest where it began.
+    public var settingRingsStartJumps: Bool {
+        lesson == nil && !isSettingRings && (own.isPlaying || own.isPartWay)
+    }
+
+    /// Whether Cancel moves the toy to another pose at once: the arrangement is not the toy's, or the toy was stopped
+    /// part way.
+    public var settingRingsCancelJumps: Bool {
+        guard let settingRings else { return false }
+        return settingRings != own.state || own.isPartWay
     }
 
     // MARK: - The slide
@@ -167,6 +243,7 @@ public struct PlayState: Sendable, Equatable {
     /// A change to the toy shown, as a ring tap, undo, Solve or a drag makes it: on the lesson's steps but the last,
     /// nothing happens.
     private mutating func useToy(_ change: (inout PuzzleSession) -> Void) {
+        if isSettingRings { return }
         if lesson != nil { lesson?.useToy(change) } else { change(&own) }
     }
 

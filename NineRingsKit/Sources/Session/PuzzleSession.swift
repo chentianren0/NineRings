@@ -110,7 +110,8 @@ public struct PuzzleSession: Sendable, Equatable {
         isPlaying || isPartWay || !queue.isEmpty
     }
 
-    private var isPartWay: Bool {
+    /// Whether the toy is between the two ends of the move on the slider, so that it does not rest in `state`.
+    public var isPartWay: Bool {
         current != nil && progress > 0 && progress < 1
     }
 

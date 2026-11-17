@@ -66,6 +66,8 @@ enum Spoken {
             String(localized: Sentences.blocked(ring, by: block))
         case .rested(let summary):
             Self.summary(summary)
+        case .settingRings:
+            String(localized: Sentences.settingRings)
         }
     }
 

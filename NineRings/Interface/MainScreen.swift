@@ -13,7 +13,14 @@ struct MainScreen: View {
     #endif
 
     init() {
-        player = StoreCapture.player() ?? LaunchOptions.move.map { Player(move: $0, progress: LaunchOptions.startProgress ?? 0) } ?? Player()
+        let player = StoreCapture.player() ?? LaunchOptions.move.map { Player(move: $0, progress: LaunchOptions.startProgress ?? 0) } ?? Player()
+        #if DEBUG
+        if let rings = LaunchOptions.settingRings {
+            player.startSettingRings()
+            player.setRings(to: rings)
+        }
+        #endif
+        self.player = player
         rig = CameraRig(framing: Framing.rings)
     }
 

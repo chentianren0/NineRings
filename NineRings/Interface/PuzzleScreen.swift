@@ -58,7 +58,8 @@ struct PuzzleScreen: View {
                     }
             }
             .arrangementViewStyle(.overlay)
-            .puzzleCommands(PuzzleActions(player: player, rig: rig, showsLesson: $showsLesson, lesson: lesson) { jump { player.reset() } })
+            .puzzleCommands(PuzzleActions(player: player, rig: rig, showsLesson: $showsLesson, lesson: lesson,
+                                          reset: { jump { player.reset() } }, settingRings: settingRings))
             .navigationTitle(Text("Nine Rings", comment: "The window's title."))
             .toolbar(removing: .title)
             #if os(iOS)
@@ -178,24 +179,54 @@ struct PuzzleScreen: View {
         // With no title in the window's toolbar, items gather at the leading end unless something pushes them over.
         ToolbarSpacer(.flexible)
         #endif
-        ToolbarItemGroup(placement: Self.trailing) {
-            viewMenu
-            Button {
-                jump { player.reset() }
-            } label: {
-                Label { Text("Reset", comment: "Toolbar button that puts every ring back on.") } icon: { Image(systemName: "arrow.counterclockwise") }
+        if player.isSettingRings {
+            // Setting the rings is a mode, as editing is in Apple's apps: the toolbar offers only the way out, Cancel to
+            // give the toy back as it was, Done to keep the rings as set, and the View menu, to see them from anywhere.
+            ToolbarItem(placement: Self.trailing) {
+                viewMenu
             }
-            .help(Text("Put every ring back on", comment: "Tooltip on the Reset button."))
-        }
-        ToolbarSpacer(.fixed, placement: Self.trailing)
-        ToolbarItem(placement: Self.trailing) {
-            Button {
-                showsLesson.toggle()
-            } label: {
-                Label { Text("Lesson", comment: "Toolbar button that shows or hides the lesson on how the puzzle works.") } icon: { Image(systemName: "book") }
+            ToolbarSpacer(.fixed, placement: Self.trailing)
+            ToolbarItem(placement: .cancellationAction) {
+                Button(role: .cancel) {
+                    settingRings.cancel()
+                }
+                .keyboardShortcut(.cancelAction)
+                .help(Text("Put the rings back as they were", comment: "Tooltip on the Cancel button while the rings are set by hand."))
             }
-            .accessibilityAddTraits(showsLesson ? .isSelected : [])
-            .help(Text("Show how the puzzle works", comment: "Tooltip on the Lesson button."))
+            ToolbarItem(placement: .confirmationAction) {
+                Button(role: .confirm) {
+                    settingRings.finish()
+                }
+                .keyboardShortcut(.defaultAction)
+                .help(Text("Keep the rings as set", comment: "Tooltip on the Done button while the rings are set by hand."))
+            }
+        } else {
+            ToolbarItemGroup(placement: Self.trailing) {
+                viewMenu
+                Button {
+                    settingRings.start()
+                } label: {
+                    Label { Text("Set Rings", comment: "Toolbar button that starts setting the rings by hand: each ring button then puts its ring on or takes it off at once.") } icon: { Image(systemName: "pencil") }
+                }
+                .disabled(showsLesson)
+                .help(Text("Choose which rings are on", comment: "Tooltip on the Set Rings button."))
+                Button {
+                    jump { player.reset() }
+                } label: {
+                    Label { Text("Reset", comment: "Toolbar button that puts every ring back on.") } icon: { Image(systemName: "arrow.counterclockwise") }
+                }
+                .help(Text("Put every ring back on", comment: "Tooltip on the Reset button."))
+            }
+            ToolbarSpacer(.fixed, placement: Self.trailing)
+            ToolbarItem(placement: Self.trailing) {
+                Button {
+                    showsLesson.toggle()
+                } label: {
+                    Label { Text("Lesson", comment: "Toolbar button that shows or hides the lesson on how the puzzle works.") } icon: { Image(systemName: "book") }
+                }
+                .accessibilityAddTraits(showsLesson ? .isSelected : [])
+                .help(Text("Show how the puzzle works", comment: "Tooltip on the Lesson button."))
+            }
         }
         #if os(iOS)
         ToolbarOverflowMenu {
@@ -233,6 +264,11 @@ struct PuzzleScreen: View {
         }
     }
 
+    /// Setting the rings by hand, with a cover over the toy where it jumps.
+    private var settingRings: SettingRings {
+        SettingRings(player: player, cover: jump)
+    }
+
     /// Covers the toy, makes a change that moves it to another state at once, and uncovers it, so that the jump
     /// is calm.
     private func jump(_ change: @escaping () -> Void) {
@@ -243,6 +279,34 @@ struct PuzzleScreen: View {
         } completion: {
             change()
             withAnimation(.easeOut(duration: 0.4)) { cover = 0 }
+        }
+    }
+}
+
+/// Starting, finishing and cancelling the setting of the rings, as the toolbar and the menu bar do them: where the toy
+/// jumps, to rest from a move in hand or back to how it was, under the screen's cover.
+struct SettingRings {
+    let player: Player
+    let cover: (@escaping () -> Void) -> Void
+
+    func start() {
+        guard !player.isSettingRings else { return }
+        if player.settingRingsStartJumps {
+            cover { player.startSettingRings() }
+        } else {
+            player.startSettingRings()
+        }
+    }
+
+    func finish() {
+        player.finishSettingRings()
+    }
+
+    func cancel() {
+        if player.settingRingsCancelJumps {
+            cover { player.cancelSettingRings() }
+        } else {
+            player.cancelSettingRings()
         }
     }
 }
