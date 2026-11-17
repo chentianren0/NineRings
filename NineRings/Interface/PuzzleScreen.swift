@@ -95,15 +95,14 @@ struct PuzzleScreen: View {
             }
             .onAppear { hasAppeared = true }
             #if os(iOS)
-            // Settings and About hold little: on a phone each stops at half height; on an iPad each is the system's
-            // form sheet.
+            // Settings hold little: on a phone the sheet stops at half height. About, with its text and links, is a
+            // full sheet. On an iPad each is the system's form sheet.
             .sheet(isPresented: $showsSettings) {
                 NavigationStack { SettingsScreen() }
                     .presentationDetents(lessonHasColumn ? [.large] : [.medium, .large])
             }
             .sheet(isPresented: $showsAbout) {
                 NavigationStack { AboutScreen() }
-                    .presentationDetents(lessonHasColumn ? [.large] : [.medium, .large])
             }
             #endif
         }
