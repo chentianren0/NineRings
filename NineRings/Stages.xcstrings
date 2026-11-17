@@ -2,7 +2,7 @@
   "sourceLanguage" : "en",
   "strings" : {
     "Back over the slot" : {
-      "comment" : "The name of a stage of a ring's move, shown under the slider and in the status line.",
+      "comment" : "The name of a stage of a ring's move, shown in the status line after the move, as in 'Ring 1 comes off — <stage>'. A short label. Ring 1 coming off: having passed the tip, ring 1 swings back so that it is above the slot, the gap between the sword's two rails.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -10,11 +10,35 @@
             "state" : "translated",
             "value" : "Back over the slot"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Retour au-dessus de la fente"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "すき間の上に戻る"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "回到中缝上方"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "回到中縫上方"
+          }
         }
       }
     },
     "Down through the slot" : {
-      "comment" : "The name of a stage of a ring's move, shown under the slider and in the status line.",
+      "comment" : "The name of a stage of a ring's move, shown in the status line after the move, as in 'Ring 3 comes off — <stage>'. A short label. Ring 1, or the second ring on the sword, coming off: the ring goes down through the slot, the gap between the sword's two rails, past the rod of the ring before it.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -22,11 +46,35 @@
             "state" : "translated",
             "value" : "Down through the slot"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Passage vers le bas par la fente"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "すき間を下りる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "从中缝落下"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "從中縫落下"
+          }
         }
       }
     },
     "Flatten" : {
-      "comment" : "The name of a stage of a ring's move, shown under the slider and in the status line.",
+      "comment" : "The name of a stage of a ring's move, shown in the status line after the move, as in 'Ring 1 comes off — <stage>'. A short label. Ring 1 coming off, first stage: ring 1 swings up from leaning down toward the tip until it lies flat, while the sword slides a little toward the grip.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -34,11 +82,35 @@
             "state" : "translated",
             "value" : "Flatten"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mise à plat"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "水平になる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "放平"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "放平"
+          }
         }
       }
     },
     "Hang" : {
-      "comment" : "The name of a stage of a ring's move, shown under the slider and in the status line.",
+      "comment" : "The name of a stage of a ring's move, shown in the status line after the move, as in 'Ring 1 comes off — <stage>'. A short label. Ring 1 coming off, last stage: ring 1 comes to rest hanging below the sword, across it.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -46,11 +118,35 @@
             "state" : "translated",
             "value" : "Hang"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anneau suspendu"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ぶら下がる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "垂下"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "垂下"
+          }
         }
       }
     },
     "Lean" : {
-      "comment" : "The name of a stage of a ring's move, shown under the slider and in the status line.",
+      "comment" : "The name of a stage of a ring's move, shown in the status line after the move, as in 'Ring 1 goes on — <stage>'. A short label. Ring 1 going on, last stage: ring 1 settles back on the sword, leaning down toward the tip as it rests.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -58,11 +154,35 @@
             "state" : "translated",
             "value" : "Lean"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inclinaison"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "傾く"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "倾斜"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "傾斜"
+          }
         }
       }
     },
     "Lift" : {
-      "comment" : "The name of a stage of a ring's move, shown under the slider and in the status line.",
+      "comment" : "The name of a stage of a ring's move, shown in the status line after the move, as in 'Ring 1 goes on — <stage>'. A short label. Ring 1 going on, first stage: ring 1, hanging below the sword, lifts toward the slot.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -70,11 +190,35 @@
             "state" : "translated",
             "value" : "Lift"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Levée"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "持ち上がる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "抬起"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "抬起"
+          }
         }
       }
     },
     "Out past the tip" : {
-      "comment" : "The name of a stage of a ring's move, shown under the slider and in the status line.",
+      "comment" : "The name of a stage of a ring's move, shown in the status line after the move, as in 'Ring 1 goes on — <stage>'. A short label. Ring 1 going on: ring 1 moves out beyond the sword's tip, its rounded end, before coming back over it.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -82,11 +226,35 @@
             "state" : "translated",
             "value" : "Out past the tip"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sortie par le bout"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "先端から外へ出る"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "从前端移出"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "移出劍尖"
+          }
         }
       }
     },
     "Over the tip" : {
-      "comment" : "The name of a stage of a ring's move, shown under the slider and in the status line.",
+      "comment" : "The name of a stage of a ring's move, shown in the status line after the move, as in 'Ring 1 comes off — <stage>'. A short label. Ring 1's move: ring 1 passes over the sword's tip, its rounded end. Coming off, the ring is lifted over the tip; going on, it comes back over it to its place.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -94,11 +262,35 @@
             "state" : "translated",
             "value" : "Over the tip"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Passage par-dessus le bout"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "先端を越える"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "越过前端"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "越過劍尖"
+          }
         }
       }
     },
     "Ring %lld hangs" : {
-      "comment" : "The name of a stage of a ring's move, shown under the slider and in the status line. The variable is the ring's number.",
+      "comment" : "The name of a stage of a ring's move, shown in the status line after the move, as in 'Ring 3 comes off — <stage>'. A short label. The second ring on the sword coming off: that ring comes to rest hanging below the sword. The variable is the ring's number.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -106,11 +298,35 @@
             "state" : "translated",
             "value" : "Ring %lld hangs"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anneau %lld suspendu"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld輪がぶら下がる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld环垂下"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld環垂下"
+          }
         }
       }
     },
     "Ring %lld lifts" : {
-      "comment" : "The name of a stage of a ring's move, shown under the slider and in the status line. The variable is the ring's number.",
+      "comment" : "The name of a stage of a ring's move, shown in the status line after the move, as in 'Ring 3 goes on — <stage>'. A short label. The second ring on the sword going on: that ring, hanging below the sword, lifts toward the slot. The variable is the ring's number.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -118,11 +334,35 @@
             "state" : "translated",
             "value" : "Ring %lld lifts"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anneau %lld soulevé"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld輪が持ち上がる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld环抬起"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld環抬起"
+          }
         }
       }
     },
     "Ring %lld over the tip" : {
-      "comment" : "The name of a stage of a ring's move, shown under the slider and in the status line. The variable is the ring's number.",
+      "comment" : "The name of a stage of a ring's move, shown in the status line after the move, as in 'Ring 3 comes off — <stage>'. A short label. The move of the second ring on the sword: that ring swings up over the sword's tip. The variable is the ring's number.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -130,11 +370,35 @@
             "state" : "translated",
             "value" : "Ring %lld over the tip"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anneau %lld par-dessus le bout"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld輪が先端を越える"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld环越过前端"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld環越過劍尖"
+          }
         }
       }
     },
     "Sword comes back" : {
-      "comment" : "The name of a stage of a ring's move, shown under the slider and in the status line.",
+      "comment" : "The name of a stage of a ring's move, shown in the status line after the move, as in 'Ring 3 comes off — <stage>'. A short label. Last stage of the move of the second ring on the sword: the sword comes back up and slides home, toward the tip.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -142,11 +406,35 @@
             "state" : "translated",
             "value" : "Sword comes back"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Retour de la navette"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "枠が戻る"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "框架回位"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "劍回位"
+          }
         }
       }
     },
     "Sword moves away" : {
-      "comment" : "The name of a stage of a ring's move, shown under the slider and in the status line.",
+      "comment" : "The name of a stage of a ring's move, shown in the status line after the move, as in 'Ring 3 comes off — <stage>'. A short label. First stage of the move of the second ring on the sword (rings 2 to 9): the sword slides back toward the grip and goes down, away from the ring before the one that moves, which keeps still.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -154,11 +442,35 @@
             "state" : "translated",
             "value" : "Sword moves away"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Recul de la navette"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "枠が離れる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "框架移开"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "劍移開"
+          }
         }
       }
     },
     "Turn" : {
-      "comment" : "The name of a stage of a ring's move, shown under the slider and in the status line.",
+      "comment" : "The name of a stage of a ring's move, shown in the status line after the move, as in 'Ring 1 comes off — <stage>'. A short label. Ring 1's move: standing on its eye, ring 1 turns about the upright, between lying across the sword and lying along it.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -166,11 +478,35 @@
             "state" : "translated",
             "value" : "Turn"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rotation"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "向きを変える"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "转向"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "轉向"
+          }
         }
       }
     },
     "Up through the slot" : {
-      "comment" : "The name of a stage of a ring's move, shown under the slider and in the status line.",
+      "comment" : "The name of a stage of a ring's move, shown in the status line after the move, as in 'Ring 3 goes on — <stage>'. A short label. Ring 1, or the second ring on the sword, going on: the ring comes up through the slot, the gap between the sword's two rails.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -178,9 +514,33 @@
             "state" : "translated",
             "value" : "Up through the slot"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Passage vers le haut par la fente"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "すき間を上がる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "从中缝升起"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "從中縫升起"
+          }
         }
       }
     }
   },
-  "version" : "1.0"
+  "version" : "1.3"
 }

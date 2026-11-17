@@ -10,6 +10,30 @@
             "state" : "translated",
             "value" : "Nine Rings"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nine Rings"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nine Rings"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "解连环"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nine Rings"
+          }
         }
       }
     },
@@ -21,6 +45,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Privacy Policy"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Politique de confidentialité"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "プライバシーポリシー"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "隐私政策"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "隱私權政策"
           }
         }
       }
@@ -34,6 +82,30 @@
             "state" : "translated",
             "value" : "Support"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Assistance"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "サポート"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "支持"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "支援"
+          }
         }
       }
     },
@@ -44,7 +116,31 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nine Rings shows how the nine linked rings puzzle works. The puzzle is a wire sword with nine rings on it, each held by a rod that links it to the next, and the aim is to take every ring off. The toy here plays every one of the puzzle’s 511 moves, each by the puzzle’s one rule."
+            "value" : "Nine Rings shows how the nine linked rings puzzle works. The puzzle is a wire sword with nine rings on it, each held by a rod that links it to the next, and the aim is to take every ring off. The toy here plays every move the puzzle allows, each by the puzzle’s one rule."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nine Rings montre comment fonctionne le baguenaudier. Ce casse-tête est une navette en fil de fer portant neuf anneaux, chacun tenu par une tige qui le relie au suivant, et le but est de descendre tous les anneaux. Le modèle présenté ici exécute tous les coups que le casse-tête permet, chacun selon son unique règle."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nine Ringsは、九連環というパズルのしくみをわかりやすく示すAppです。このパズルは、針金の枠に9つの輪がかかったもので、それぞれの輪は棒で次の輪とつながっています。目的は、すべての輪を外すことです。このAppでは、パズルで許されるすべての手を、ただ1つのルールに従って再現できます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“解连环”演示九连环这个益智玩具的原理。九连环由一个金属丝框架和套在上面的九个环组成，每个环由一根直杆连向下一个环，目标是把所有环都取下来。App中的九连环能走出它允许的每一步，每一步都遵循同一条规则。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nine Rings示範九連環這個益智玩具的原理。九連環由一把金屬線彎成的劍和套在上面的九個環組成，每個環由一根直桿連向下一個環，目標是把所有環都取下來。App裡的九連環能走出它允許的每一步，每一步都依照那唯一的一條規則。"
           }
         }
       }
@@ -58,6 +154,30 @@
             "state" : "translated",
             "value" : "Version %1$@ (%2$@)"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Version %1$@ (%2$@)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "バージョン%1$@（%2$@）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "版本%1$@ (%2$@)"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "版本%1$@（%2$@）"
+          }
         }
       }
     },
@@ -69,6 +189,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Done"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "OK"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "完了"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "完成"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "完成"
           }
         }
       }
@@ -82,6 +226,30 @@
             "state" : "translated",
             "value" : "Put Every Ring Back On"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Remonter tous les anneaux"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "すべての輪をかけ直す"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "重新套上所有环"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "重新套上所有環"
+          }
         }
       }
     },
@@ -93,6 +261,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "You took all nine rings off the sword. The puzzle is solved."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vous avez descendu les neuf anneaux de la navette. Le baguenaudier est résolu."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "9つの輪をすべて枠から外しました。パズルが解けました。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "你把九个环全部从框架上取下来了。九连环已解开。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "你把九個環全部從劍上取下來了。九連環已解開。"
           }
         }
       }
@@ -106,6 +298,30 @@
             "state" : "translated",
             "value" : "All Rings Off"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tous les anneaux sont descendus"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "すべての輪が外れました"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "全部取下"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "全部取下"
+          }
         }
       }
     },
@@ -117,6 +333,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "About Nine Rings"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "À propos de Nine Rings"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nine Ringsについて"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "关于解连环"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "關於Nine Rings"
           }
         }
       }
@@ -130,6 +370,30 @@
             "state" : "translated",
             "value" : "Haptics"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vibrations"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "触覚"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "触感反馈"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "觸覺回饋"
+          }
         }
       }
     },
@@ -141,6 +405,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sounds"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sons"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "サウンド"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "声音"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "音效"
           }
         }
       }
@@ -154,6 +442,30 @@
             "state" : "translated",
             "value" : "Settings"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Réglages"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "設定"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "设置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "設定"
+          }
         }
       }
     },
@@ -165,6 +477,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Continue"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Continuer"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "続ける"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "继续"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "繼續"
           }
         }
       }
@@ -178,6 +514,30 @@
             "state" : "translated",
             "value" : "A short lesson explains the rule and the two moves, whenever you want it."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Une courte leçon explique la règle et les deux mouvements, quand vous le souhaitez."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "短いレッスンで、ルールと2種類の動きをいつでも学べます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "随时可以打开简短的教程，了解规则和两种走法。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "簡短的教學會說明規則和兩種走法，隨時都能查看。"
+          }
         }
       }
     },
@@ -189,6 +549,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Learn how it works"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Découvrez le principe"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "しくみを知る"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "了解原理"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "了解原理"
           }
         }
       }
@@ -214,6 +598,78 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "device" : {
+              "mac" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Cliquez sur un anneau pour le descendre de la navette ou le remonter."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Touchez un anneau pour le descendre de la navette ou le remonter."
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "variations" : {
+            "device" : {
+              "mac" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "輪をクリックすると、枠から外したり、かけ直したりできます。"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "輪をタップすると、枠から外したり、かけ直したりできます。"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "device" : {
+              "mac" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "点按一个环，即可把它从框架上取下或重新套上。"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "轻点一个环，即可把它从框架上取下或重新套上。"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hant" : {
+          "variations" : {
+            "device" : {
+              "mac" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "按一下環，即可把它從劍上取下或重新套上。"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "點一下環，即可把它從劍上取下或重新套上。"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -225,6 +681,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Move the rings"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Déplacez les anneaux"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "輪を動かす"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "移动圆环"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "移動環"
           }
         }
       }
@@ -238,6 +718,30 @@
             "state" : "translated",
             "value" : "Welcome to Nine Rings"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bienvenue dans Nine Rings"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nine Ringsへようこそ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "欢迎使用解连环"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "歡迎使用Nine Rings"
+          }
         }
       }
     },
@@ -249,6 +753,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "When a ring can’t move, the app tells you which ring is in the way and why."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Quand un anneau ne peut pas bouger, l’app vous indique quel anneau gêne et pourquoi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "輪が動かせないときは、どの輪がじゃまになっているかと、その理由が表示されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "环不能移动时，App会告诉你是哪个环挡住了它，以及原因。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "環不能移動時，App會告訴你是哪個環擋住了它，以及原因。"
           }
         }
       }
@@ -262,9 +790,33 @@
             "state" : "translated",
             "value" : "See why"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Comprenez pourquoi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "理由がわかる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "弄清原因"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "看看為什麼"
+          }
         }
       }
     }
   },
-  "version" : "1.0"
+  "version" : "1.3"
 }

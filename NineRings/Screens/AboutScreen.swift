@@ -57,11 +57,11 @@ struct AboutScreen: View {
 
 /// The app's name and version, as the bundle has them.
 enum AppInfo {
-    /// The name the bundle shows, or else the app's name as written. The bundle's own name is the product's,
-    /// "NineRings", which is not the name to show.
+    /// The name the bundle shows, in the app's language where the bundle has one, or else the app's name as written.
+    /// The bundle's own name is the product's, "NineRings", which is not the name to show.
     static var name: String {
-        let info = Bundle.main.localizedInfoDictionary ?? Bundle.main.infoDictionary ?? [:]
-        return info["CFBundleDisplayName"] as? String ?? String(localized: "about.name", table: "Screens")
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
+            ?? String(localized: "about.name", table: "Screens")
     }
 
     /// "Version 1.0 (1)": the marketing version and the build number.

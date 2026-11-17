@@ -10,6 +10,12 @@
             "state": "translated",
             "value": "Half fold it and watch"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把 iPhone 半折起来看"
+          }
         }
       }
     },
@@ -21,6 +27,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Learn how it works"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "了解原理"
           }
         }
       }
@@ -34,6 +46,12 @@
             "state": "translated",
             "value": "Watch every ring come off"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "看清每个环怎么取下"
+          }
         }
       }
     },
@@ -45,6 +63,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nine rings. One rule."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "九个环，一条规则"
           }
         }
       }
@@ -58,6 +82,12 @@
             "state": "translated",
             "value": "Take every ring off"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把环全部取下来"
+          }
         }
       }
     },
@@ -70,6 +100,12 @@
             "state": "translated",
             "value": "Look from any side"
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "从各个角度看"
+          }
         }
       }
     },
@@ -81,6 +117,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "See why a ring can’t move"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "看懂这个环为什么动不了"
           }
         }
       }
