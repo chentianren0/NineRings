@@ -72,6 +72,9 @@ script finds them by that exact name and stops if one is missing; make it with
 - The UI test's screenshot of the Duo's inner display is 2006 × 2852, a pixel short of 2007 × 2853 each way; the test and
   the composer accept a capture within a pixel (the composer scales the capture into its place anyway).
 - A test with an expected failure (`XCTExpectFailure`) is left out of `xcresulttool export attachments`.
+- On the half-folded Duo the lesson (moment 4) opened at its step and then closed by itself before the picture, which
+  showed the toy at rest. The store mode now refuses the picture when the lesson is no longer open at its step; why the
+  lesson closes in that layout is for the interface.
 
 ## The preview video
 

@@ -211,7 +211,14 @@ private struct StoreCaptureModifier: ViewModifier {
                 pose: player.poseKey, camera: rig.revision, isPlaying: player.isPlaying,
                 isCongratulating: player.isCongratulating, lessonStep: player.lessonPage?.index, window: windowFrame
             )
-            if readiness.observe(signature, at: seconds, drawnFrames: counter.frames) { break }
+            if readiness.observe(signature, at: seconds, drawnFrames: counter.frames) {
+                // A lesson that closed by itself after opening (as its sheet can in a changed layout) would leave a
+                // picture of the toy at rest: refuse it.
+                if let step = launch.lessonStep, player.lessonPage?.index != step - 1 {
+                    StoreCapture.fail("the lesson is no longer open at step \(step)")
+                }
+                break
+            }
             if seconds > Self.timeout { StoreCapture.fail("not ready after \(Int(Self.timeout)) s") }
             try? await Task.sleep(for: .milliseconds(100))
         }
