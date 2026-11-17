@@ -10,6 +10,7 @@ struct PuzzleActions {
     let showsLesson: Binding<Bool>
     let lesson: LessonGuide
     let reset: () -> Void
+    let settingRings: SettingRings
 }
 
 extension FocusedValues {
@@ -76,7 +77,9 @@ struct PuzzleCommands: Commands {
             canScrub: player.hasMove,
             progress: player.progress,
             stages: player.stages,
-            lessonHoldsToy: player.lessonHoldsToy
+            lessonHoldsToy: player.lessonHoldsToy,
+            lessonIsOpen: puzzle?.showsLesson.wrappedValue ?? false,
+            isSettingRings: player.isSettingRings
         )
     }
 
@@ -114,7 +117,7 @@ struct PuzzleCommands: Commands {
                 Text("menu.help", tableName: "Commands")
             }
             .keyboardShortcut("?", modifiers: .command)
-            .disabled(puzzle == nil)
+            .disabled(!(state?.canShowLesson ?? false))
         }
     }
 
@@ -215,6 +218,25 @@ struct PuzzleCommands: Commands {
             Text("menu.reset", tableName: "Commands")
         }
         .disabled(!(state?.canReset ?? false))
+
+        Divider()
+
+        // One item starts and finishes setting the rings, as Show and Hide Lesson share one; Cancel is the Escape key,
+        // on the toolbar's Cancel button.
+        Button {
+            guard let puzzle else { return }
+            if puzzle.player.isSettingRings {
+                puzzle.settingRings.finish()
+            } else {
+                puzzle.settingRings.start()
+            }
+        } label: {
+            state?.isSettingRings == true
+                ? Text("menu.doneSettingRings", tableName: "Commands")
+                : Text("menu.setRings", tableName: "Commands")
+        }
+        .keyboardShortcut("e", modifiers: .command)
+        .disabled(!(state?.canSetRings ?? false))
     }
 
     private var speed: Binding<PlaybackSpeed> {
@@ -237,7 +259,7 @@ struct PuzzleCommands: Commands {
             shows ? Text("menu.hideLesson", tableName: "Commands") : Text("menu.showLesson", tableName: "Commands")
         }
         .keyboardShortcut("l", modifiers: .command)
-        .disabled(puzzle == nil)
+        .disabled(!(state?.canShowLesson ?? false))
 
         Divider()
 

@@ -1,4 +1,5 @@
 import Motion
+import Puzzle
 import Session
 import SwiftUI
 
@@ -12,6 +13,10 @@ import SwiftUI
 ///
 /// Beside the toy, in a half of its own on a half-folded iPhone Duo, the controls have room: the buttons are larger,
 /// and the line says the reason a ring cannot move itself.
+///
+/// While the person sets the rings by hand, the line says how, the ring buttons put rings on and take them off, and
+/// in place of the row of controls, which move the toy and so do nothing then, two buttons set every ring on or every
+/// ring off. They take the row's place exactly, so that the panel keeps its height and the toy does not move.
 struct ControlPanel: View {
     enum Style {
         /// Over the toy, at the bottom of the window.
@@ -49,7 +54,7 @@ struct ControlPanel: View {
                 VStack(alignment: .leading, spacing: 28) {
                     caption(lines: 3)
                     rings
-                    transport
+                    controls
                 }
             case .floating where isOneRow:
                 VStack(alignment: .leading, spacing: 10) {
@@ -57,14 +62,14 @@ struct ControlPanel: View {
                     HStack(spacing: Self.rowSpacing) {
                         rings
                             .frame(width: Self.ringsInRow)
-                        transport
+                        controls
                     }
                 }
             case .floating:
                 VStack(alignment: .leading, spacing: 12) {
                     caption(lines: 2)
                     rings
-                    transport
+                    controls
                 }
             }
         }
@@ -72,12 +77,13 @@ struct ControlPanel: View {
         .frame(maxWidth: .infinity)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .dynamicTypeSize(...Self.largestTextSize)
+        .animation(.snappy(duration: 0.25), value: player.isSettingRings)
     }
 
     /// The ring buttons; dimmed while the lesson holds the toy, since asking for a ring then does nothing. (What is said
     /// aloud, a refusal among it, is the player's: see `Narration`.)
     private var rings: some View {
-        RingButtons(markers: player.markers, diameter: style == .beside ? 52 : 40) { player.tap($0) }
+        RingButtons(markers: player.markers, diameter: style == .beside ? 52 : 40, settingRings: player.isSettingRings) { player.tap($0) }
             .disabled(player.lessonHoldsToy)
     }
 
@@ -92,6 +98,7 @@ struct ControlPanel: View {
     /// What the line says: the status, or, floating while a refusal shows in the bubble, what it said before. At rest
     /// while the lesson's steps show the toy, it says so, rather than to tap a ring.
     private var captionText: LocalizedStringResource {
+        if player.isSettingRings { return Sentences.settingRings }
         let status = style == .floating && refusal != nil ? PuzzleSession.Status.resting(player.poseKey.state) : player.status
         if player.lessonHoldsToy, case .resting = status {
             return Sentences.lessonHoldsToy
@@ -120,6 +127,70 @@ struct ControlPanel: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .animation(.snappy(duration: 0.25), value: refusal == nil)
         .accessibilityElement(children: .combine)
+    }
+
+    /// The row under the rings: the controls that move the toy, or, while the rings are set by hand, the buttons that
+    /// set them all. The controls keep their place, hidden, so that the row keeps its height.
+    private var controls: some View {
+        transport
+            .opacity(player.isSettingRings ? 0 : 1)
+            .disabled(player.isSettingRings)
+            .accessibilityHidden(player.isSettingRings)
+            .overlay {
+                if player.isSettingRings {
+                    settingButtons
+                        .transition(.opacity)
+                }
+            }
+    }
+
+    /// Every ring on, every ring off: the two arrangements a person most often starts from. Each is a capsule of its
+    /// own, drawn here rather than by the bordered style, whose fill does not show on the glass panel on iPhone; the
+    /// title is in the primary colour, since the tint, at this size, is under the contrast text needs.
+    private var settingButtons: some View {
+        HStack(spacing: 12) {
+            settingButton(
+                Text("All On", comment: "Button, while the rings are set by hand, that puts every ring on at once."),
+                help: Text("Put every ring on", comment: "Tooltip on the All On button, while the rings are set by hand."),
+                to: .allOn
+            )
+            settingButton(
+                Text("All Off", comment: "Button, while the rings are set by hand, that takes every ring off at once."),
+                help: Text("Take every ring off", comment: "Tooltip on the All Off button, while the rings are set by hand."),
+                to: .allOff
+            )
+        }
+        .font(.subheadline.weight(.semibold))
+    }
+
+    private func settingButton(_ title: Text, help: Text, to state: PuzzleState) -> some View {
+        Button {
+            player.setRings(to: state)
+        } label: {
+            title
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                // The colour itself: inside a button, `.primary` is the button's own first level, the tint.
+                .foregroundStyle(Color.primary)
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, minHeight: Self.settingButtonHeight)
+                .background(.fill.secondary, in: .capsule)
+                .contentShape(.capsule)
+                // A borderless button keeps an explicit colour when it is disabled; fade it, as the system fades its own.
+                .opacity(player.shownState == state ? 0.4 : 1)
+        }
+        .buttonStyle(.borderless)
+        .disabled(player.shownState == state)
+        .help(help)
+    }
+
+    /// As tall as the row of controls it takes the place of.
+    private static var settingButtonHeight: CGFloat {
+        #if os(iOS)
+        40
+        #else
+        28
+        #endif
     }
 
     private var transport: some View {

@@ -1,6 +1,42 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "menu.doneSettingRings" : {
+      "comment" : "Puzzle menu item, while the rings are set by hand, that keeps the rings as set and ends setting them. Same as the toolbar's Done button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done Setting Rings"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Terminer le placement des anneaux"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "輪の設定を完了"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "完成设定圆环"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "完成設定環"
+          }
+        }
+      }
+    },
     "menu.help" : {
       "comment" : "Help menu item that opens the lesson, which is the app's help. 'Nine Rings' is the app's name.",
       "extractionState" : "manual",
@@ -537,6 +573,42 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "第%lld環"
+          }
+        }
+      }
+    },
+    "menu.setRings" : {
+      "comment" : "Puzzle menu item that starts setting the rings by hand: each ring button then puts its ring on or takes it off at once. Same as the toolbar's Set Rings button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set Rings"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Placer les anneaux"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "輪を設定"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "设定圆环"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "設定環"
           }
         }
       }

@@ -33,6 +33,8 @@ public struct Narration: Sendable, Equatable {
         case refused(ring: Int, block: PuzzleState.Block)
         /// The toy was set somewhere at once, as Reset does: what it is now.
         case rested(ToySummary)
+        /// The person began setting the rings by hand: how to set them.
+        case settingRings
     }
 
     /// What is said, in order.

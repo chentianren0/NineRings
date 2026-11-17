@@ -10,18 +10,24 @@ import SwiftUI
 /// in the way also wears the raised hand the refusal shows. VoiceOver hears the same: "Ring 3, on, can come off", with
 /// "in the way of ring 5" or "moving" after it.
 ///
+/// While the person sets the rings by hand, each button is a switch for its ring: pressing it puts the ring on or takes
+/// it off at once, with no rule, so the bar that marks a ring that can move goes, and VoiceOver hears a switch: "Ring 3,
+/// on".
+///
 /// The row always runs left to right, even in a right-to-left language, because it mirrors the toy, which does not
 /// turn round.
 struct RingButtons: View {
     let markers: [PuzzleSession.Marker]
     /// The largest a button's disc grows to, in points; it shrinks when the row is narrower.
     var diameter: CGFloat = 40
+    /// Whether the rings are being set by hand.
+    var settingRings = false
     let tap: (Int) -> Void
 
     var body: some View {
         HStack(spacing: 4) {
             ForEach(markers) { marker in
-                RingButton(marker: marker, refused: refused, diameter: diameter) { tap(marker.ring) }
+                RingButton(marker: marker, refused: refused, diameter: diameter, settingRings: settingRings) { tap(marker.ring) }
             }
         }
         .environment(\.layoutDirection, .leftToRight)
@@ -38,6 +44,7 @@ private struct RingButton: View {
     let marker: PuzzleSession.Marker
     let refused: Int?
     let diameter: CGFloat
+    let settingRings: Bool
     let action: () -> Void
     @Environment(\.isEnabled) private var isEnabled
 
@@ -87,7 +94,7 @@ private struct RingButton: View {
                 Capsule()
                     .fill(colorScheme == .dark ? AnyShapeStyle(.tint) : AnyShapeStyle(Self.onFill))
                     .frame(width: 12, height: 3)
-                    .opacity(marker.canMove ? 1 : 0)
+                    .opacity(marker.canMove && !settingRings ? 1 : 0)
             }
             .frame(maxWidth: .infinity, minHeight: 44)
             .contentShape(.rect)
@@ -96,15 +103,25 @@ private struct RingButton: View {
         }
         .buttonStyle(.plain)
         .keyboardShortcut(KeyEquivalent(Character(String(marker.ring))), modifiers: [])
-        .help(Text("Move ring \(marker.ring)", comment: "Tooltip on a ring button. The variable is the ring's number."))
+        .help(tooltip)
         .accessibilityLabel(Text("Ring \(marker.ring)", comment: "Spoken name of a ring button. The variable is the ring's number."))
         .accessibilityValue(spokenValue)
-        .accessibilityHint(marker.block.map { Text(Sentences.shortReason($0)) } ?? Text(verbatim: ""))
+        .accessibilityHint(settingRings ? Text(verbatim: "") : marker.block.map { Text(Sentences.shortReason($0)) } ?? Text(verbatim: ""))
+        .accessibilityAddTraits(settingRings ? .isToggle : [])
         #if os(iOS)
         .accessibilityShowsLargeContentViewer {
             Text(marker.ring, format: .number)
         }
         #endif
+    }
+
+    private var tooltip: Text {
+        guard settingRings else {
+            return Text("Move ring \(marker.ring)", comment: "Tooltip on a ring button. The variable is the ring's number.")
+        }
+        return marker.isOn
+            ? Text("Take ring \(marker.ring) off", comment: "Tooltip on a ring button while the rings are set by hand: a click takes the ring off at once. The variable is the ring's number.")
+            : Text("Put ring \(marker.ring) on", comment: "Tooltip on a ring button while the rings are set by hand: a click puts the ring on at once. The variable is the ring's number.")
     }
 
     private var outline: AnyShapeStyle {
@@ -144,7 +161,7 @@ private struct RingButton: View {
     private var state: Text { Text(stateResource) }
 
     private var stateResource: LocalizedStringResource {
-        switch (marker.isOn, marker.canMove) {
+        switch (marker.isOn, marker.canMove && !settingRings) {
         case (true, true): LocalizedStringResource("On, can come off", comment: "Spoken value of a ring button: the ring is on and can come off now.")
         case (true, false): LocalizedStringResource("On", comment: "Spoken value of a ring button: the ring is on and cannot move now.")
         case (false, true): LocalizedStringResource("Off, can go on", comment: "Spoken value of a ring button: the ring is off and can go on now.")

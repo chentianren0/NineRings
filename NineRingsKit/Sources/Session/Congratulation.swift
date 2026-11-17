@@ -8,7 +8,8 @@ import Puzzle
 ///   there. A move undone does not count, and neither does a move that Solve played: the text says the person took
 ///   the rings off.
 /// - Once every ring has come off, it is not shown again until every ring is on again, by Reset or by moves. Putting
-///   ring 1 back on and taking it off again is exploring, not solving the puzzle again.
+///   ring 1 back on and taking it off again is exploring, not solving the puzzle again. Rings set by hand count
+///   the same way: they arm it only when every ring is on (see ``set(_:)``).
 /// - It goes away at the next change to the session, so that the toy stays free: a tap, Reset, a drag of the slider.
 ///   The screen may also hide it itself, with ``dismiss()``.
 public struct Congratulation: Sendable, Equatable {
@@ -43,5 +44,13 @@ public struct Congratulation: Sendable, Equatable {
     /// Hides the congratulation, as its Done button does.
     public mutating func dismiss() {
         isShowing = false
+    }
+
+    /// Takes in the toy set to an arrangement the person chose, as setting the rings does. It is hidden, and armed only
+    /// when every ring is on, as after Reset: from any other arrangement, taking the last ring off is not taking all
+    /// nine off the sword, which is what the congratulation says.
+    public mutating func set(_ state: PuzzleState) {
+        isShowing = false
+        isArmed = state == .allOn
     }
 }

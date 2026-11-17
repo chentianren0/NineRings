@@ -88,6 +88,64 @@
         }
       }
     },
+    "All Off" : {
+      "comment" : "Button, while the rings are set by hand, that takes every ring off at once.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tout descendre"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "すべて外す"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "全部取下"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "全部取下"
+          }
+        }
+      }
+    },
+    "All On" : {
+      "comment" : "Button, while the rings are set by hand, that puts every ring on at once.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tout monter"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "すべてかける"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "全部套上"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "全部套上"
+          }
+        }
+      }
+    },
     "All rings are off." : {
       "comment" : "Status when every ring is off the sword. The congratulation says the rest.",
       "localizations" : {
@@ -233,6 +291,35 @@
         }
       }
     },
+    "Choose which rings are on" : {
+      "comment" : "Tooltip on the Set Rings button.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisir les anneaux montés"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "かける輪を選択"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "选择要套上的环"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "選擇要套上的環"
+          }
+        }
+      }
+    },
     "Click a ring to move it." : {
       "comment" : "Status when nothing is moving, on the Mac. A ring is clicked in the 3D view or by its numbered button.",
       "localizations" : {
@@ -258,6 +345,35 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "按一下環即可移動。"
+          }
+        }
+      }
+    },
+    "Click a ring to put it on or take it off." : {
+      "comment" : "Status while the person sets the rings by hand, on the Mac: a click puts a ring on or takes it off at once, with no move and no rule. A ring is clicked in the 3D view or by its numbered button.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cliquez sur un anneau pour le monter ou le descendre."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "輪をクリックすると、かけたり外したりできます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "点按一个环来套上或取下它。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "按一下環即可套上或取下。"
           }
         }
       }
@@ -490,6 +606,35 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "從劍尖看"
+          }
+        }
+      }
+    },
+    "Keep the rings as set" : {
+      "comment" : "Tooltip on the Done button while the rings are set by hand.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Garder les anneaux ainsi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "設定した状態を保持"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "保留设定好的环"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "保留設定好的環"
           }
         }
       }
@@ -1016,6 +1161,93 @@
         }
       }
     },
+    "Put every ring on" : {
+      "comment" : "Tooltip on the All On button, while the rings are set by hand.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Monter tous les anneaux"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "すべての輪をかける"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "套上所有环"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "套上所有環"
+          }
+        }
+      }
+    },
+    "Put ring %lld on" : {
+      "comment" : "Tooltip on a ring button while the rings are set by hand: a click puts the ring on at once. The variable is the ring's number.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Monter l’anneau %lld"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld輪をかける"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "套上第%lld环"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "套上第%lld環"
+          }
+        }
+      }
+    },
+    "Put the rings back as they were" : {
+      "comment" : "Tooltip on the Cancel button while the rings are set by hand.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Remettre les anneaux comme avant"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "輪を元の状態に戻す"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "让环恢复原状"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "將環恢復原狀"
+          }
+        }
+      }
+    },
     "Reset" : {
       "comment" : "Toolbar button that puts every ring back on.",
       "localizations" : {
@@ -1219,6 +1451,35 @@
         }
       }
     },
+    "Set Rings" : {
+      "comment" : "Toolbar button that starts setting the rings by hand: each ring button then puts its ring on or takes it off at once.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Placer les anneaux"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "輪を設定"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "设定圆环"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "設定環"
+          }
+        }
+      }
+    },
     "Settings" : {
       "comment" : "Menu item that opens the app's settings.",
       "localizations" : {
@@ -1393,6 +1654,64 @@
         }
       }
     },
+    "Take every ring off" : {
+      "comment" : "Tooltip on the All Off button, while the rings are set by hand.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descendre tous les anneaux"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "すべての輪を外す"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "取下所有环"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "取下所有環"
+          }
+        }
+      }
+    },
+    "Take ring %lld off" : {
+      "comment" : "Tooltip on a ring button while the rings are set by hand: a click takes the ring off at once. The variable is the ring's number.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descendre l’anneau %lld"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第%lld輪を外す"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "取下第%lld环"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "取下第%lld環"
+          }
+        }
+      }
+    },
     "Tap a ring to move it." : {
       "comment" : "Status when nothing is moving. A ring is tapped in the 3D view or by its numbered button.",
       "localizations" : {
@@ -1418,6 +1737,35 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "點一下環即可移動。"
+          }
+        }
+      }
+    },
+    "Tap a ring to put it on or take it off." : {
+      "comment" : "Status while the person sets the rings by hand: a tap puts a ring on or takes it off at once, with no move and no rule. A ring is tapped in the 3D view or by its numbered button.",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Touchez un anneau pour le monter ou le descendre."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "輪をタップすると、かけたり外したりできます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "轻点一个环来套上或取下它。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "點一下環即可套上或取下。"
           }
         }
       }
