@@ -47,11 +47,16 @@ final class StoreShots: XCTestCase {
         let device = XCUIDevice.shared
         device.appearance = setup.appearance == "dark" ? .dark : .light
         // The Duo: closed shows the outer display; half folded, the laptop pose, splits the inner one.
-        switch setup.device["hinge"] as? String {
-        case "closed": device.hinge?.angle = 0
-        case "half-open": device.hinge?.angle = .pi * 110 / 180
-        case "open": device.hinge?.angle = .pi
-        default: break
+        let angle: Double? = switch setup.device["hinge"] as? String {
+        case "closed": 0
+        case "half-open": .pi * 110 / 180
+        case "open": .pi
+        default: nil
+        }
+        if let angle, let hinge = device.hinge, abs(hinge.angle - angle) > 0.01 {
+            hinge.angle = angle
+            // While the displays change over, the main screen can be the one going dark, which refuses a screenshot.
+            Thread.sleep(forTimeInterval: 3)
         }
         // The orientation that gives the store picture's shape. A device's portrait is not always tall: the Duo's inner
         // display is wide in portrait, and its half-folded laptop pose is tall in landscape.
