@@ -54,6 +54,7 @@ struct PuzzleScreen: View {
                             .opacity(cover)
                             .ignoresSafeArea()
                             .allowsHitTesting(false)
+                            .accessibilityHidden(true)
                     }
             }
             .arrangementViewStyle(.overlay)

@@ -14,13 +14,10 @@ struct CongratulationCard: View {
 
     @State private var appeared = false
     @Environment(\.reducesMotion) private var reducesMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        // One low row where the window is wide enough, so that it stays clear of the sword; stacked where it is not.
-        ViewThatFits(in: .horizontal) {
-            row
-            stacked
-        }
+        layout
         .glassEffect(.regular, in: .rect(cornerRadius: 28))
         .accessibilityElement(children: .contain)
         // Escape, or VoiceOver's two-finger scrub, closes it as Done does.
@@ -49,7 +46,36 @@ struct CongratulationCard: View {
         .frame(maxWidth: 820)
     }
 
+    /// One low row where the window is wide enough, so that it stays clear of the sword; stacked where it is not. At the
+    /// accessibility text sizes always stacked, and scrolling: measured to fit a row, a scroll view would take its whole
+    /// height and never scroll.
+    @ViewBuilder
+    private var layout: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            stacked
+        } else {
+            ViewThatFits(in: .horizontal) {
+                row
+                stacked
+            }
+        }
+    }
+
+    /// Stacked; at the accessibility text sizes, where it can be taller than the screen, it scrolls, and its buttons are
+    /// rounded rectangles, which a label of two or three lines fits.
+    @ViewBuilder
     private var stacked: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            ScrollView { stackedContent }
+                .scrollBounceBehavior(.basedOnSize)
+                .clipShape(.rect(cornerRadius: 28))
+                .buttonBorderShape(.roundedRectangle(radius: 16))
+        } else {
+            stackedContent
+        }
+    }
+
+    private var stackedContent: some View {
         VStack(spacing: 12) {
             seal
             words(alignment: .center)
@@ -87,7 +113,10 @@ struct CongratulationCard: View {
     @ViewBuilder
     private var buttons: some View {
         Button(action: onPutBack) {
+            // Wraps rather than truncates at the largest text sizes.
             Text("congratulation.putBack", tableName: "Screens")
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .buttonStyle(.glass)
         Button(action: onDone) {
