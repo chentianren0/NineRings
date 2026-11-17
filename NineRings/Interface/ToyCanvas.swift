@@ -37,27 +37,30 @@ struct ToyCanvas: View {
     }
 
     var body: some View {
-        ToyRealityView(player: player, rig: rig, tapRing: tapRing)
-            .ignoresSafeArea()
-            .accessibilityHidden(true)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onGeometryChange(for: Space.self) { proxy in
-                Space(frame: proxy.frame(in: .global), safeArea: proxy.safeAreaInsets)
-            } action: { space = $0 }
-            .onChange(of: space.map(viewport), initial: true) { _, viewport in
-                if let viewport { rig.resize(to: viewport) }
-            }
-            .background(Backdrop.color(for: colorScheme))
-            .onChange(of: followsMove && !reducesMotion, initial: true) { _, follows in
-                rig.followsMove = follows
-            }
-            .onChange(of: reducesMotion, initial: true) { _, reduces in
-                rig.reducesMotion = reduces
-            }
-            .overlay {
-                ToyDescription(player: player)
-                    .allowsHitTesting(false)
-            }
+        ZStack {
+            // Measured inside the safe area, as the 3D view behind it fills the whole window.
+            Color.clear
+                .onGeometryChange(for: Space.self) { proxy in
+                    Space(frame: proxy.frame(in: .global), safeArea: proxy.safeAreaInsets)
+                } action: { space = $0 }
+            ToyRealityView(player: player, rig: rig, tapRing: tapRing)
+                .ignoresSafeArea()
+                .accessibilityHidden(true)
+        }
+        .onChange(of: space.map(viewport), initial: true) { _, viewport in
+            if let viewport { rig.resize(to: viewport) }
+        }
+        .background(Backdrop.color(for: colorScheme))
+        .onChange(of: followsMove && !reducesMotion, initial: true) { _, follows in
+            rig.followsMove = follows
+        }
+        .onChange(of: reducesMotion, initial: true) { _, reduces in
+            rig.reducesMotion = reduces
+        }
+        .overlay {
+            ToyDescription(player: player)
+                .allowsHitTesting(false)
+        }
     }
 
     /// The whole view, and how much of each edge bars and controls cover.
