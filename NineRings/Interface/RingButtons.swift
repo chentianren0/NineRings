@@ -9,12 +9,14 @@ import SwiftUI
 /// turn round.
 struct RingButtons: View {
     let markers: [PuzzleSession.Marker]
+    /// The largest a button's disc grows to, in points; it shrinks when the row is narrower.
+    var diameter: CGFloat = 40
     let tap: (Int) -> Void
 
     var body: some View {
         HStack(spacing: 4) {
             ForEach(markers) { marker in
-                RingButton(marker: marker) { tap(marker.ring) }
+                RingButton(marker: marker, diameter: diameter) { tap(marker.ring) }
             }
         }
         .environment(\.layoutDirection, .leftToRight)
@@ -26,6 +28,7 @@ struct RingButtons: View {
 
 private struct RingButton: View {
     let marker: PuzzleSession.Marker
+    let diameter: CGFloat
     let action: () -> Void
 
     var body: some View {
@@ -37,12 +40,12 @@ private struct RingButton: View {
                     Circle()
                         .strokeBorder(outline, lineWidth: marker.isBlocking ? 3 : 2)
                     Text(marker.ring, format: .number)
-                        .font(.system(.callout, design: .rounded, weight: .semibold))
+                        .font(.system(diameter > 44 ? .title3 : .callout, design: .rounded, weight: .semibold))
                         .monospacedDigit()
                         .foregroundStyle(marker.isOn ? AnyShapeStyle(.white) : AnyShapeStyle(.secondary))
                 }
                 .aspectRatio(1, contentMode: .fit)
-                .frame(maxWidth: 40)
+                .frame(maxWidth: diameter)
                 .scaleEffect(marker.isMoving ? 1.12 : 1)
                 Capsule()
                     .fill(.tint)
