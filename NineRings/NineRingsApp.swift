@@ -4,6 +4,7 @@ import SwiftUI
 struct NineRingsApp: App {
     init() {
         #if DEBUG
+        StoreCapture.prepare()
         if let request = Capture.request {
             Task { await Capture.run(request) }
         }

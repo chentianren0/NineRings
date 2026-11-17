@@ -19,6 +19,9 @@ import Toy
 ///   and stage.
 /// - `-capture-size 1600x1000` (pixels), `-capture-appearance dark`, and `-capture-focus x,y,z,size` to frame a
 ///   cube of `size` millimetres around a point in the toy's frame instead of the whole move.
+/// - `-capture-safe-area 1097,493,1646,661`: frames the toy inside that rectangle of the picture, in pixels from the top
+///   left, rather than the whole picture, leaving the backdrop around it: for the App Store's product page header,
+///   whose key art must sit in a safe area in its middle.
 ///
 /// Each frame is posed exactly as the slider poses the app: the app's own player is set to the progress, and the
 /// scene draws the pose the player gives. Frames are named `ring<n>-p<progress>-<view>-<appearance>.png`, and
@@ -34,6 +37,7 @@ enum Capture {
         var directory: URL
         var size: CGSize
         var appearance: Backdrop.Appearance
+        var safeArea: CGRect?
     }
 
     static let request: Request? = parse(ProcessInfo.processInfo.arguments)
@@ -45,7 +49,7 @@ enum Capture {
             let framing = Framing.wholeToy
             let ring = request.move.ring
             let prefix = "ring\(ring)"
-            let renderer = try await Renderer(size: request.size, appearance: request.appearance, floor: framing.lower.y - 6)
+            let renderer = try await Renderer(size: request.size, safeArea: request.safeArea, appearance: request.appearance, floor: framing.lower.y - 6)
             for view in request.views {
                 var frames: [ContactSheet.Frame] = []
                 for progress in request.progress {
@@ -97,11 +101,13 @@ enum Capture {
         let dimensions = (value("-capture-size") ?? "1600x1000").split(separator: "x").compactMap { Double($0) }
         let size = dimensions.count == 2 ? CGSize(width: dimensions[0], height: dimensions[1]) : CGSize(width: 1600, height: 1000)
         let appearance = value("-capture-appearance").flatMap(Backdrop.Appearance.init(rawValue:)) ?? .light
+        let safeNumbers = value("-capture-safe-area")?.split(separator: ",").compactMap { Double($0) } ?? []
+        let safeArea = safeNumbers.count == 4 ? CGRect(x: safeNumbers[0], y: safeNumbers[1], width: safeNumbers[2], height: safeNumbers[3]) : nil
         let ring = value("-capture-move").flatMap { Int($0) } ?? 1
         guard let move = Player.moves.first(where: { $0.ring == ring }) else { return nil }
         return Request(
             move: move, progress: progress, views: views, focus: focus, sheet: arguments.contains("-capture-sheet"),
-            directory: directory, size: size, appearance: appearance
+            directory: directory, size: size, appearance: appearance, safeArea: safeArea
         )
     }
 
@@ -133,9 +139,14 @@ enum Capture {
         private let texture: any MTLTexture
         private let output: RealityRenderer.CameraOutput
         private let size: CGSize
+        private let viewport: Viewport
 
-        init(size: CGSize, appearance: Backdrop.Appearance, floor: Float) async throws {
+        init(size: CGSize, safeArea: CGRect?, appearance: Backdrop.Appearance, floor: Float) async throws {
             self.size = size
+            // Framing into part of the picture is framing into a view whose edges are covered, as bars cover the app's.
+            viewport = safeArea.map { area in
+                Viewport(size: size, topInset: area.minY, bottomInset: size.height - area.maxY, leftInset: area.minX, rightInset: size.width - area.maxX)
+            } ?? Viewport(size: size)
             scene = try await ToyScene.make()
             scene.setFloor(floor)
             renderer = try RealityRenderer()
@@ -160,7 +171,7 @@ enum Capture {
         /// Draws `pose`, writes it to `url` and returns the image.
         func render(_ pose: ToyPose, view: View, framing box: ToyBounds, to url: URL) async throws -> CGImage {
             scene.apply(pose)
-            camera.transform = OrbitCamera.framing(yaw: view.yaw, pitch: view.pitch, of: box, in: Viewport(size: size)).transform
+            camera.transform = OrbitCamera.framing(yaw: view.yaw, pitch: view.pitch, of: box, in: viewport).transform
             // The first frame after a change can still be settling resources; draw twice and keep the second.
             for _ in 0..<2 {
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
