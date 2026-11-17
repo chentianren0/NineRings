@@ -225,8 +225,7 @@ final class Player {
 
     /// A player over `session`, for the store-capture mode, which sets up states the other initializers do not.
     init(session: PuzzleSession) {
-        ownSession = session
-        published = session
+        play = PlayState(session)
         publish()
     }
 
@@ -234,15 +233,15 @@ final class Player {
     /// move, and holds it there, so that every launch gives the same picture.
     func holdLessonStep(_ index: Int, at progress: Double) {
         guard lesson != nil else { return }
-        lesson?.go(to: index)
+        play.goToLessonStep(index)
         // Going to a step that finishes a move toggles play: if the toy was already playing from that point, it stops.
-        if lesson?.toy.isPlaying == false { lesson?.togglePlay() }
+        if !play.toy.isPlaying { play.togglePlay() }
         var steps = 0
         while let run = lesson, run.isShowing, run.toy.progress < progress, steps < 100_000 {
-            lesson?.advance(by: 1.0 / 600)
+            play.advance(by: 1.0 / 600)
             steps += 1
         }
-        lesson?.pause()
+        play.pause()
         publish()
     }
     #endif

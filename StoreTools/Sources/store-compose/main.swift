@@ -17,6 +17,11 @@ import StoreComposer
 //       What App Store Connect would refuse in each file.
 //   store-compose captions --captions Captions.xcstrings --languages en,fr,ja
 //       Which captions each language still lacks.
+//   store-compose device --manifest Shots.json --device duo-inner
+//       The device's fields, one `name=value` per line, for the script.
+//   store-compose collect --from DIR --to DIR
+//       The StoreShots screenshots exported from a test result (xcresulttool export attachments), copied to
+//       <moment>-<appearance>.png by their attachment names.
 
 struct Failure: Error, CustomStringConvertible {
     var description: String
@@ -167,6 +172,23 @@ func run() throws -> Bool {
             print(missing.isEmpty ? "\(language): every caption" : "\(language): lacks \(missing.joined(separator: ", ")) (falls back to \(catalog.sourceLanguage))")
         }
         return true
+
+    case "device":
+        let device = try Manifest(contentsOf: try options.url("manifest")).device(try options.value("device"))
+        print("class=\(device.class.rawValue)")
+        print("size=\(device.size)")
+        print("capture=\(device.capture.rawValue)")
+        if let window = device.window { print("window=\(window)") }
+        if let simulator = device.simulator { print("simulator=\(simulator)") }
+        if let display = device.display { print("display=\(display)") }
+        if let hinge = device.hinge { print("hinge=\(hinge)") }
+        return true
+
+    case "collect":
+        let from = try options.url("from"), to = try options.url("to")
+        let found = try Attachments.collect(from: from, to: to)
+        for name in found { print("collected \(name)") }
+        return !found.isEmpty
 
     default:
         throw Failure(description: "unknown command \(arguments[1])")

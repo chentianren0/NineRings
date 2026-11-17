@@ -10,8 +10,8 @@ window, composes each store picture at Apple's exact size, checks it, and render
 `header-dark.png`. It runs in about two minutes. After any change to the interface, run it again. `--help` lists the
 options: languages, captions on or off, a bezel, light or dark for all, another folder, compose again without capturing.
 
-Only the Mac's pictures are made today. The iPhone, iPad and iPhone Duo pictures wait for a UI test target, described in
-`StoreShots.md`; the script skips those devices with a note.
+The Mac's pictures come from the app's own window. The iPhone, iPad and iPhone Duo pictures come from the `StoreShots`
+UI tests on each simulator (`--devices iphone-6.3,ipad-13,…`); see `StoreShots.md`. They are built but not yet run.
 
 ## The parts
 

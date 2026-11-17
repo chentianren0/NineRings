@@ -7,8 +7,9 @@
 #                           [--appearance plan|light|dark] [--header|--no-header] [--out DIR]
 #                           [--compose-only] [--skip-build]
 #
-#   --devices      Device ids from Shots.json, comma-separated. Today only mac can be captured; the simulator devices
-#                  wait for the StoreShots UI test target (StoreTools/StoreShots.md) and are skipped with a note.
+#   --devices      Device ids from Shots.json, comma-separated (default mac). mac is captured from the app's own
+#                  window. The others (iphone-6.3, iphone-6.9, ipad-13, duo-outer, duo-inner) run the StoreShots UI
+#                  tests on their simulator, one simulator at a time; see StoreTools/StoreShots.md.
 #   --languages    App Store languages, comma-separated (default en). Each runs the app in that language.
 #   --caption      Captions above the pictures, from StoreTools/Captions.xcstrings (default on).
 #   --bezel        A bezel description (see StoreTools/README.md); default none.
@@ -21,7 +22,8 @@
 # Writes OUT/<language>/<device>/01.png and so on, OUT/header/header-light.png and header-dark.png, and the raw
 # captures under OUT/captures/. Exits non-zero if anything fails or a picture is refused.
 #
-# Runs only its own copy of the app, launched in the background by its own path, and quits it by its process id.
+# On the Mac it runs only its own copy of the app, launched in the background by its own path, and quits it by its
+# process id. On a simulator it installs its own build and launches that.
 
 set -euo pipefail
 
@@ -123,28 +125,70 @@ failures=0
 IFS=',' read -r -a device_list <<< "$devices"
 IFS=',' read -r -a language_list <<< "$languages"
 
+# A field of a device in Shots.json.
+field() { compose device --manifest "$manifest" --device "$1" | sed -n "s/^$2=//p"; }
+
+# Captures every moment on a simulator with the StoreShots UI tests, into $captures, for $language.
+capture_simulator() {
+    local device="$1" simulator="$2" result="$out/captures/$language/$device.xcresult"
+    local export="$out/captures/$language/$device-export"
+    rm -rf "$result" "$export"
+    TEST_RUNNER_STORE_MANIFEST="$manifest" TEST_RUNNER_STORE_DEVICE="$device" \
+    TEST_RUNNER_STORE_LANGUAGE="$language" TEST_RUNNER_STORE_APPEARANCE="$appearance" \
+        xcodebuild test-without-building -project "$root/NineRings.xcodeproj" -scheme StoreShots \
+            -destination "platform=iOS Simulator,name=$simulator" -derivedDataPath "$build/app" \
+            -resultBundlePath "$result" > "$result.log" 2>&1 \
+        || { tail -30 "$result.log"; say "the StoreShots tests failed on $device (log: $result.log)"; return 1; }
+    xcrun xcresulttool export attachments --path "$result" --output-path "$export" > /dev/null
+    compose collect --from "$export" --to "$captures"
+}
+
 for device in "${device_list[@]}"; do
-    case "$device" in
-        mac) ;;
-        *)
-            say "skipping $device: simulator devices wait for the StoreShots UI test target (StoreTools/StoreShots.md)"
-            continue ;;
-    esac
-    window="$(python3 -c 'import json,sys; d=[d for d in json.load(open(sys.argv[1]))["devices"] if d["id"]=="mac"][0]; print("%dx%d" % tuple(d["window"]))' "$manifest")"
+    method="$(field "$device" capture)"
+    [ -n "$method" ] || { failures=$((failures + 1)); continue; }
+    simulator=""
+    booted_here=0
+    if [ "$method" = "simulator" ] && [ "$compose_only" -eq 0 ]; then
+        simulator="$(field "$device" simulator)"
+        destination="platform=iOS Simulator,name=$simulator"
+        if [ "$skip_build" -eq 0 ]; then
+            say "building the app and StoreShots for $simulator"
+            xcodebuild build -project "$root/NineRings.xcodeproj" -scheme NineRings -configuration Debug \
+                -destination "$destination" -derivedDataPath "$build/app" CODE_SIGNING_ALLOWED=NO > "$build-sim.log" 2>&1 \
+            && xcodebuild build-for-testing -project "$root/NineRings.xcodeproj" -scheme StoreShots -configuration Debug \
+                -destination "$destination" -derivedDataPath "$build/app" CODE_SIGNING_ALLOWED=NO >> "$build-sim.log" 2>&1 \
+            || { tail -30 "$build-sim.log"; say "the build for $simulator failed"; failures=$((failures + 1)); continue; }
+        fi
+        # One simulator at a time: boot this one if it is not running, and shut down only what was booted here.
+        if ! xcrun simctl list devices booted | grep -q "$simulator ("; then
+            xcrun simctl boot "$simulator"
+            booted_here=1
+        fi
+        xcrun simctl bootstatus "$simulator" > /dev/null
+        xcrun simctl status_bar "$simulator" override --time 9:41 --batteryLevel 100 --batteryState charged \
+            --wifiBars 3 --cellularBars 4 --operatorName ''
+        xcrun simctl install "$simulator" "$build/app/Build/Products/Debug-iphonesimulator/NineRings.app"
+    fi
     for language in "${language_list[@]}"; do
         captures="$out/captures/$language/$device"
         mkdir -p "$captures"
         if [ "$compose_only" -eq 0 ]; then
-            while IFS=$'\t' read -r -a line; do
-                id="${line[0]}"; shade="${line[1]}"; arguments=("${line[@]:2}")
-                say "capturing $language $device $id ($shade)"
-                # The system's options first, the store-capture options last: see NineRings/Store/StoreLaunch.swift.
-                capture_mac "$captures/$id-$shade.png" \
-                    -AppleLanguages "($language)" -AppleLocale "$(locale_for "$language")" \
-                    -appearance "$shade" -window-size "$window" \
-                    "${arguments[@]}" -store-capture \
-                    || failures=$((failures + 1))
-            done < <(compose plan --manifest "$manifest" --device "$device" --appearance "$appearance")
+            if [ "$method" = "mac-window" ]; then
+                window="$(field "$device" window)"
+                while IFS=$'\t' read -r -a line; do
+                    id="${line[0]}"; shade="${line[1]}"; arguments=("${line[@]:2}")
+                    say "capturing $language $device $id ($shade)"
+                    # The system's options first, the store-capture options last: see NineRings/Store/StoreLaunch.swift.
+                    capture_mac "$captures/$id-$shade.png" \
+                        -AppleLanguages "($language)" -AppleLocale "$(locale_for "$language")" \
+                        -appearance "$shade" -window-size "$window" \
+                        "${arguments[@]}" -store-capture \
+                        || failures=$((failures + 1))
+                done < <(compose plan --manifest "$manifest" --device "$device" --appearance "$appearance")
+            else
+                say "capturing $language $device on $simulator"
+                capture_simulator "$device" "$simulator" || { failures=$((failures + 1)); continue; }
+            fi
         fi
         say "composing $language $device"
         bezel_options=()
@@ -154,6 +198,10 @@ for device in "${device_list[@]}"; do
             ${bezel_options[@]+"${bezel_options[@]}"} \
             || failures=$((failures + 1))
     done
+    if [ -n "$simulator" ]; then
+        xcrun simctl status_bar "$simulator" clear || true
+        [ "$booted_here" -eq 0 ] || xcrun simctl shutdown "$simulator" || true
+    fi
 done
 
 if [ "$header" -eq 1 ] && [ "$compose_only" -eq 0 ]; then

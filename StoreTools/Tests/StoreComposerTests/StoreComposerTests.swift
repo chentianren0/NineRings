@@ -179,3 +179,29 @@ import Testing
         #expect(bounds == CGRect(x: 100, y: 30, width: 50, height: 40))
     }
 }
+
+@Suite struct AttachmentTests {
+    @Test func findsTheShotNameInsideALongerName() {
+        #expect(Attachments.shotName(in: "01-light_0_6D1E2A.png") == "01-light")
+        #expect(Attachments.shotName(in: "Screenshot 05-dark") == "05-dark")
+        #expect(Attachments.shotName(in: "unmatched-2007x2853") == nil)
+    }
+
+    @Test func collectsByAttachmentName() throws {
+        let from = FileManager.default.temporaryDirectory.appending(path: "store-collect-\(UUID().uuidString)")
+        let to = from.appending(path: "out")
+        try FileManager.default.createDirectory(at: from, withIntermediateDirectories: true)
+        try Data("a".utf8).write(to: from.appending(path: "A1.png"))
+        try Data("b".utf8).write(to: from.appending(path: "B2.png"))
+        try Data("c".utf8).write(to: from.appending(path: "C3.png"))
+        try Data("""
+        [{"testIdentifier": "StoreShots/test01()", "attachments": [
+            {"exportedFileName": "A1.png", "suggestedHumanReadableName": "01-light_0_ABC.png"},
+            {"exportedFileName": "C3.png", "suggestedHumanReadableName": "unmatched-1206x2622_1_DEF.png"}]},
+         {"testIdentifier": "StoreShots/test05()", "attachments": [
+            {"exportedFileName": "B2.png", "suggestedHumanReadableName": "05-dark_0_GHI.png"}]}]
+        """.utf8).write(to: from.appending(path: "manifest.json"))
+        #expect(try Attachments.collect(from: from, to: to) == ["01-light", "05-dark"])
+        #expect(try Data(contentsOf: to.appending(path: "05-dark.png")) == Data("b".utf8))
+    }
+}
