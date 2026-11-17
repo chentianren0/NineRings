@@ -79,6 +79,7 @@
         "ENABLE_USER_SELECTED_FILES": "readonly",
         "GENERATE_INFOPLIST_FILE": "YES",
         "INFOPLIST_FILE": "NineRings/Info.plist",
+        "INFOPLIST_KEY_CFBundleDisplayName": "Nine Rings",
         "INFOPLIST_KEY_GCSupportsGameMode": "YES",
         "INFOPLIST_KEY_ITSAppUsesNonExemptEncryption": "NO",
         "INFOPLIST_KEY_LSApplicationCategoryType": "public.app-category.education",
