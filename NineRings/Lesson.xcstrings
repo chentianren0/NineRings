@@ -374,7 +374,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Le baguenaudier n’a donc que deux mouvements : celui de l’anneau 1, et celui du deuxième anneau sur la navette, le même pour les anneaux 2 à 9. Pourtant, il faut 341 coups pour descendre les neuf anneaux. Avant qu’un anneau éloigné du bout puisse bouger, les anneaux qui le précèdent doivent être placés comme le veut la règle, ce qui demande à son tour de nombreux coups."
+            "value" : "Le baguenaudier n’a donc que deux mouvements : celui de l’anneau 1, et celui du deuxième anneau sur la navette, le même pour les anneaux 2 à 9. Pourtant, descendre les neuf anneaux demande 341 coups : avant de bouger un anneau éloigné du bout, il faut placer ceux qui le précèdent comme le veut la règle, et cela demande déjà bien des coups."
           }
         },
         "ja" : {
