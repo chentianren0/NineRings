@@ -151,7 +151,8 @@ struct PuzzleScreen: View {
     /// Covers the toy, makes a change that moves it to another state at once, and uncovers it, so that the jump
     /// is calm.
     private func jump(_ change: @escaping () -> Void) {
-        player.pause()
+        // Quietly: the jump says what the toy has become, and "Paused" would only come before it.
+        player.pause(quiet: true)
         withAnimation(.easeIn(duration: 0.25)) {
             cover = 1
         } completion: {

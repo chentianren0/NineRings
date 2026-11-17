@@ -6,9 +6,11 @@ import Session
 /// and what each line of ``Narration`` says. Where the screen has words for it already (the status line, the reason a
 /// ring cannot move), these are those words; the rest are in `Accessibility.xcstrings`.
 enum Spoken {
-    /// What the toy is: the rings on, then the rings that can move. "Rings 1 to 3 and 5 are on. Rings 1 and 4 can move."
-    static func summary(_ summary: ToySummary) -> String {
-        [on(summary), movable(summary.movable)].joined(separator: " ")
+    /// What the toy is: the rings on, then, when `sayingWhichCanMove`, the rings that can move. "Rings 1 to 3 and 5 are
+    /// on. Rings 1 and 4 can move."
+    static func summary(_ summary: ToySummary, sayingWhichCanMove: Bool = true) -> String {
+        guard sayingWhichCanMove else { return on(summary) }
+        return [on(summary), movable(summary.movable)].joined(separator: " ")
     }
 
     /// Which rings are on.

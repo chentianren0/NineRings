@@ -121,8 +121,10 @@ final class Player {
         publish()
     }
 
-    func pause() {
-        play.pause()
+    /// Stops the move part way. A `quiet` pause says nothing: the screen pauses this way before it covers the toy for a
+    /// jump, which says the news itself.
+    func pause(quiet: Bool = false) {
+        play.pause(quiet: quiet)
         publish()
     }
 
@@ -215,6 +217,7 @@ final class Player {
 
     /// Goes to step `index` of the lesson and plays it from its start.
     func goToLessonStep(_ index: Int) {
+        guard isInLesson else { return }
         play.goToLessonStep(index)
         publish()
     }

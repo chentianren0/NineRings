@@ -79,7 +79,7 @@ import Testing
     }
 
     /// A ring asked during a move waits; when its turn comes the rule refuses it, after the first ring's end is said.
-    @Test func aChainSaysEachEndAndARefusalInOrder() {
+    @Test func aChainSaysItsEndThenTheRefusalThatStopsIt() {
         var state = PlayState()
         state.tap(1)
         state.tap(2)
@@ -88,21 +88,33 @@ import Testing
         #expect(lines == [.ended(ring: 1, state: PuzzleState("011111111")!), .refused(ring: 2, block: .previousRingOff(1))])
     }
 
-    /// Solve says its first move beginning, then only where each ring went, down to every ring off.
-    @Test func solveSaysOnlyWhereEachRingWent() {
+    /// Solve says its first move beginning and where the last ring went, and nothing between: a chain of announcements,
+    /// each interrupting the last, would drown out everything else.
+    @Test func solveSaysOnlyItsStartAndItsEnd() {
         var state = PlayState(PuzzleSession(resting: PuzzleState("011000000")!))
         let expected = PuzzleState("011000000")!.moves(to: .allOff)
         #expect(expected.count > 2)
         state.solve()
         #expect(state.narration.lines.count == 1)
         #expect(state.narration.lines.first.map { isBegan($0, ring: expected[0]) } == true)
-        let lines = playOut(&state)
-        var after = PuzzleState("011000000")!
-        #expect(lines == expected.map { ring in
-            after = after.moving(ring)
-            return .ended(ring: ring, state: after)
-        })
+        #expect(playOut(&state) == [.ended(ring: expected.last!, state: .allOff)])
         #expect(!state.isCongratulating)
+    }
+
+    /// The whole Solve, every ring on to every ring off: 341 moves, two announcements.
+    @Test func aWholeSolveSaysTwoThings() {
+        var state = PlayState()
+        state.solve()
+        var said = state.narration.isEmpty ? 0 : 1
+        var count = 0
+        while state.toy.isPlaying && count < 10_000_000 {
+            state.advance(by: 0.25)
+            if !state.narration.isEmpty { said += 1 }
+            count += 1
+        }
+        #expect(state.toy.state == .allOff)
+        #expect(state.toy.moveCount == 341)
+        #expect(said == 2)
     }
 
     /// The person's own move that takes the last ring off is said by the congratulation, not as a ring's end.
@@ -158,5 +170,49 @@ import Testing
         _ = playOut(&state)
         state.tap(1)
         #expect(state.narration.lines.first.map { isBegan($0, ring: 1) } == true)
+    }
+
+    /// The screen pauses quietly before it covers the toy for a jump: a pause then Reset says only what Reset says.
+    @Test func aPauseBeforeAJumpSaysOnlyTheJump() {
+        var state = PlayState()
+        state.tap(1)
+        for _ in 0..<30 { state.advance(by: Self.frame) }
+        state.pause(quiet: true)
+        #expect(state.narration.isEmpty)
+        state.reset()
+        #expect(state.narration.lines == [.rested(ToySummary(.allOn))])
+
+        state.tap(1)
+        for _ in 0..<30 { state.advance(by: Self.frame) }
+        state.pause(quiet: true)
+        #expect(state.narration.isEmpty)
+        state.openLesson()
+        #expect(state.narration.isEmpty)
+    }
+
+    /// A pause asked for by the person still says where the move stopped.
+    @Test func aPauseAskedForStillSaysTheStage() {
+        var state = PlayState()
+        state.tap(1)
+        for _ in 0..<30 { state.advance(by: Self.frame) }
+        state.pause()
+        guard case .paused? = state.narration.lines.first else {
+            Issue.record("pause said \(state.narration.lines)")
+            return
+        }
+    }
+
+    /// A request that changes nothing does not say the last change again: here, going to a step after the lesson has
+    /// closed, which the menu bar can ask for while the screen is still covering the toy.
+    @Test func aRequestThatChangesNothingSaysNothing() {
+        var state = PlayState()
+        state.openLesson(at: 2)
+        state.closeLesson()
+        #expect(state.narration.lines == [.rested(ToySummary(.allOn))])
+        state.goToLessonStep(3)
+        #expect(state.narration.isEmpty)
+        #expect(state.hearing == Hearing())
+        state.closeLesson()
+        #expect(state.narration.isEmpty)
     }
 }

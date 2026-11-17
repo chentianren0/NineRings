@@ -30,6 +30,7 @@ struct ToyCanvas: View {
         GeometryReader { proxy in
             ToyRealityView(player: player, rig: rig, tapRing: tapRing)
                 .ignoresSafeArea()
+                .accessibilityHidden(true)
                 .onChange(of: viewport(proxy), initial: true) { _, viewport in
                     rig.resize(to: viewport)
                 }
@@ -41,20 +42,9 @@ struct ToyCanvas: View {
         .onChange(of: reducesMotion, initial: true) { _, reduces in
             rig.reducesMotion = reduces
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("toy.label", tableName: "Accessibility"))
-        .accessibilityValue(Text(verbatim: spokenValue))
-        .accessibilityAddTraits(.isImage)
-    }
-
-    /// The status line's sentence while a move is in hand, then which rings are on and which can move.
-    private var spokenValue: String {
-        let summary = Spoken.summary(ToySummary(player.shownState))
-        switch player.status {
-        case .playing, .paused:
-            return String(localized: "toy.valueWhileMoving \(String(localized: Sentences.status(player.status))) \(summary)", table: "Accessibility")
-        case .note, .resting:
-            return summary
+        .overlay {
+            ToyDescription(player: player)
+                .allowsHitTesting(false)
         }
     }
 
@@ -85,6 +75,32 @@ struct ToyCanvas: View {
             }
         }
         return viewport
+    }
+}
+
+/// The toy as VoiceOver has it: one element, "Toy", over the whole view. A view of its own, so that what it reads (the
+/// status and the rings) redraws it alone, not the 3D view.
+private struct ToyDescription: View {
+    let player: Player
+
+    var body: some View {
+        Color.clear
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("toy.label", tableName: "Accessibility"))
+            .accessibilityValue(Text(verbatim: spokenValue))
+            .accessibilityAddTraits(.isImage)
+    }
+
+    /// The status line's sentence while a move is in hand, then which rings are on and, unless the lesson holds the toy
+    /// so that no ring can be asked for, which can move.
+    private var spokenValue: String {
+        let summary = Spoken.summary(ToySummary(player.shownState), sayingWhichCanMove: !player.lessonHoldsToy)
+        switch player.status {
+        case .playing, .paused:
+            return String(localized: "toy.valueWhileMoving \(String(localized: Sentences.status(player.status))) \(summary)", table: "Accessibility")
+        case .note, .resting:
+            return summary
+        }
     }
 }
 

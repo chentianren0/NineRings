@@ -74,7 +74,7 @@
       }
     },
     "ring.valueWithNote %@ %@" : {
-      "comment" : "Spoken value of a ring button with a note after it. The first variable is whether the ring is on and can move, such as “On, can come off”; the second the note, such as “Moving”.",
+      "comment" : "Spoken value of a ring button with a note after it. The first variable is whether the ring is on and can move, such as “On, can come off”; the second the note, such as “moving”.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {

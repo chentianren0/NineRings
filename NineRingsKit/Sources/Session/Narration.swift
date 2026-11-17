@@ -9,8 +9,10 @@ import Puzzle
 /// screen shows. The rules it keeps:
 /// - A request that starts a move playing (a ring asked, Play, Undo, Solve) says what the status line says as it
 ///   begins: the ring, which way it goes, and the stage.
-/// - A move that ends by playing says where its ring is now: on or off. Moves after the first in a chain (Solve, or
-///   rings asked during a move) say only that, so that a chain is a list of where each ring went.
+/// - A move that ends by playing says where its ring is now, on or off, when the toy then comes to rest. In a chain
+///   (Solve, or rings asked during a move) the moves between say nothing: a Solve of every ring is 341 moves, and an
+///   announcement interrupts whatever is being said, so one for each would drown out the person looking for Pause. A
+///   chain says its first start and its last end ("Ring 1 is off. All rings are off."), and a refusal if one stops it.
 /// - A move stopped part way by a request says the status line, with the stage it stopped in.
 /// - A ring the rule refuses says why, every time it is asked (see ``Hearing/refused``).
 /// - Lines come in that order: a move's end, a start, a pause, a refusal.
@@ -43,7 +45,7 @@ public struct Narration: Sendable, Equatable {
     /// What is said going from `before` to `after` by playing or by a request. `refused` is the ring the rule just
     /// refused, as ``Hearing`` finds it.
     public init(from before: PuzzleSession, to after: PuzzleSession, refused: Int? = nil) {
-        if before.isPlaying {
+        if before.isPlaying, !after.isBusy {
             if after.made.count == before.made.count + 1, let move = after.made.last {
                 lines.append(.ended(ring: move.ring, state: after.state))
             } else if after.made.count == before.made.count - 1, let move = before.made.last {

@@ -20,7 +20,10 @@ import Puzzle
 ///   slider says nothing: the slider says its own value. While the lesson holds the toy nothing is said: the step's
 ///   text says what the toy shows, and is heard whole. A move whose end congratulates does not say its ring is off:
 ///   the congratulation says it. Of the jumps, Reset and closing the lesson say what the toy now is; opening the
-///   lesson and going to a step say nothing here, since the lesson's panel says the step.
+///   lesson and going to a step say nothing here, since the lesson's panel says the step. The pause before a jump,
+///   while the screen covers the toy, says nothing either: what the jump says is the news.
+/// - A request that changes nothing, such as going to a step with the lesson closed, is heard and said as nothing:
+///   what the last change said is not said again.
 public struct PlayState: Sendable, Equatable {
     /// The person's own toy. While the lesson is open it waits, and the lesson's toy is shown instead.
     public private(set) var own: PuzzleSession
@@ -88,9 +91,10 @@ public struct PlayState: Sendable, Equatable {
         settle()
     }
 
-    public mutating func pause() {
+    /// Stops the move part way. A `quiet` pause says nothing, as the one before a jump does.
+    public mutating func pause(quiet: Bool = false) {
         if lesson != nil { lesson?.pause() } else { own.pause() }
-        settle()
+        settle(quiet: quiet)
     }
 
     /// The clock: `seconds` of the move's own time, at the playing speed.
@@ -122,14 +126,14 @@ public struct PlayState: Sendable, Equatable {
 
     /// Opens the lesson at step `index`, counted from 0, keeping the toy as it is to give back on closing.
     public mutating func openLesson(at index: Int = 0) {
-        guard lesson == nil else { return }
+        guard lesson == nil else { return nothingChanged() }
         lesson = LessonRun(opening: own, at: index)
         settle(jump: true, rebase: true)
     }
 
     /// Closes the lesson: the toy is as it was before, or, on the step that gave it back, as the person has it there.
     public mutating func closeLesson() {
-        guard let lesson else { return }
+        guard let lesson else { return nothingChanged() }
         own = lesson.closingToy
         self.lesson = nil
         settle(jump: true, rebase: true, sayingWhereItRests: true)
@@ -137,7 +141,7 @@ public struct PlayState: Sendable, Equatable {
 
     /// Goes to step `index` of the lesson and plays it from its start.
     public mutating func goToLessonStep(_ index: Int) {
-        guard lesson != nil else { return }
+        guard lesson != nil else { return nothingChanged() }
         lesson?.go(to: index)
         settle(jump: true, rebase: true)
     }
@@ -152,6 +156,13 @@ public struct PlayState: Sendable, Equatable {
     }
 
     // MARK: - Inside
+
+    /// After a request that changed nothing: nothing heard, nothing said, no congratulation appearing.
+    private mutating func nothingChanged() {
+        hearing = Hearing()
+        narration = Narration()
+        congratulates = false
+    }
 
     /// A change to the toy shown, as a ring tap, undo, Solve or a drag makes it: on the lesson's steps but the last,
     /// nothing happens.
