@@ -1,246 +1,246 @@
 {
-  "sourceLanguage": "en",
-  "strings": {
-    "followMove.reduceMotion": {
-      "comment": "The line under the Follow the Move switch in settings while the system's Reduce Motion setting is on: the view then stays still. Use the system's name for Reduce Motion.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Off while Reduce Motion is on."
+  "sourceLanguage" : "en",
+  "strings" : {
+    "followMove.reduceMotion" : {
+      "comment" : "The line under the Follow the Move switch in settings while the system's Reduce Motion setting is on: the view then stays still. Use the system's name for Reduce Motion.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off while Reduce Motion is on."
           }
         }
       }
     },
-    "lesson.step %@ %@": {
-      "comment": "Said aloud when the lesson goes to another step. The first variable is where the reader is, such as “Step 3 of 12”; the second is the step's text.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@. %2$@"
+    "lesson.step %@ %@" : {
+      "comment" : "Said aloud when the lesson goes to another step. The first variable is where the reader is, such as “Step 3 of 12”; the second is the step's text.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@. %2$@"
           }
         }
       }
     },
-    "ring.inTheWay %lld": {
-      "comment": "Spoken on a ring button, after whether the ring is on: this ring is what stops the ring just asked for from moving. The variable is the number of the ring asked for.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "in the way of ring %lld"
+    "ring.inTheWay %lld" : {
+      "comment" : "Spoken on a ring button, after whether the ring is on: this ring is what stops the ring just asked for from moving. The variable is the number of the ring asked for.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "in the way of ring %lld"
           }
         }
       }
     },
-    "ring.isOff %lld": {
-      "comment": "Said aloud when a ring's move ends with the ring off the sword. The variable is the ring's number.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring %lld is off."
+    "ring.isOff %lld" : {
+      "comment" : "Said aloud when a ring's move ends with the ring off the sword. The variable is the ring's number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ring %lld is off."
           }
         }
       }
     },
-    "ring.isOn %lld": {
-      "comment": "Said aloud when a ring's move ends with the ring on the sword. The variable is the ring's number.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring %lld is on."
+    "ring.isOn %lld" : {
+      "comment" : "Said aloud when a ring's move ends with the ring on the sword. The variable is the ring's number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ring %lld is on."
           }
         }
       }
     },
-    "ring.moving": {
-      "comment": "Spoken on a ring button, after whether the ring is on: the ring is moving now, or stopped part way.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "moving"
+    "ring.moving" : {
+      "comment" : "Spoken on a ring button, after whether the ring is on: the ring is moving now, or stopped part way.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "moving"
           }
         }
       }
     },
-    "ring.valueWithNote %@ %@": {
-      "comment": "Spoken value of a ring button with a note after it. The first variable is whether the ring is on and can move, such as “On, can come off”; the second the note, such as “Moving”.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@, %2$@"
+    "ring.valueWithNote %@ %@" : {
+      "comment" : "Spoken value of a ring button with a note after it. The first variable is whether the ring is on and can move, such as “On, can come off”; the second the note, such as “Moving”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@"
           }
         }
       }
     },
-    "speed.double": {
-      "comment": "Spoken value of the speed button: moves play twice as fast as normal (2×).",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Double speed"
+    "speed.double" : {
+      "comment" : "Spoken value of the speed button: moves play twice as fast as normal (2×).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Double speed"
           }
         }
       }
     },
-    "speed.half": {
-      "comment": "Spoken value of the speed button: moves play at half the normal speed (0.5×).",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Half speed"
+    "speed.half" : {
+      "comment" : "Spoken value of the speed button: moves play at half the normal speed (0.5×).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Half speed"
           }
         }
       }
     },
-    "speed.normal": {
-      "comment": "Spoken value of the speed button: moves play at the normal speed (1×).",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Normal speed"
+    "speed.normal" : {
+      "comment" : "Spoken value of the speed button: moves play at the normal speed (1×).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normal speed"
           }
         }
       }
     },
-    "speed.quadruple": {
-      "comment": "Spoken value of the speed button: moves play four times as fast as normal (4×).",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Quadruple speed"
+    "speed.quadruple" : {
+      "comment" : "Spoken value of the speed button: moves play four times as fast as normal (4×).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quadruple speed"
           }
         }
       }
     },
-    "speed.quarter": {
-      "comment": "Spoken value of the speed button: moves play at a quarter of the normal speed (0.25×).",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Quarter speed"
+    "speed.quarter" : {
+      "comment" : "Spoken value of the speed button: moves play at a quarter of the normal speed (0.25×).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quarter speed"
           }
         }
       }
     },
-    "toy.allOn": {
-      "comment": "Spoken description of the toy when every ring is on the sword.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "All nine rings are on."
+    "toy.allOn" : {
+      "comment" : "Spoken description of the toy when every ring is on the sword.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All nine rings are on."
           }
         }
       }
     },
-    "toy.label": {
-      "comment": "Spoken name of the 3D view of the puzzle. VoiceOver says it, then which rings are on.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Toy"
+    "toy.label" : {
+      "comment" : "Spoken name of the 3D view of the puzzle. VoiceOver says it, then which rings are on.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toy"
           }
         }
       }
     },
-    "toy.movable.one %lld": {
-      "comment": "Spoken after which rings are on: the one ring the rule lets move now. The variable is its number.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ring %lld can move."
+    "toy.movable.one %lld" : {
+      "comment" : "Spoken after which rings are on: the one ring the rule lets move now. The variable is its number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ring %lld can move."
           }
         }
       }
     },
-    "toy.movable.some %@": {
-      "comment": "Spoken after which rings are on: the rings the rule lets move now. The variable is a list of two ring numbers, such as “1 and 4”.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rings %@ can move."
+    "toy.movable.some %@" : {
+      "comment" : "Spoken after which rings are on: the rings the rule lets move now. The variable is a list of two ring numbers, such as “1 and 4”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rings %@ can move."
           }
         }
       }
     },
-    "toy.oneOn %lld": {
-      "comment": "Spoken description of the toy when one ring is on. The variable is that ring's number.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Only ring %lld is on."
+    "toy.oneOn %lld" : {
+      "comment" : "Spoken description of the toy when one ring is on. The variable is that ring's number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only ring %lld is on."
           }
         }
       }
     },
-    "toy.run %lld %lld": {
-      "comment": "A run of rings that are all on, in the list of rings that are on, such as “1 to 3”. The variables are the first and last ring of the run.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld to %2$lld"
+    "toy.run %lld %lld" : {
+      "comment" : "A run of rings that are all on, in the list of rings that are on, such as “1 to 3”. The variables are the first and last ring of the run.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld to %2$lld"
           }
         }
       }
     },
-    "toy.someOn %@": {
-      "comment": "Spoken description of the toy: which rings are on. The variable is a list of ring numbers and runs, such as “1 to 3, 5 and 8”.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rings %@ are on."
+    "toy.someOn %@" : {
+      "comment" : "Spoken description of the toy: which rings are on. The variable is a list of ring numbers and runs, such as “1 to 3, 5 and 8”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rings %@ are on."
           }
         }
       }
     },
-    "toy.valueWhileMoving %@ %@": {
-      "comment": "Spoken value of the toy while a ring moves or is stopped part way. The first variable is the status line's sentence, such as “Ring 3 comes off — Sword moves away”; the second says which rings are on and which can move, such as “Rings 1 to 3 are on. Rings 1 and 4 can move.”",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@. %2$@"
+    "toy.valueWhileMoving %@ %@" : {
+      "comment" : "Spoken value of the toy while a ring moves or is stopped part way. The first variable is the status line's sentence, such as “Ring 3 comes off — Sword moves away”; the second says which rings are on and which can move, such as “Rings 1 to 3 are on. Rings 1 and 4 can move.”",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@. %2$@"
           }
         }
       }
     }
   },
-  "version": "1.0"
+  "version" : "1.0"
 }
