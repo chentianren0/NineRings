@@ -124,9 +124,9 @@ private struct ToyDescription: View {
     }
 
     /// The status line's sentence while a move is in hand, then which rings are on and, unless the lesson holds the toy
-    /// so that no ring can be asked for, which can move.
+    /// so that no ring can be asked for, which a tap would move, as the ring buttons show them.
     private var spokenValue: String {
-        let summary = Spoken.summary(ToySummary(player.shownState), sayingWhichCanMove: !player.lessonHoldsToy)
+        let summary = Spoken.summary(ToySummary(player.markers), sayingWhichCanMove: !player.lessonHoldsToy)
         switch player.status {
         case .playing, .paused:
             return String(localized: "toy.valueWhileMoving \(String(localized: Sentences.status(player.status))) \(summary)", table: "Accessibility")

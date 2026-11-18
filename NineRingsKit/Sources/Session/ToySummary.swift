@@ -6,7 +6,8 @@ import Puzzle
 /// - The rings that are on are told as runs of neighbours, ring 1's end first: rings 1, 2, 3 and 5 on are the runs
 ///   1 to 3 and 5. Every ring on is the one run 1 to 9; no ring on is no run.
 /// - The rings that can move are the ones the rule lets move now, from ``PuzzleState/block(for:)``: ring 1 always, and
-///   the ring after the first ring that is on, when there is one. So there are never more than two.
+///   the ring after the first ring that is on, when there is one. So there are never more than two. Told from the ring
+///   buttons, they are the ones a tap would move, which leaves out the ring asked for last.
 public struct ToySummary: Sendable, Equatable {
     public let state: PuzzleState
     /// The rings that are on, as runs of neighbours, in order.
@@ -18,6 +19,14 @@ public struct ToySummary: Sendable, Equatable {
         self.state = state
         on = Self.runs(PuzzleState.rings.filter(state.isOn))
         movable = state.movableRings
+    }
+
+    /// The toy as the ring buttons show it: while a move is in hand, as it is about to be, with the rings a tap would
+    /// move (see ``PuzzleSession/markers``).
+    public init(_ markers: [PuzzleSession.Marker]) {
+        state = PuzzleState(bits: markers.reduce(0) { $1.isOn ? $0 | 1 << ($1.ring - 1) : $0 })
+        on = Self.runs(markers.filter(\.isOn).map(\.ring))
+        movable = markers.filter(\.canMove).map(\.ring)
     }
 
     /// How many rings are on.

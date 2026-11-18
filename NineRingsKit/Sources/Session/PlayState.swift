@@ -71,6 +71,13 @@ public struct PlayState: Sendable, Equatable {
 
     public var isSettingRings: Bool { settingRings != nil }
 
+    /// The ring buttons: as the toy is about to be, so that a ring marked as able to move is one a tap would move. While
+    /// the lesson holds the toy no ring can be asked for, and they follow the toy move by move as it plays.
+    public var markers: [PuzzleSession.Marker] {
+        let lessonHoldsToy = lesson.map { !$0.givesToyBack } ?? false
+        return toy.markers(asPlanned: !lessonHoldsToy)
+    }
+
     public var isCongratulating: Bool { congratulation.isShowing }
 
     /// The person's toy, where it is shown: their own, or on the lesson's last step the toy it gives back; nil on the

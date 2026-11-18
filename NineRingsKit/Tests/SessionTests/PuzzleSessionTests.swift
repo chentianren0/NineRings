@@ -131,20 +131,46 @@ import simd
 
     // MARK: Taps while a move plays
 
-    @Test func aTapWhileAMovePlaysWaitsItsTurn() {
+    @Test func aTapOnAnotherRingWhileAMovePlaysWaitsItsTurn() {
         var session = PuzzleSession()
         session.tap(1)
         session.advance(by: 0.3 * aMove)
-        session.tap(1)
-        #expect(session.queue == [1])
+        session.tap(3)
+        #expect(session.queue == [3])
         #expect(session.current == Move(ring: 1, from: .allOn), "the move in hand goes on")
         session.advance(by: aMove)
         #expect(session.state == ringOneOff)
-        #expect(session.current == Move(ring: 1, from: ringOneOff), "then the waiting ring begins")
+        #expect(session.current == Move(ring: 3, from: ringOneOff), "then the waiting ring begins")
         #expect(session.isPlaying)
         playOut(&session)
-        #expect(session.state == .allOn)
+        #expect(session.state == ringOneOff.moving(3))
         #expect(session.moveCount == 2)
+    }
+
+    /// Moving one ring twice in a row cancels out, so a tap on the ring that would move just before it is not queued.
+    @Test func fourQuickTapsOnOneRingMakeOneMove() {
+        var session = PuzzleSession()
+        for _ in 0..<4 {
+            session.tap(1)
+            session.advance(by: 0.1 * aMove)
+        }
+        #expect(session.queue.isEmpty)
+        playOut(&session)
+        #expect(session.state == ringOneOff)
+        #expect(session.moveCount == 1)
+    }
+
+    @Test func ringsOneThreeOneMakeThreeMoves() {
+        var session = PuzzleSession()
+        session.tap(1)
+        session.tap(3)
+        session.tap(3)
+        session.tap(1)
+        session.tap(1)
+        #expect(session.queue == [3, 1], "a repeat of the last ring waiting is not queued either")
+        playOut(&session)
+        #expect(session.made.map(\.ring) == [1, 3, 1])
+        #expect(session.state == PuzzleState.allOn.moving(1).moving(3).moving(1))
     }
 
     @Test func aWaitingTapIsJudgedWhenItsTurnComes() {
@@ -162,7 +188,7 @@ import simd
         var session = PuzzleSession()
         session.tap(1)
         session.tap(5)
-        session.tap(1)
+        session.tap(3)
         playOut(&session)
         #expect(session.state == ringOneOff)
         #expect(session.queue.isEmpty)
@@ -182,9 +208,147 @@ import simd
         }
         session.tap(2)
         #expect(session.isPlaying)
-        #expect(session.queue == [2])
+        #expect(session.queue.isEmpty, "the ring is already moving")
+        playOut(&session)
+        #expect(session.state == ringTwoOff)
+        #expect(session.moveCount == 1)
+    }
+
+    @Test func aTapOnAnotherRingWhilePausedPartWayCarriesOnAndWaits() {
+        var session = PuzzleSession()
+        session.tap(1)
+        session.advance(by: 0.4 * aMove)
+        session.pause()
+        session.tap(3)
+        #expect(session.isPlaying)
+        #expect(session.queue == [3])
+        playOut(&session)
+        #expect(session.made.map(\.ring) == [1, 3])
+    }
+
+    /// Undo moves the ring back: a tap on it then would only move it again.
+    @Test func aTapOnTheRingBeingUndoneIsNotQueued() {
+        var session = PuzzleSession()
+        session.tap(1)
+        playOut(&session)
+        session.undo()
+        session.advance(by: 0.3 * aMove)
+        session.tap(1)
+        #expect(session.queue.isEmpty)
+        #expect(session.direction == .backward, "the undo goes on")
         playOut(&session)
         #expect(session.state == .allOn)
+        #expect(session.moveCount == 0)
+    }
+
+    // MARK: The markers while a move is in hand
+
+    /// While ring 1 comes off the markers show it off already, and ring 3 can come off: a tap on it would take it off
+    /// next. Ring 1 cannot move: a tap on it would not be queued.
+    @Test func theMarkersShowTheToyAsItIsAboutToBe() {
+        var session = PuzzleSession()
+        session.tap(1)
+        session.advance(by: 0.3 * aMove)
+        let markers = session.markers
+        #expect(markers.map(\.isOn) == PuzzleState.rings.map(ringOneOff.isOn))
+        #expect(markers.filter(\.canMove).map(\.ring) == [3])
+        #expect(markers[1].block == .previousRingOff(1))
+        #expect(markers[0].block == nil && markers[0].isMoving)
+        session.tap(3)
+        let afterThree = ringOneOff.moving(3)
+        #expect(session.markers.map(\.isOn) == PuzzleState.rings.map(afterThree.isOn))
+        #expect(session.markers.filter(\.canMove).map(\.ring) == [1], "ring 3 waits, and ring 4 needs ring 3 on")
+        #expect(session.markers.filter(\.isMoving).map(\.ring) == [1])
+    }
+
+    /// Once a ring waits that will be refused, every ring after it is dropped: no ring can be asked for.
+    @Test func noRingCanMoveAfterAWaitingRingThatWillBeRefused() {
+        var session = PuzzleSession()
+        session.tap(1)
+        session.tap(5)
+        #expect(session.markers.allSatisfy { !$0.canMove })
+        playOut(&session)
+        #expect(session.markers.filter(\.canMove).map(\.ring) == [1, 3])
+    }
+
+    /// While solving, a tap drops the rest of the way, so the markers show the toy once the move in hand ends.
+    @Test func whileSolvingTheMarkersShowTheEndOfTheMoveInHand() throws {
+        var session = PuzzleSession()
+        session.solve()
+        let moving = try #require(session.current)
+        #expect(session.markers.map(\.isOn) == PuzzleState.rings.map(moving.to.isOn))
+        let expected = moving.to.movableRings.filter { $0 != moving.ring }
+        #expect(session.markers.filter(\.canMove).map(\.ring) == expected)
+    }
+
+    /// Following the toy move by move, as the lesson's toy shows them, the markers are as the state is, by the rule.
+    @Test func markersNotAsPlannedFollowTheState() {
+        var session = PuzzleSession()
+        session.tap(1)
+        session.tap(3)
+        let markers = session.markers(asPlanned: false)
+        #expect(markers.allSatisfy { $0.isOn })
+        #expect(markers.filter(\.canMove).map(\.ring) == [1, 2])
+        #expect(markers.filter(\.isMoving).map(\.ring) == [1])
+    }
+
+    /// Whatever is in hand, a ring is marked as able to move exactly when a tap on it would move it: tapped, and played
+    /// out, the toy ends as the markers show it with that ring moved.
+    @Test func aRingMarkedAbleToMoveIsOneATapWouldMove() {
+        var checked = 0
+        func check(_ session: PuzzleSession, _ what: String) {
+            let markers = session.markers
+            let shown = PuzzleState(bits: markers.reduce(0) { $1.isOn ? $0 | 1 << ($1.ring - 1) : $0 })
+            for marker in markers {
+                var tapped = session
+                tapped.tap(marker.ring)
+                playOut(&tapped)
+                let moved = Move(ring: marker.ring, from: shown).map { tapped.state == $0.to } ?? false
+                #expect(marker.canMove == moved, "ring \(marker.ring) after \(what)")
+                checked += 1
+            }
+        }
+        let starts: [(PuzzleSession, String)] = [
+            (PuzzleSession(), "nothing"),
+            (PuzzleSession(at: Move(ring: 3, from: ringOneOff)!, progress: 0.5), "ring 3 paused half way"),
+        ]
+        let requests: [(String, (inout PuzzleSession) -> Void)] = [
+            ("tap 1", { $0.tap(1) }), ("tap 2", { $0.tap(2) }), ("tap 3", { $0.tap(3) }), ("tap 5", { $0.tap(5) }),
+            ("a third of a move", { $0.advance(by: aMove / 3) }), ("pause", { $0.pause() }), ("undo", { $0.undo() }),
+            ("solve", { $0.solve() }), ("drag to 0", { $0.scrub(to: 0) }), ("drag to 1", { $0.scrub(to: 1) }),
+        ]
+        // Every sequence of up to three requests from each start.
+        var sessions = starts
+        for _ in 0..<3 {
+            sessions = sessions.flatMap { session, what in
+                requests.map { name, request in
+                    var next = session
+                    request(&next)
+                    return (next, what + ", " + name)
+                }
+            }
+            for (session, what) in sessions { check(session, what) }
+        }
+        #expect(checked > 10_000)
+    }
+
+    @Test func aTapWhileSolvingOnAnotherRingTakesOver() throws {
+        var session = PuzzleSession()
+        session.solve()
+        let moving = try #require(session.current?.ring)
+        let other = moving == 1 ? 2 : 1
+        session.tap(other)
+        #expect(!session.isSolving)
+        #expect(session.queue == [other])
+    }
+
+    @Test func aTapWhileSolvingOnTheRingMovingChangesNothing() throws {
+        var session = PuzzleSession()
+        session.solve()
+        session.advance(by: 0.2 * aMove)
+        let before = session
+        session.tap(try #require(session.current?.ring))
+        #expect(session == before, "Solve goes on")
     }
 
     // MARK: Play, pause and the slider
@@ -301,7 +465,7 @@ import simd
     @Test func undoDropsTheQueue() {
         var session = PuzzleSession()
         session.tap(1)
-        session.tap(1)
+        session.tap(3)
         session.undo()
         #expect(session.queue.isEmpty)
         playOut(&session)
@@ -406,14 +570,6 @@ import simd
         session.solve()
         #expect(session.current?.ring == 2, "the move in hand goes on")
         #expect(session.queue == ringTwoOff.moves(to: .allOff))
-    }
-
-    @Test func aTapWhileSolvingTakesOver() {
-        var session = PuzzleSession()
-        session.solve()
-        session.tap(1)
-        #expect(!session.isSolving)
-        #expect(session.queue == [1])
     }
 
     // MARK: Beginning at a chosen move
