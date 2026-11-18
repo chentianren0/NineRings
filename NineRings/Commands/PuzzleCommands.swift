@@ -12,6 +12,8 @@ struct PuzzleActions {
 
 extension FocusedValues {
     @Entry var puzzle: PuzzleActions?
+    /// On iPhone and iPad, whether the window in front shows the history, a sheet over it.
+    @Entry var showsHistory: Binding<Bool>?
 }
 
 extension View {
@@ -51,8 +53,16 @@ final class MenusWithoutFocus {
 ///
 /// A ring that cannot move is disabled in Move Ring, but its number key still asks it, through the ring buttons'
 /// own shortcuts, which the window answers before the menu bar: so a refused ring still says why it cannot move.
+///
+/// The person's record of their plays ends the Puzzle menu: the history, then Game Center. The toolbar's More menu on
+/// iPhone and iPad holds the two in the same order.
 struct PuzzleCommands: Commands {
     @FocusedValue(\.puzzle) private var focused
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #else
+    @FocusedBinding(\.showsHistory) private var showsHistory
+    #endif
 
     /// The window the commands act on: the one in front.
     private var puzzle: PuzzleActions? {
@@ -236,6 +246,21 @@ struct PuzzleCommands: Commands {
         .disabled(!(state?.canSetRings ?? false))
 
         Divider()
+
+        // The history of finished plays: a window of its own on the Mac, which needs no other window; a sheet over the
+        // window in front on iPad.
+        Button {
+            #if os(macOS)
+            openWindow(id: HistoryWindow.id)
+            #else
+            showsHistory = true
+            #endif
+        } label: {
+            Text("menu.history", tableName: "Commands")
+        }
+        #if !os(macOS)
+        .disabled(showsHistory == nil)
+        #endif
 
         // The app's achievements, in Game Center's own dashboard. It needs no window, only a player signed in.
         Button {

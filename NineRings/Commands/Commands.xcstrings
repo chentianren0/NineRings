@@ -121,6 +121,18 @@
         }
       }
     },
+    "menu.history" : {
+      "comment" : "Puzzle menu item, and on iPhone and iPad an item of the toolbar's More menu, that opens the history of the person's finished plays: a window of its own on the Mac, a sheet on iPhone and iPad. It sits just before the Game Center item.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "History"
+          }
+        }
+      }
+    },
     "menu.lesson" : {
       "comment" : "Title of the menu bar menu with the lesson's commands.",
       "extractionState" : "manual",

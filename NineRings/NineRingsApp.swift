@@ -47,6 +47,14 @@ struct NineRingsApp: App {
             SettingsWindow()
         }
         .environment(keeper)
+
+        // The history of finished plays, opened from the Puzzle menu.
+        Window(Text("history.title", tableName: "Screens"), id: HistoryWindow.id) {
+            HistoryWindow()
+        }
+        .environment(keeper)
+        .defaultSize(width: 460, height: 560)
+        .commandsRemoved()
         #endif
     }
 

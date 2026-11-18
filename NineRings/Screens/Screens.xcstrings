@@ -325,6 +325,222 @@
         }
       }
     },
+    "history.clear" : {
+      "comment" : "In the history, the button that deletes every finished play after a confirmation; also the confirmation's button that deletes them.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear History"
+          }
+        }
+      }
+    },
+    "history.clear.everyDevice" : {
+      "comment" : "The message of the confirmation that comes before the history is cleared, when clearing also deletes the finished plays on the person's other devices, as when the plays are kept in iCloud.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every finished play will be deleted from all your devices. You can’t undo this action."
+          }
+        }
+      }
+    },
+    "history.clear.thisDevice" : {
+      "comment" : "The message of the confirmation that comes before the history is cleared, while the finished plays are kept on this device only.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every finished play will be deleted from this device. You can’t undo this action."
+          }
+        }
+      }
+    },
+    "history.clear.title" : {
+      "comment" : "Title of the confirmation that comes before the history of finished plays is cleared.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear the history?"
+          }
+        }
+      }
+    },
+    "history.empty.text" : {
+      "comment" : "The history of finished plays when there is none yet: the line under the title No Finished Plays, saying how a play gets there.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When you take all nine rings off the sword, the play appears here."
+          }
+        }
+      }
+    },
+    "history.empty.title" : {
+      "comment" : "The history of finished plays when there is none yet: its title, in the middle of the page. A play is finished when the person takes every ring off the sword, starting from every ring on.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Finished Plays"
+          }
+        }
+      }
+    },
+    "history.moves %lld" : {
+      "comment" : "In the history, a finished play's moves: how many times a ring was moved, such as 341 moves. Shown in a line with the time spent, the undos and the moves played for the person, and inside the sentence VoiceOver reads for the play.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld move"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld moves"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "history.play.spoken %@ %@ %@ %@ %@" : {
+      "comment" : "What VoiceOver reads for a finished play in the history, as one sentence. The first variable is when the play was finished, such as November 18, 2026 at 3:41 PM; the second its moves, such as 341 moves; the third the time spent, such as 20 minutes, 35 seconds; the fourth its undos, such as 4 undos; the fifth the moves the app played for the person, such as 60 moves played for you. Each variable comes already translated.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finished %1$@: %2$@ in %3$@, with %4$@ and %5$@."
+          }
+        }
+      }
+    },
+    "history.play.spoken.shortestWay %@ %@ %@ %@ %@" : {
+      "comment" : "What VoiceOver reads for a finished play in the history that went the shortest way, as one sentence: the same as the sentence for any play, saying the shortest way too. The first variable is when the play was finished, such as November 18, 2026 at 3:41 PM; the second its moves, such as 341 moves; the third the time spent, such as 9 minutes; the fourth its undos, 0 undos; the fifth the moves the app played for the person, 0 moves played for you. Each variable comes already translated.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finished %1$@, the shortest way: %2$@ in %3$@, with %4$@ and %5$@."
+          }
+        }
+      }
+    },
+    "history.playedForYou %lld" : {
+      "comment" : "In the history, how many of a finished play's moves the app made for the person: the moves Solve and the lesson played on their toy, such as 60 moves played for you. Shown in a line with the moves and the time spent, and inside the sentence VoiceOver reads for the play.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld move played for you"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld moves played for you"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "history.shortestWay" : {
+      "comment" : "In the history, the mark beside a finished play that went the shortest way: from every ring on to every ring off in the fewest moves, 341, with no undo and no move played for the person. Shown with a star. Same idea as the Game Center achievement The Shortest Way.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shortest Way"
+          }
+        }
+      }
+    },
+    "history.title" : {
+      "comment" : "The title of the history of the person's finished plays: the window's title on the Mac, the sheet's title on iPhone and iPad. The menu item that opens it is History too.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "History"
+          }
+        }
+      }
+    },
+    "history.undos %lld" : {
+      "comment" : "In the history, a finished play's undos: how many moves the person took back, with Undo or by dragging the slider back, such as 4 undos. Shown in a line with the moves and the time spent, and inside the sentence VoiceOver reads for the play.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld undo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld undos"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "history.unreadable %lld" : {
+      "comment" : "In the history, a quiet line under the plays, shown only when there is at least one such play: how many finished plays are kept that this version of the app can't read, because a newer version of the app recorded them on another device. 'Nine Rings' is the app's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld play needs a newer version of Nine Rings to show here."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld plays need a newer version of Nine Rings to show here."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "menu.about" : {
       "comment" : "The menu item that opens the page about the app: in the Mac's app menu, and in the main screen's menu on iPhone and iPad.",
       "extractionState" : "manual",
