@@ -82,9 +82,13 @@ Xcode's editor, not by hand.
       Click **Save**, then **Save** again.
 
    Once an achievement is live, it can't be deleted and its points can't be changed.
-4. **The pictures.** Four, one for each achievement, each a different picture: 1024 × 1024 pixels, `.png` or `.jpeg`,
-   RGB, at least 72 ppi. Game Center shows them inside a circle, so keep what matters in the middle. They are not in the
-   repository yet: the art is being chosen.
+4. **The pictures** are in `StoreTools/AchievementPictures/`, one for each achievement, named by its identifier:
+   `all_nine_off.png`, `shortest_way.png`, `all_nine_back_on.png` and `far_end.png`. Upload each as its achievement's
+   **Image**. They are what App Store Connect asks for: 1024 × 1024 pixels, PNG, RGB, 72 ppi, with no transparency.
+   They are in the Bauhaus style: the sword is one black diagonal, a ring on it a bar woven through its two wires, a
+   ring off it a circle, and one great plane of colour sets each picture apart. They are drawn by
+   `swift run --package-path StoreTools achievement-pictures` (the drawing is
+   `StoreTools/Sources/AchievementPictures/Bauhaus.swift`), so a change is made there and they are drawn again.
 5. **Turn Game Center on for the version.** In **Apps**, choose Nine Rings, then the version that will ship this, in
    the sidebar. Scroll down, tick **Game Center**, and add the four achievements to the version. They are reviewed
    with it, and players see them only once they are approved.

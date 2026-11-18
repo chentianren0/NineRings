@@ -89,7 +89,7 @@ extension CGContext {
 
 // MARK: The pictures
 
-func draw(_ picture: Picture, in c: CGContext) {
+func draw(_ picture: AchievementPicture, in c: CGContext) {
     c.background(paper)
     switch picture {
     case .allNineOff: allNineOff(c)

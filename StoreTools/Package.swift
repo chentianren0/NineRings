@@ -7,7 +7,8 @@ let package = Package(
     name: "StoreTools",
     platforms: [.macOS(.v15)],
     dependencies: [
-        // Only for the tests, which check that each moment of the series is a state the rules allow.
+        // Only for the tests, which check that each moment of the series is a state the rules allow, and that each
+        // achievement picture is named by one of the app's achievements.
         .package(path: "../NineRingsKit"),
     ],
     targets: [
@@ -19,6 +20,9 @@ let package = Package(
         ),
         .target(name: "StoreComposer"),
         .executableTarget(name: "store-compose", dependencies: ["StoreComposer"]),
+        // The Game Center achievements' pictures (AchievementPictures/), and the command that draws them.
+        .target(name: "AchievementPictures"),
+        .executableTarget(name: "achievement-pictures", dependencies: ["AchievementPictures"]),
         .testTarget(name: "StoreComposerTests", dependencies: ["StoreComposer"]),
         .testTarget(
             name: "StoreLaunchTests",
@@ -29,6 +33,10 @@ let package = Package(
                 .product(name: "Motion", package: "NineRingsKit"),
                 .product(name: "Session", package: "NineRingsKit"),
             ]
+        ),
+        .testTarget(
+            name: "AchievementPicturesTests",
+            dependencies: ["AchievementPictures", .product(name: "Session", package: "NineRingsKit")]
         ),
     ]
 )
