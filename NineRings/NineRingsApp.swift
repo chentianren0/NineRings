@@ -12,6 +12,8 @@ struct NineRingsApp: App {
         NSWindow.allowsAutomaticWindowTabbing = false
         #endif
         #if DEBUG
+        // Before any store opens: CloudKit's development schema, only when the launch asks.
+        CloudSchema.createIfAsked()
         StoreCapture.prepare()
         if let request = Capture.request {
             Task { await Capture.run(request) }

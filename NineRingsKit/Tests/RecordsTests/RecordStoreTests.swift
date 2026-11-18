@@ -159,7 +159,7 @@ import Testing
             ],
             "SavedToy": [
                 "installation": String.self, "changedAt": Date.self, "format": Int.self, "snapshot": Data.self,
-                "appVersion": String.self,
+                "appVersion": String.self, "lineage": Data.self,
             ],
         ]
         #expect(Set(RecordStore.schema.entities.map(\.name)) == Set(fixed.keys))

@@ -577,6 +577,42 @@
         }
       }
     },
+    "offer.keepThisOne" : {
+      "comment" : "A button beside the line saying another device has a different play: keeps the play on this device; the other device then follows.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep This One"
+          }
+        }
+      }
+    },
+    "offer.line" : {
+      "comment" : "The one line that shows when the person's play went on apart on two devices. Two buttons follow: play the other device's play here, or keep this one.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another device has a different play."
+          }
+        }
+      }
+    },
+    "offer.playThatOne" : {
+      "comment" : "A button beside the line saying another device has a different play: takes that play up here in place of this one.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play That One"
+          }
+        }
+      }
+    },
     "settings.haptics" : {
       "comment" : "A switch in settings that turns the vibrations the app makes on or off. Shown only on devices that can make them.",
       "extractionState" : "manual",
@@ -609,6 +645,42 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "觸覺回饋"
+          }
+        }
+      }
+    },
+    "settings.iCloud" : {
+      "comment" : "A switch in settings. When on, the finished plays and the toy as it was left go to the person's other devices through iCloud.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud Sync"
+          }
+        }
+      }
+    },
+    "settings.iCloud.footer" : {
+      "comment" : "The line under the iCloud switch in settings, saying what it does.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your finished plays, and the toy as you left it, go to your other devices through iCloud."
+          }
+        }
+      }
+    },
+    "settings.iCloud.unavailable" : {
+      "comment" : "The line under the iCloud switch in settings when it is on but iCloud is not available, as when no account is signed in or iCloud is off for the app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud is not available, so your plays stay on this device until it is."
           }
         }
       }

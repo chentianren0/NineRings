@@ -39,9 +39,10 @@ enum LaunchOptions {
     ///   device, it shares the App Store version's container.
     /// - A launch that sets up or plays its own toy keeps them in memory, so that it starts where it says and leaves
     ///   what is kept as it was. That is a debug launch that sets up its own toy (`-keeps-toy NO`, `-move`,
-    ///   `-set-rings`, `-play-last-move`, the store's pictures, the frame capture) or asks for sample plays
-    ///   (`-sample-plays`), and a measuring build, whose scripts play the toy by themselves from every ring on. Plays are
-    ///   recorded and can be read during the launch, and nothing reaches a file.
+    ///   `-set-rings`, `-play-last-move`, the store's pictures, the frame capture), asks for sample plays
+    ///   (`-sample-plays`) or stages another device's toy (`-stage-other-play`), and a measuring build, whose scripts
+    ///   play the toy by themselves from every ring on. Plays are recorded and can be read during the launch, and nothing
+    ///   reaches a file.
     static var recordPlace: RecordStore.Place {
         #if DEBUG
         keepsRecordsInMemory ? .memory : .folder(RecordStore.debugFolder)
@@ -70,7 +71,7 @@ enum LaunchOptions {
         let keepsNoToy = arguments.firstIndex(of: "-keeps-toy").map { $0 + 1 < arguments.count && arguments[$0 + 1] == "NO" } ?? false
         let setsUpToy = keepsNoToy || move != nil || settingRings != nil || ScreenLaunchOptions.playsLastMove
             || StoreCapture.isActive || Capture.request != nil
-        return setsUpToy || arguments.contains("-sample-plays")
+        return setsUpToy || arguments.contains("-sample-plays") || ICloudLaunchOptions.stagedPlay != nil
     }
 
     /// `-set-rings 110100000` opens the app setting the rings by hand, set to that arrangement: nine digits, ring 1
