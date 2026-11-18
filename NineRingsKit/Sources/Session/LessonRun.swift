@@ -21,8 +21,11 @@ import Toy
 /// - On a step that shows something, the toy belongs to the lesson: ring taps, undo, solve and the slider do nothing,
 ///   and play only pauses and resumes the step's showing. Reset goes back to the first step.
 /// - A step that gives the toy back (``LessonStep/Show/givenBack``, the last step, "your turn") shows the person's own
-///   toy, as it was before the lesson, with its history, and every request reaches it: whatever they do there is
-///   theirs. Going from it to another step takes the toy again, remembering it as it is then.
+///   toy, with its history, and every request reaches it: whatever they do there is theirs. When their toy rests where
+///   the lesson begins, every ring on, the lesson's moves are made on it, so that it goes on from where the lesson
+///   ended, with no jump, and undo takes them back; they are played for the person, not by them
+///   (``movesPlayedForThePerson``). Otherwise it is as it was before the lesson. Going from that step to another takes
+///   the toy again, remembering it as it is then, the lesson's moves included, so that they are made once.
 /// - Closing gives back the toy as it was before the lesson; on a step that has given it back already, closing
 ///   changes nothing.
 public struct LessonRun: Sendable, Equatable {
@@ -52,6 +55,10 @@ public struct LessonRun: Sendable, Equatable {
     /// The person's own toy, as it was when the lesson opened, or when it last took the toy again, paused. On a step
     /// that gives the toy back, `toy` is the person's toy, and this is where it was when given back.
     public private(set) var before: PuzzleSession
+    /// On the step that gives the toy back, the moves the lesson made on it as it gave it: the lesson's moves, when the
+    /// toy rested where the lesson begins, or none. Empty on the other steps. They are the person's moves now, played
+    /// for them rather than by them.
+    public private(set) var movesPlayedForThePerson: [Move] = []
 
     /// Opens the lesson over `toy` at step `index`, counted from 0, with every ring on.
     public init(opening toy: PuzzleSession, steps: [LessonStep] = Lesson.steps, at index: Int = 0) {
@@ -154,6 +161,7 @@ public struct LessonRun: Sendable, Equatable {
             own.pause()
             before = own
             toy = PuzzleSession()
+            movesPlayedForThePerson = []
         }
         index = newIndex
         enter(givenBackAlready: givenBackAlready)
@@ -208,12 +216,19 @@ public struct LessonRun: Sendable, Equatable {
     // MARK: - Inside
 
     /// Puts the toy in the step's start, going on from where it is when it is there already, and begins the step's
-    /// showing; or gives the person's toy back, unless it is theirs already.
+    /// showing; or gives the person's toy back, unless it is theirs already, with the lesson's moves made on it when
+    /// it rests where they begin.
     private mutating func enter(givenBackAlready: Bool) {
         let step = step
         switch step.show {
         case .givenBack:
-            if !givenBackAlready { toy = before }
+            guard !givenBackAlready else { return }
+            toy = before
+            let moves = lessonMoves
+            if let first = moves.first, !toy.isBusy, toy.state == first.from {
+                toy.make(moves)
+                movesPlayedForThePerson = moves
+            }
         case .rest(let state):
             if !isResting(in: state) {
                 toy = PuzzleSession(resting: state)
@@ -244,6 +259,18 @@ public struct LessonRun: Sendable, Equatable {
 
     private func isResting(in state: PuzzleState) -> Bool {
         !toy.isBusy && toy.state == state
+    }
+
+    /// The moves the lesson makes before the step that gives the toy back, in order: each move its steps play to the
+    /// end, once. A held move is made by the step that finishes it.
+    private var lessonMoves: [Move] {
+        steps.prefix { $0.show != .givenBack }.flatMap { step -> [Move] in
+            switch step.show {
+            case .play(let moves): moves
+            case .finish(let move, _): [move]
+            case .rest, .hold, .givenBack: []
+            }
+        }
     }
 }
 
