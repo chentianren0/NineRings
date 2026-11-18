@@ -73,6 +73,30 @@
         }
       }
     },
+    "offer.keepThisOne.hint" : {
+      "comment" : "VoiceOver's hint on the button that keeps this device's play.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keeps the play here. The other device then takes it up."
+          }
+        }
+      }
+    },
+    "offer.playThatOne.hint" : {
+      "comment" : "VoiceOver's hint on the button that takes up the other device's play.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replaces the play here with the one on the other device."
+          }
+        }
+      }
+    },
     "ring.inTheWay %lld" : {
       "comment" : "Spoken on a ring button, after whether the ring is on: this ring is what stops the ring just asked for from moving. The variable is the number of the ring asked for.",
       "extractionState" : "manual",

@@ -320,6 +320,7 @@ private struct Controls: View {
     let putBack: () -> Void
     @Environment(\.overlayArrangementZIndex) private var zIndex
     @Environment(\.reducesMotion) private var reducesMotion
+    @Environment(Keeper.self) private var keeper
 
     /// The congratulation goes with the controls: over the top of the whole window where they float over the toy, and
     /// in the controls' own half above them on a half-folded Duo, clear of the fold and of the toy.
@@ -327,6 +328,18 @@ private struct Controls: View {
         content
             .congratulation(player, overlays: !hasOwnSpace, putBack: putBack)
             .onChange(of: hasOwnSpace, initial: true) { _, own in hasOwnHalf = own }
+            .onChange(of: keeper.isOfferingOtherPlay) { _, offers in
+                if offers { Announcer.say(String(localized: OtherPlayOffer.text)) }
+            }
+    }
+
+    /// The line that offers another device's play, when the play has parted in two.
+    @ViewBuilder
+    private var otherPlayOffer: some View {
+        if keeper.isOfferingOtherPlay {
+            OtherPlayOffer(playThatOne: player.playThatOne, keepThisOne: player.keepThisOne)
+                .appearingOverToy(reducesMotion: reducesMotion)
+        }
     }
 
     @ViewBuilder
@@ -343,9 +356,11 @@ private struct Controls: View {
                         .transition(.blurReplace)
                 }
                 LessonTipView(openLesson: openLesson)
+                otherPlayOffer
                 ControlPanel(player: player, style: .beside)
             }
             .animation(ScreenMotion.card, value: player.isCongratulating)
+            .animation(ScreenMotion.small, value: keeper.isOfferingOtherPlay)
             .frame(maxWidth: 560)
             .padding(.horizontal, 16)
             .padding(.top, lessonSheet.isNull ? 0 : 12)
@@ -382,9 +397,10 @@ private struct Controls: View {
             .overlay(alignment: .top) {
                 // The reason a ring cannot move floats above the panel, over the toy, taking no room, so that the
                 // panel keeps its height and the toy does not move. The lesson's tip, where it is inline, floats above
-                // it.
+                // it, and so does the line that offers another device's play.
                 VStack(spacing: 10) {
                     LessonTipView(openLesson: openLesson)
+                    otherPlayOffer
                     if let refusal = ControlPanel.refusal(in: player.status) {
                         RefusalBubble(text: refusal)
                             .appearingOverToy(reducesMotion: reducesMotion)
@@ -396,6 +412,7 @@ private struct Controls: View {
                 }
             }
             .animation(ScreenMotion.small, value: ControlPanel.refusal(in: player.status) == nil)
+            .animation(ScreenMotion.small, value: keeper.isOfferingOtherPlay)
             .frame(maxWidth: 720)
             .padding(.horizontal, 12)
             .padding(.bottom, 8 + lift)

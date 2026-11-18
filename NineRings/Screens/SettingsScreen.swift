@@ -42,6 +42,7 @@ struct SettingsSwitches: View {
             }
         }
         FollowMoveSetting()
+        ICloudSetting()
     }
 }
 
