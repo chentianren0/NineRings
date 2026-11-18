@@ -72,7 +72,7 @@ final class GameCenter {
                 Self.present(viewController)
             }
             isSignedIn = GKLocalPlayer.local.isAuthenticated
-            if let error { log("not signed in: \(error.localizedDescription)") }
+            log(isSignedIn ? "signed in" : "not signed in: \(error?.localizedDescription ?? "no player")")
             reportPending()
         }
         #if DEBUG
