@@ -190,6 +190,28 @@ import Testing
         #expect(!state.isCongratulating && !state.congratulates)
     }
 
+    /// From every ring on, step 12 gives the toy back with the lesson's six moves made: arriving is silent and does not
+    /// congratulate; taking the rest off by hand congratulates once, at the last move, and closing does not again.
+    @Test func afterTheLessonsMovesTheRestByHandCongratulatesOnce() {
+        var state = PlayState()
+        state.openLesson(at: 10)
+        _ = state.frame()
+        state.goToLessonStep(11)
+        expectSilent(&state, "step 12")
+        #expect(!state.isCongratulating && !state.congratulates)
+        #expect(state.toy.moveCount == 6)
+        var congratulated = 0
+        for ring in state.toy.state.moves(to: .allOff) {
+            state.tap(ring)
+            congratulated += playOut(&state).congratulated
+        }
+        #expect(state.toy.state == .allOff && state.toy.moveCount == 341)
+        #expect(congratulated == 1 && state.isCongratulating)
+        state.closeLesson()
+        #expect(state.own.moveCount == 341, "closing keeps the play")
+        #expect(!state.congratulates)
+    }
+
     /// Without the lesson: solving by hand congratulates once, at the last move; Solve does not.
     @Test func ownToyCongratulatesAsBefore() {
         var state = PlayState()
