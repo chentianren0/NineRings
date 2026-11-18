@@ -39,6 +39,8 @@ The second ring's move is checked in full for ring 2, with ring 3 on and off beh
 
 Every pose of every move at those 801 values, and the rest pose of every state, is also held to a fingerprint written in `MotionFingerprintTests`: a hash of their exact bits. A change that should leave the motion alone leaves the fingerprint alone; a change meant to change the motion changes the value there with it.
 
+The motion tests, the tools below among them, need a release build: without optimization they take far longer than half an hour, so a plain `swift test` skips them and says so. Run them with `swift test --package-path NineRingsKit -c release -Xswiftc -enable-testing --filter MotionTests`, as GitHub does. Each motion suite is declared in an `extension MotionTests`, where that one condition covers it; a test checks that none is left outside.
+
 ## Tools that run only when asked
 
 Some tests are tools rather than checks. Each runs only when its environment variable is set, and says what it does in its own doc comment:
