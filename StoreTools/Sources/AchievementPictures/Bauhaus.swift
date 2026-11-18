@@ -3,8 +3,10 @@ import Foundation
 
 // Bauhaus and Constructivism: the sword as a rising diagonal bar, the rings as upright loops wrapped round it, a few
 // strong colours with black on off-white paper, each picture built like a poster around one great plane of colour.
+// All Nine Off and The Far End are drawn here; The Shortest Way and All Nine Back On, designed later in the same
+// language, in ShortestWayAndBackOn.swift.
 //
-// Every picture is drawn in the sword's own frame: u runs along the sword from the grip towards the tip, v across it
+// The two pictures here are drawn in the sword's own frame: u runs along the sword from the grip towards the tip, v across it
 // (positive below the sword).
 
 // MARK: Palette
@@ -73,7 +75,7 @@ extension CGContext {
 
 // MARK: The ruler
 
-/// A hairline parallel to the sword, with a tick under each ring's place: the measure every picture stands on.
+/// A hairline parallel to the sword, with a tick under each ring's place: the measure The Far End stands on.
 let rulerV: CGFloat = 215
 
 extension CGContext {
@@ -93,8 +95,8 @@ func draw(_ picture: AchievementPicture, in c: CGContext) {
     c.background(paper)
     switch picture {
     case .allNineOff: allNineOff(c)
-    case .shortestWay: shortestWay(c)
-    case .allNineBackOn: allNineBackOn(c)
+    case .shortestWay: shortestWayMeasure(c)
+    case .allNineBackOn: backOnFullCircle(c)
     case .farEnd: farEnd(c)
     }
 }
@@ -112,39 +114,6 @@ func allNineOff(_ c: CGContext) {
             let centre = pt(ringU(n) - 34, rulerV - r - 6)
             c.fill(annulus(centre, outer: r + 7, inner: r - 7), ink)
         }
-    }
-}
-
-/// The paper cut along the sword, black above and light below; a red wedge drives straight along it, through the tip.
-func shortestWay(_ c: CGContext) {
-    let above = rect(-1400, -1400, 2800, 1400)
-    let below = rect(-1400, 0, 2800, 1400)
-    c.transformed(frame) {
-        c.fill(above, ink)
-        c.ruler()
-        // A disc at the tip, turned inside out by the cut.
-        let disc = circle(pt(tipCentre + 10, 0), 132)
-        c.clipped(to: above) { c.fill(disc, paper) }
-        c.clipped(to: below) { c.fill(disc, ink) }
-        c.clipped(to: above) { c.fill(wires(), ink) }
-        c.clipped(to: below) { c.fill(wires(), paper) }
-        c.clipped(outside: disc) {
-            c.clipped(to: above) { c.fill(wires(), paper) }
-            c.clipped(to: below) { c.fill(wires(), ink) }
-        }
-        let wedge = polygon([pt(gripEnd, -railHalf + 8), pt(tipCentre + 260, 0), pt(gripEnd, railHalf - 8)])
-        c.fill(wedge, red)
-        c.fill(grip(), red)
-    }
-}
-
-/// A blue band behind, a red dot above; all nine rings back on the sword.
-func allNineBackOn(_ c: CGContext) {
-    c.transformed(frame) {
-        c.fill(rect(-330, -175, 700, 350), blue)
-        c.fill(circle(pt(-120, -300), 44), red)
-        c.ruler()
-        c.sword(rings: Array(1...9), ringColor: yellow)
     }
 }
 
