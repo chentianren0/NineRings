@@ -21,11 +21,22 @@ extension RecordStore {
         case production = "Production"
     }
 
-    /// The folder of the iCloud stores in a place's `folder`, left out of backups: what they hold can be fetched again,
-    /// and what a copy of them restored onto a device would do is not documented. The device's store stays in backups,
-    /// since with sync off it is the only copy.
-    public static func cloudFolder(in folder: URL) -> URL {
+    /// The folder left out of backups in a place's `folder`: the iCloud stores, whose records can be fetched again and
+    /// whose restored copy would do what is not documented, and the copy of the installation's id that tells a store
+    /// restored from a backup (``InstallationID``). The device's store stays in backups, since with sync off it is the
+    /// only copy.
+    public nonisolated static func cloudFolder(in folder: URL) -> URL {
         folder.appending(path: "iCloud", directoryHint: .isDirectory)
+    }
+
+    /// Makes `cloudFolder` if it is missing, and marks it left out of backups: at every use, since Apple notes that some
+    /// file operations clear the mark.
+    nonisolated static func prepareCloudFolder(_ cloudFolder: URL) throws {
+        try FileManager.default.createDirectory(at: cloudFolder, withIntermediateDirectories: true)
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        var folder = cloudFolder
+        try folder.setResourceValues(values)
     }
 
     /// The iCloud store in `place` for `environment`.
@@ -50,12 +61,7 @@ extension RecordStore {
     /// iCloud entitlement may ask for that, and only with sync on. In memory it opens the stand-in, as tests do.
     public static func cloudContainer(in place: Place, environment: CloudEnvironment) throws -> ModelContainer {
         if case .folder(let folder) = place {
-            var cloudFolder = cloudFolder(in: folder)
-            try FileManager.default.createDirectory(at: cloudFolder, withIntermediateDirectories: true)
-            // Set at every opening: Apple notes that some file operations clear it.
-            var values = URLResourceValues()
-            values.isExcludedFromBackup = true
-            try cloudFolder.setResourceValues(values)
+            try prepareCloudFolder(cloudFolder(in: folder))
         }
         return try ModelContainer(for: schema, configurations: cloudConfiguration(in: place, environment: environment))
     }

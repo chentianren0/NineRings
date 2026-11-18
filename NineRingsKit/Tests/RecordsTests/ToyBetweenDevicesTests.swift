@@ -488,6 +488,47 @@ import Testing
         #expect(ids == ["A", "N"])
     }
 
+    /// A store restored onto the same device, its keychain item come back with it: the store's count of changes is the
+    /// backup's, so with the same id the moves made after the restore would be named as changes the iPad already knows,
+    /// and its toy would replace them by itself. With no copy left out of backups the installation takes a new id, so the
+    /// moves are new changes: the play has parted, and is offered on both devices.
+    @Test(arguments: [1, 3])
+    func aStoreRestoredOntoTheSameDeviceNamesNoChangeTwice(movesAfterRestore: Int) throws {
+        let iPhone = try Installation("X")
+        let iPad = try Installation("B")
+        try iPhone.move(1)
+        // Last night's backup: the iPhone's store with its toy at its first change.
+        let restored = RecordStore(container: try RecordStore.deviceContainer(in: .memory))
+        try restored.copyToy(of: "X", from: iPhone.store)
+        try iPhone.move(3)
+        try iPhone.move(1)
+        try iPhone.move(2)
+        try iPhone.send(to: cloud)
+        try iPad.follow(cloud)
+        #expect(iPad.state == iPhone.state)
+        try iPad.send(to: cloud)
+
+        // The iPhone is erased and the backup restored: the keychain gives back X, the copy left out of backups is gone.
+        let resolution = InstallationID.resolve(keychain: .holds("X"), leftOutOfBackups: .holdsNone, store: try restored.installationKept()) { "N" }
+        #expect(resolution.id == "N" && resolution.givesToyFrom == "X")
+        try restored.giveToy(of: "X", to: "N")
+        var play = try #require(try restored.keptToy(installation: "N").flatMap(PlayState.init))
+        // The person moves before the iPad's toy arrives.
+        for ring in [3, 1, 2].prefix(movesAfterRestore) {
+            play.tap(ring)
+            while play.toy.isPlaying { play.advance(by: 10) }
+            try restored.keep(play.snapshot, installation: "N", appVersion: "1.4")
+        }
+
+        let onIPhone = ToyDecision(mine: try restored.lineage(installation: "N"), others: try cloud.otherToys(than: "N"))
+        #expect(onIPhone.takeUp == nil, "the moves made after the restore are not replaced by themselves")
+        #expect(onIPhone.offer != nil, "the iPad's play is offered")
+        try cloud.copyToy(of: "N", from: restored)
+        let onIPad = try iPad.look(at: cloud)
+        #expect(onIPad.takeUp == nil)
+        #expect(onIPad.offer?.installation == "N", "the restored iPhone's play is offered on the iPad, not taken for the same toy")
+    }
+
     // MARK: Helpers
 
     /// A Mac and an iPad whose play has parted in two, each toy in the iCloud store.

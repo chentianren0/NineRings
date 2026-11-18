@@ -85,9 +85,11 @@ enum CloudAccess {
 }
 
 /// Whether iCloud is available to the app now: an account signed in, and iCloud not switched off for the app. It asks
-/// CloudKit at once, and again whenever CloudKit says the account changed, as Apple's `accountStatus` page asks. Only
-/// `available` counts: no account, a restricted one, one temporarily unavailable or a status CloudKit could not tell
-/// all count as not available, and none of them deletes anything.
+/// CloudKit whenever the answer may have changed: at once, whenever CloudKit says the account changed, as Apple's
+/// `accountStatus` page asks, and whenever the app comes to the front (``ask()``), so that an answer CloudKit could not
+/// give, or a change missed, lasts no longer than the app's stay in front. Only `available` counts: no account, a
+/// restricted one, one temporarily unavailable or a status CloudKit could not tell all count as not available, and none
+/// of them deletes anything.
 ///
 /// Only a build that ``CloudAccess/isEntitled`` makes one, once for the launch: it watches for as long as the app runs.
 @MainActor
@@ -105,15 +107,19 @@ final class ICloudAccount {
     init() {
         precondition(CloudAccess.isEntitled, "a build without the iCloud entitlement must not make a CloudKit container")
         container = CKContainer(identifier: RecordStore.cloudContainer)
+        // Listening from before the first answer, so that a change while it is asked is not missed.
+        let changes = NotificationCenter.default.notifications(named: .CKAccountChanged)
         watching = Task { [weak self] in
+            let iterator = changes.makeAsyncIterator()
             await self?.ask()
-            for await _ in NotificationCenter.default.notifications(named: .CKAccountChanged) {
+            while await iterator.next() != nil {
                 await self?.ask()
             }
         }
     }
 
-    private func ask() async {
+    /// Asks CloudKit for the account's status, and tells ``onChange`` when the answer differs.
+    func ask() async {
         let status: CKAccountStatus
         do {
             status = try await container.accountStatus()

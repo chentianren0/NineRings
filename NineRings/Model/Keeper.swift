@@ -177,9 +177,11 @@ final class Keeper {
         sendToy()
     }
 
-    /// The app has come to the front: a time to look at the other installations' toys.
+    /// The app has come to the front: a time to look at the other installations' toys, and to ask again whether iCloud
+    /// is available.
     func cameToFront() {
         lookAtOtherToys()
+        if let account { Task { await account.ask() } }
     }
 
     /// The app has left the front: the toy is sent at once.
@@ -463,24 +465,31 @@ final class Keeper {
         }
     }
 
-    /// This installation's id: in memory, the launch's own; otherwise as ``InstallationID`` decides it from the keychain
-    /// and the device's store, giving the store's toy to a new id when the store came from another device.
+    /// This installation's id: in memory, the launch's own; otherwise as ``InstallationID`` decides it from the keychain,
+    /// the copy left out of backups and the device's store, giving the store's toy to a new id when the store came from
+    /// another device or back from a backup.
     private static func installationID(in place: RecordStore.Place, device: RecordStore) -> String {
         guard case .folder(let folder) = place else { return UUID().uuidString }
         let keychain = InstallationKeychain(folder: folder)
+        let apart = InstallationID.CopyLeftOutOfBackups(folder: folder)
         let kept = try? device.installationKept()
-        let resolution = InstallationID.resolve(keychain: keychain.read(), store: kept) { UUID().uuidString }
+        let resolution = InstallationID.resolve(keychain: keychain.read(), leftOutOfBackups: apart.read(), store: kept) {
+            UUID().uuidString
+        }
         if resolution.writesKeychain, !keychain.write(resolution.id) {
             log.error("The installation's id could not be written to the keychain.")
+        }
+        if resolution.writesCopyLeftOutOfBackups, !apart.write(resolution.id) {
+            log.error("The installation's id could not be written to its copy left out of backups.")
         }
         if let old = resolution.givesToyFrom {
             do {
                 try device.giveToy(of: old, to: resolution.id)
-                log.notice("The device's store came from another installation: its toy now goes on under a new id.")
+                log.notice("The device's store came from another installation or back from a backup: its toy now goes on under a new id.")
             } catch {
                 log.error("The toy could not be given the new id: \(error.localizedDescription, privacy: .public)")
             }
-        } else if resolution.writesKeychain {
+        } else if resolution.id != kept {
             log.notice("This installation has a new id.")
         }
         return resolution.id
