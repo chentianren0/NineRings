@@ -7,21 +7,23 @@ private var profiledMove: Move {
     ProcessInfo.processInfo.environment["NINE_RINGS_PROFILE"] == "2" ? ringTwoOff : ringOneOff
 }
 
-/// Prints the smallest gap through the move, a line per step of progress, for tuning the path by hand.
-/// Run with `NINE_RINGS_PROFILE=1`, or `NINE_RINGS_PROFILE=2` for ring 2's move.
-@Suite struct ProfileTests {
-    @Test(.enabled(if: ProcessInfo.processInfo.environment["NINE_RINGS_PROFILE"] != nil))
-    func profile() throws {
-        let motion = MoveMotion(profiledMove)
-        let sweep = Sweep(motion, samples: 400)
-        for (index, gap) in sweep.gaps.enumerated() where index % 2 == 0 {
-            let flag = gap.distance < smallestAllowedGap ? "  <<<" : ""
-            print(String(format: "%.4f ", sweep.progress[index]) + "\(gap)" + flag)
+extension MotionTests {
+    /// Prints the smallest gap through the move, a line per step of progress, for tuning the path by hand.
+    /// Run with `NINE_RINGS_PROFILE=1`, or `NINE_RINGS_PROFILE=2` for ring 2's move.
+    @Suite struct ProfileTests {
+        @Test(.enabled(if: ProcessInfo.processInfo.environment["NINE_RINGS_PROFILE"] != nil))
+        func profile() throws {
+            let motion = MoveMotion(profiledMove)
+            let sweep = Sweep(motion, samples: 400)
+            for (index, gap) in sweep.gaps.enumerated() where index % 2 == 0 {
+                let flag = gap.distance < smallestAllowedGap ? "  <<<" : ""
+                print(String(format: "%.4f ", sweep.progress[index]) + "\(gap)" + flag)
+            }
         }
     }
 }
 
-extension ProfileTests {
+extension MotionTests.ProfileTests {
     /// Prints, for each fiftieth of the move's time, the fastest any point moves, in millimetres per second at full
     /// speed.
     @Test(.enabled(if: ProcessInfo.processInfo.environment["NINE_RINGS_PROFILE"] != nil))

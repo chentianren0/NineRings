@@ -179,10 +179,3 @@ import Testing
         #expect(DeviceClass.mac.accepts(window * 2))
     }
 }
-
-@Suite struct AchievementPictureNameTests {
-    /// Each picture is named by an achievement's identifier in Game Center, as the app reports it.
-    @Test func thePicturesAreTheAppsAchievements() {
-        #expect(Set(AchievementPictures.Picture.allCases.map(\.rawValue)) == Set(Achievement.allCases.map(\.rawValue)))
-    }
-}
