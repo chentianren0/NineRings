@@ -69,6 +69,9 @@ final class CameraRig {
     private var swordInView: (revision: Int, points: [SIMD3<Float>])?
     /// The camera last drawn from, so that a pan moves the toy as far as the finger in the picture as it is.
     private var shown: OrbitCamera?
+    /// Following the move, the picture easing from where it was drawn before a jump to where it follows the toy now,
+    /// over the jump's fade.
+    private var jumpEase: (from: OrbitCamera, elapsed: Double, duration: Double)?
 
     init(framing box: ToyBounds, defaultAngles: @escaping (Viewport) -> CameraAngles = { _ in CameraAngles(.side) }) {
         self.box = box
@@ -164,11 +167,32 @@ final class CameraRig {
     /// sword, so that in a far move the grip is in view wherever the edge cut it at rest.
     ///
     /// It depends on the pose and on `camera` alone, so the same point of a move always gives the same picture,
-    /// whether the move plays forward or back, is paused or is dragged; and with the sword at home it is `camera`.
+    /// whether the move plays forward or back, is paused or is dragged; and with the sword at home it is `camera`. Only
+    /// across a jump does it ease, over the jump's fade, from the picture drawn before (see `toyJumped(fadingOver:)`).
     func camera(for pose: ToyPose) -> OrbitCamera {
+        let following = followingCamera(for: pose)
+        guard let ease = jumpEase else {
+            shown = following
+            return following
+        }
+        let linear = ease.duration > 0 ? Float(min(ease.elapsed / ease.duration, 1)) : 1
+        let eased = ease.from.blended(to: following, t: linear * linear * (3 - 2 * linear))
+        shown = eased
+        return eased
+    }
+
+    /// The toy has jumped to another arrangement, its parts fading across over `duration` seconds. Following the move
+    /// the picture depends on the pose, so it eases from where it was drawn to where it follows the toy now, rather than
+    /// cut; otherwise nothing changes.
+    func toyJumped(fadingOver duration: Double) {
+        guard followsMove, let shown, duration > 0 else { return }
+        jumpEase = (shown, 0, duration)
+        revision += 1
+    }
+
+    private func followingCamera(for pose: ToyPose) -> OrbitCamera {
         let offset = SIMD3<Float>(pose.swordOffset)
         guard followsMove, offset != .zero, !viewport.isEmpty else {
-            shown = camera
             return camera
         }
         var following = camera.holding(swordPointsInView().map { $0 + offset }, in: viewport)
@@ -177,7 +201,6 @@ final class CameraRig {
             let whole = camera.holding(Self.swordPoints.map { $0 + offset }, in: viewport)
             following = following.blended(to: whole, t: reach * reach * (3 - 2 * reach))
         }
-        shown = following
         return following
     }
 
@@ -206,6 +229,11 @@ final class CameraRig {
     }
 
     func advance(by seconds: Double) {
+        if var ease = jumpEase {
+            ease.elapsed += seconds
+            jumpEase = ease.elapsed < ease.duration ? ease : nil
+            revision += 1
+        }
         guard var current = flight else { return }
         let duration = reducesMotion ? 0 : current.duration
         current.elapsed = min(current.elapsed + seconds, duration)
