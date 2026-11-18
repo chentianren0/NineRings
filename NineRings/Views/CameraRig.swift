@@ -76,7 +76,7 @@ final class CameraRig {
         camera = OrbitCamera.framing(.side, of: box, in: viewport)
     }
 
-    private static let flightDuration = 0.6
+    private static var flightDuration: Double { ScreenMotion.flight }
 
     /// Flies the camera to `preset`, framing `box`.
     func show(_ preset: CameraPreset, framing box: ToyBounds) {

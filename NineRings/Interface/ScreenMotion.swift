@@ -30,8 +30,17 @@ enum ScreenMotion {
         reducesMotion ? 0 : modeDuration
     }
 
-    /// A small view that changes beside the controls, such as the reason a ring cannot move.
+    /// A small view that changes beside the controls, such as the reason a ring cannot move, or a ring button.
     static let small = Animation.snappy(duration: 0.25 * slowdown)
+
+    /// A card that comes over the toy, such as the congratulation.
+    static let card = Animation.smooth(duration: 0.4 * slowdown)
+
+    /// The lesson's text changing from one step to the next.
+    static let lessonStep = Animation.easeInOut(duration: 0.2 * slowdown)
+
+    /// How long the camera takes to fly to another view: to a preset, to a lesson step's view, or back.
+    static let flight = 0.6 * slowdown
 
     /// `-motion.slowdown 8`, in a debug build, makes the app's own changes of the screen eight times slower, so that
     /// pictures taken in a row can catch them part way. The system's own movements keep their pace.

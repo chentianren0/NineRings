@@ -183,7 +183,7 @@ private struct CongratulationOverlay: ViewModifier {
                         .appearingOverToy(reducesMotion: reducesMotion)
                 }
             }
-            .animation(.smooth(duration: 0.4), value: player.isCongratulating)
+            .animation(ScreenMotion.card, value: player.isCongratulating)
             #if DEBUG
             .task {
                 // `-play-last-move` opens the toy one move before every ring is off and plays that move, as a tap would.

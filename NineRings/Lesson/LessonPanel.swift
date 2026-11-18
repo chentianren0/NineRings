@@ -78,7 +78,7 @@ struct LessonPanel: View {
                     .padding(.vertical, 12)
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: page.index)
+        .animation(ScreenMotion.lessonStep, value: page.index)
         .onChange(of: page.index) {
             // The text changed under the button that was pressed: say where the reader is and the step's text to someone
             // who cannot see it. The step's own moves are not narrated, so the text is heard whole.
