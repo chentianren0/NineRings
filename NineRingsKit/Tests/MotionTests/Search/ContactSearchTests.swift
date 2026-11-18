@@ -5,48 +5,50 @@ import Testing
 import Toy
 import simd
 
-/// Where the written moves bring parts together: the tool that found the contacts the score is written at (see
-/// ``Score``). Run optimized with `NINE_RINGS_CONTACTS=1`. For ring 1's move and the second ring's (as ring 2's), it
-/// samples the path's own parameter and prints each place where the gap between two parts that the score cares about
-/// is at its smallest, under 2 mm: the moving ring and the sword, the moving ring and any other part, and, in the
-/// second ring's move, ring k−1 and the sword.
-@Suite struct ContactSearchTests {
-    @Test(.enabled(if: ProcessInfo.processInfo.environment["NINE_RINGS_CONTACTS"] != nil))
-    func contacts() {
-        report("ring 1", ring: 1, pose: { RingOneOff.written.pose(at: $0) }, pacing: RingOneOff.pacing)
-        let paced = PairMoveOff.paced[0]
-        report("ring 2", ring: 2, pose: paced.path.pose(at:), pacing: paced.pacing)
-    }
+extension MotionTests {
+    /// Where the written moves bring parts together: the tool that found the contacts the score is written at (see
+    /// ``Score``). Run optimized with `NINE_RINGS_CONTACTS=1`. For ring 1's move and the second ring's (as ring 2's), it
+    /// samples the path's own parameter and prints each place where the gap between two parts that the score cares about
+    /// is at its smallest, under 2 mm: the moving ring and the sword, the moving ring and any other part, and, in the
+    /// second ring's move, ring k−1 and the sword.
+    @Suite struct ContactSearchTests {
+        @Test(.enabled(if: ProcessInfo.processInfo.environment["NINE_RINGS_CONTACTS"] != nil))
+        func contacts() {
+            report("ring 1", ring: 1, pose: { RingOneOff.written.pose(at: $0) }, pacing: RingOneOff.pacing)
+            let paced = PairMoveOff.paced[0]
+            report("ring 2", ring: 2, pose: paced.path.pose(at:), pacing: paced.pacing)
+        }
 
-    private func report(_ title: String, ring: Int, pose: (Double) -> ToyPose, pacing: Pacing) {
-        let samples = 2000
-        let parameters = (0...samples).map { Double($0) / Double(samples) }
-        let poses = parameters.map(pose)
-        var series: [(String, [Double])] = [
-            ("ring \(ring) – sword", poses.map { ContactProbe.gap(ring: ring, toSword: $0) }),
-            ("ring \(ring) – others", poses.map { ContactProbe.gap(ring: ring, toOthers: $0) }),
-        ]
-        if ring > 1 {
-            series.append(("ring \(ring - 1) – sword", poses.map { ContactProbe.gap(ring: ring - 1, toSword: $0) }))
-        }
-        print("\(title):")
-        for (name, gaps) in series {
-            for index in ContactProbe.minima(gaps, below: 2, prominence: 0.3) {
-                let parameter = parameters[index]
-                print(String(
-                    format: "  %@: %.3f mm at path %.4f, progress %.4f", name, gaps[index], parameter,
-                    pacing.progress(atPathParameter: parameter)
-                ))
+        private func report(_ title: String, ring: Int, pose: (Double) -> ToyPose, pacing: Pacing) {
+            let samples = 2000
+            let parameters = (0...samples).map { Double($0) / Double(samples) }
+            let poses = parameters.map(pose)
+            var series: [(String, [Double])] = [
+                ("ring \(ring) – sword", poses.map { ContactProbe.gap(ring: ring, toSword: $0) }),
+                ("ring \(ring) – others", poses.map { ContactProbe.gap(ring: ring, toOthers: $0) }),
+            ]
+            if ring > 1 {
+                series.append(("ring \(ring - 1) – sword", poses.map { ContactProbe.gap(ring: ring - 1, toSword: $0) }))
             }
-            let profile = stride(from: 0, through: samples, by: 40).map { String(format: "%.1f", min(gaps[$0], 9.9)) }
-            print("    every 0.02: " + profile.joined(separator: " "))
-            for window in [(0.0, 0.16), (0.9, 1.0)] {
-                let range = stride(from: Int(window.0 * Double(samples)), through: Int(window.1 * Double(samples)), by: 10)
-                print(String(format: "    from %.2f every 0.005: ", window.0) + range.map { String(format: "%.2f", min(gaps[$0], 9.9)) }.joined(separator: " "))
+            print("\(title):")
+            for (name, gaps) in series {
+                for index in ContactProbe.minima(gaps, below: 2, prominence: 0.3) {
+                    let parameter = parameters[index]
+                    print(String(
+                        format: "  %@: %.3f mm at path %.4f, progress %.4f", name, gaps[index], parameter,
+                        pacing.progress(atPathParameter: parameter)
+                    ))
+                }
+                let profile = stride(from: 0, through: samples, by: 40).map { String(format: "%.1f", min(gaps[$0], 9.9)) }
+                print("    every 0.02: " + profile.joined(separator: " "))
+                for window in [(0.0, 0.16), (0.9, 1.0)] {
+                    let range = stride(from: Int(window.0 * Double(samples)), through: Int(window.1 * Double(samples)), by: 10)
+                    print(String(format: "    from %.2f every 0.005: ", window.0) + range.map { String(format: "%.2f", min(gaps[$0], 9.9)) }.joined(separator: " "))
+                }
             }
+            let slides = poses.map(\.swordSlide), heights = poses.map(\.swordHeight)
+            print(String(format: "  sword slide from %.2f to %.2f mm, height from %.2f to %.2f mm", slides.min()!, slides.max()!, heights.min()!, heights.max()!))
         }
-        let slides = poses.map(\.swordSlide), heights = poses.map(\.swordHeight)
-        print(String(format: "  sword slide from %.2f to %.2f mm, height from %.2f to %.2f mm", slides.min()!, slides.max()!, heights.min()!, heights.max()!))
     }
 }
 
