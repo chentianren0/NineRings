@@ -18,10 +18,11 @@ struct PuzzleScreen: View {
     @State private var hasAppeared = false
     /// When the inspector's binding last set the lesson closed, to tell the system presenting it again from opening it.
     @State private var inspectorClosedAt: ContinuousClock.Instant?
-    // In a debug build, `-open-settings` and `-about-panel` open these sheets at launch on iPhone and iPad too, to see
-    // them, as they open the Settings window and the About panel on the Mac.
+    // In a debug build, `-open-settings`, `-about-panel` and `-open-history` open these sheets at launch on iPhone and
+    // iPad too, to see them, as they open the Settings window, the About panel and the history window on the Mac.
     @State private var showsSettings = ScreenLaunchOptions.opensSettings
     @State private var showsAbout = ScreenLaunchOptions.opensAbout
+    @State private var showsHistory = ScreenLaunchOptions.opensHistory
     /// Where the floating controls are, in the global coordinate space, so that the toy is framed clear of them.
     @State private var panelFrame: CGRect = .null
     /// Where the lesson's panel is, in the global coordinate space: a column beside the toy on a wide screen, a sheet
@@ -121,6 +122,11 @@ struct PuzzleScreen: View {
             .sheet(isPresented: $showsAbout) {
                 NavigationStack { AboutScreen() }
             }
+            // The history, a full sheet as About is, since it can hold many plays. The menu bar opens it too, on iPad.
+            .sheet(isPresented: $showsHistory) {
+                NavigationStack { HistoryScreen() }
+            }
+            .focusedSceneValue(\.showsHistory, $showsHistory)
             #endif
         }
         #if os(iOS)
@@ -246,6 +252,12 @@ struct PuzzleScreen: View {
                 showsSettings = true
             } label: {
                 Label { Text("Settings", comment: "Menu item that opens the app's settings.") } icon: { Image(systemName: "gear") }
+            }
+            // The person's record of their plays, in the Puzzle menu's order: the history, then Game Center.
+            Button {
+                showsHistory = true
+            } label: {
+                Label { Text("menu.history", tableName: "Commands") } icon: { Image(systemName: HistoryScreen.symbol) }
             }
             Button {
                 GameCenter.shared.showDashboard()

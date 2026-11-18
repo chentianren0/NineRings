@@ -55,6 +55,46 @@ enum ScreenLaunchOptions {
         #endif
     }
 
+    /// `-open-history YES` opens the history on launch: its window on the Mac, its sheet on iPhone and iPad.
+    /// `-open-history clear` opens it asking to clear it: the confirmation shows once Clear History is on the screen,
+    /// which is at once with a few plays, and after scrolling down with many.
+    static var opensHistory: Bool {
+        #if DEBUG
+        value(after: "-open-history") != nil
+        #else
+        false
+        #endif
+    }
+
+    /// Whether `-open-history clear` asks for the confirmation to clear the history at launch.
+    static var confirmsClearing: Bool {
+        #if DEBUG
+        value(after: "-open-history") == "clear"
+        #else
+        false
+        #endif
+    }
+
+    /// `-clearing-reaches-other-devices YES` words the confirmation to clear the history for every device, as it reads
+    /// when clearing reaches the person's other devices, whatever the keeper says.
+    static var clearingReachesOtherDevices: Bool {
+        #if DEBUG
+        value(after: "-clearing-reaches-other-devices") == "YES"
+        #else
+        false
+        #endif
+    }
+
+    /// `-unreadable-plays 2` shows the history as if two more plays were kept that this build cannot read, until it is
+    /// cleared. Such plays come only from a newer version of the app.
+    static var unreadablePlays: Int {
+        #if DEBUG
+        max(0, value(after: "-unreadable-plays").flatMap { Int($0) } ?? 0)
+        #else
+        0
+        #endif
+    }
+
     #if DEBUG && os(macOS)
     /// For screenshots and trying the menus on the Mac, from this process alone:
     /// - `-appearance light` or `-appearance dark` sets this process's appearance, whatever the system's.

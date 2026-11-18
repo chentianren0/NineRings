@@ -203,6 +203,7 @@ private struct WelcomeOnFirstLaunch: ViewModifier {
     @State private var closed = false
     #if DEBUG && os(macOS)
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.openWindow) private var openWindow
     #endif
 
     func body(content: Content) -> some View {
@@ -220,6 +221,7 @@ private struct WelcomeOnFirstLaunch: ViewModifier {
             .task {
                 ScreenLaunchOptions.applyToApp()
                 if ScreenLaunchOptions.opensSettings { openSettings() }
+                if ScreenLaunchOptions.opensHistory { openWindow(id: HistoryWindow.id) }
             }
             #endif
     }
