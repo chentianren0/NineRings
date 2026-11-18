@@ -12,6 +12,7 @@ struct PuzzleScreen: View {
     private var player: Player { modes.player }
     private var rig: CameraRig { modes.rig }
     private var showsLesson: Bool { modes.showsLesson }
+    private var mode: ScreenMode { modes.mode }
 
     /// Whether the screen has appeared, after which the lesson opens only when asked.
     @State private var hasAppeared = false
@@ -186,21 +187,23 @@ struct PuzzleScreen: View {
         // With no title in the window's toolbar, items gather at the leading end unless something pushes them over.
         ToolbarSpacer(.flexible)
         #endif
-        if player.isSettingRings {
+        // The View menu keeps its place in every mode, so that it is never taken out and put back; the items around it
+        // follow the mode.
+        ToolbarItem(id: "view", placement: Self.trailing) {
+            viewMenu
+        }
+        if mode == .settingRings {
             // Setting the rings is a mode, as editing is in Apple's apps: the toolbar offers only the way out, Cancel to
             // give the toy back as it was, Done to keep the rings as set, and the View menu, to see them from anywhere.
-            ToolbarItem(placement: Self.trailing) {
-                viewMenu
-            }
             ToolbarSpacer(.fixed, placement: Self.trailing)
-            ToolbarItem(placement: .cancellationAction) {
+            ToolbarItem(id: "cancel", placement: .cancellationAction) {
                 Button(role: .cancel) {
                     modes.cancelSettingRings()
                 }
                 .keyboardShortcut(.cancelAction)
                 .help(Text("Put the rings back as they were", comment: "Tooltip on the Cancel button while the rings are set by hand."))
             }
-            ToolbarItem(placement: .confirmationAction) {
+            ToolbarItem(id: "done", placement: .confirmationAction) {
                 Button(role: .confirm) {
                     modes.finishSettingRings()
                 }
@@ -208,15 +211,16 @@ struct PuzzleScreen: View {
                 .help(Text("Keep the rings as set", comment: "Tooltip on the Done button while the rings are set by hand."))
             }
         } else {
-            ToolbarItemGroup(placement: Self.trailing) {
-                viewMenu
+            ToolbarItem(id: "setRings", placement: Self.trailing) {
                 Button {
                     modes.startSettingRings()
                 } label: {
                     Label { Text("Set Rings", comment: "Toolbar button that starts setting the rings by hand: each ring button then puts its ring on or takes it off at once.") } icon: { Image(systemName: "pencil") }
                 }
-                .disabled(showsLesson)
+                .disabled(mode == .lesson)
                 .help(Text("Choose which rings are on", comment: "Tooltip on the Set Rings button."))
+            }
+            ToolbarItem(id: "reset", placement: Self.trailing) {
                 Button {
                     modes.reset()
                 } label: {
@@ -225,13 +229,13 @@ struct PuzzleScreen: View {
                 .help(Text("Put every ring back on", comment: "Tooltip on the Reset button."))
             }
             ToolbarSpacer(.fixed, placement: Self.trailing)
-            ToolbarItem(placement: Self.trailing) {
+            ToolbarItem(id: "lesson", placement: Self.trailing) {
                 Button {
                     modes.toggleLesson()
                 } label: {
                     Label { Text("Lesson", comment: "Toolbar button that shows or hides the lesson on how the puzzle works.") } icon: { Image(systemName: "book") }
                 }
-                .accessibilityAddTraits(showsLesson ? .isSelected : [])
+                .accessibilityAddTraits(mode == .lesson ? .isSelected : [])
                 .help(Text("Show how the puzzle works", comment: "Tooltip on the Lesson button."))
             }
         }
@@ -331,7 +335,7 @@ private struct Controls: View {
                 }
                 ControlPanel(player: player, style: .beside)
             }
-            .animation(.smooth(duration: 0.4), value: player.isCongratulating)
+            .animation(ScreenMotion.card, value: player.isCongratulating)
             .frame(maxWidth: 560)
             .padding(.horizontal, 16)
             .padding(.top, lessonSheet.isNull ? 0 : 12)
@@ -377,7 +381,7 @@ private struct Controls: View {
                         .appearingOverToy(reducesMotion: reducesMotion)
                 }
             }
-            .animation(.snappy(duration: 0.25), value: ControlPanel.refusal(in: player.status) == nil)
+            .animation(ScreenMotion.small, value: ControlPanel.refusal(in: player.status) == nil)
             .frame(maxWidth: 720)
             .padding(.horizontal, 12)
             .padding(.bottom, 8 + lift)
