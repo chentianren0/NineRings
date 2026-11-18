@@ -361,9 +361,6 @@
         }
       }
     },
-    "Moves Left" : {
-      "comment" : "A switch in settings. When on, the control panel shows how many moves the toy is from every ring off."
-    },
     "settings.haptics" : {
       "comment" : "A switch in settings that turns the vibrations the app makes on or off. Shown only on devices that can make them.",
       "extractionState" : "manual",
@@ -471,9 +468,6 @@
           }
         }
       }
-    },
-    "Shows how many moves the toy is from every ring off." : {
-      "comment" : "The line under the Moves Left switch in settings, saying what it does."
     },
     "tip.lesson.message" : {
       "comment" : "Text of the tip that points at the Lesson button, under its title 'Learn the Rule'. It appears once, the first time a ring could not move.",

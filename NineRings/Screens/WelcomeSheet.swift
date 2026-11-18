@@ -181,8 +181,6 @@ enum ScreenKey {
     static let sounds = "settings.sounds"
     /// Whether the app makes haptics. The haptics code reads this key.
     static let haptics = "settings.haptics"
-    /// Whether the control panel shows how many moves the toy is from every ring off. On at first.
-    static let movesLeft = "settings.movesLeft"
 }
 
 extension View {

@@ -41,23 +41,7 @@ struct SettingsSwitches: View {
                 }
             }
         }
-        Section {
-            MovesLeftSetting()
-        } footer: {
-            Text("Shows how many moves the toy is from every ring off.", tableName: "Screens", comment: "The line under the Moves Left switch in settings, saying what it does.")
-        }
         FollowMoveSetting()
-    }
-}
-
-/// Whether the control panel shows how many moves are left. On at first.
-private struct MovesLeftSetting: View {
-    @AppStorage(ScreenKey.movesLeft) private var showsMovesLeft = true
-
-    var body: some View {
-        Toggle(isOn: $showsMovesLeft) {
-            Text("Moves Left", tableName: "Screens", comment: "A switch in settings. When on, the control panel shows how many moves the toy is from every ring off.")
-        }
     }
 }
 
