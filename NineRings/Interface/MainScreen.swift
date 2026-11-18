@@ -6,6 +6,7 @@ import SwiftUI
 struct MainScreen: View {
     @State private var player: Player
     @State private var rig: CameraRig
+    @Environment(\.scenePhase) private var scenePhase
     #if DEBUG
     @AppStorage(DesignKey.tallView) private var tallView = TallViewDesign.standard
     #else
@@ -13,7 +14,9 @@ struct MainScreen: View {
     #endif
 
     init() {
-        let player = StoreCapture.player() ?? LaunchOptions.move.map { Player(move: $0, progress: LaunchOptions.startProgress ?? 0) } ?? Player()
+        let player = StoreCapture.player()
+            ?? LaunchOptions.move.map { Player(move: $0, progress: LaunchOptions.startProgress ?? 0) }
+            ?? Player(keeper: LaunchOptions.keepsToy ? Keeper() : nil)
         #if DEBUG
         if let rings = LaunchOptions.settingRings {
             player.startSettingRings()
@@ -34,8 +37,27 @@ struct MainScreen: View {
                 rig.showDefault()
             }
             .storeCapture(player: player, rig: rig)
+            .keepsPlay(player, scenePhase: scenePhase)
             #if os(macOS)
             .frame(minHeight: 420)
             #endif
+    }
+}
+
+extension View {
+    /// Tells `player` when the app comes to the front and leaves it, so that the play counts its time there and the
+    /// toy is kept as the app leaves. On iPhone and iPad that is the scene's phase. On the Mac a window stays active
+    /// behind other apps, so it is the app being the active one, and quitting.
+    func keepsPlay(_ player: Player, scenePhase: ScenePhase) -> some View {
+        #if os(macOS)
+        onAppear { if NSApplication.shared.isActive { player.cameToFront() } }
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in player.cameToFront() }
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in player.leftFront() }
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in player.leftFront() }
+        #else
+        onChange(of: scenePhase, initial: true) { _, phase in
+            if phase == .active { player.cameToFront() } else { player.leftFront() }
+        }
+        #endif
     }
 }

@@ -10,6 +10,7 @@ let package = Package(
         .library(name: "Motion", targets: ["Motion"]),
         .library(name: "Geometry", targets: ["Geometry"]),
         .library(name: "Session", targets: ["Session"]),
+        .library(name: "Records", targets: ["Records"]),
     ],
     targets: [
         .target(
@@ -35,10 +36,17 @@ let package = Package(
             dependencies: ["Puzzle", "Toy", "Motion"],
             swiftSettings: [.strictMemorySafety()]
         ),
+        // The kept toy and the records of finished plays, in SwiftData.
+        .target(
+            name: "Records",
+            dependencies: ["Puzzle", "Session"],
+            swiftSettings: [.strictMemorySafety()]
+        ),
         .testTarget(name: "PuzzleTests", dependencies: ["Puzzle"]),
         .testTarget(name: "GeometryTests", dependencies: ["Geometry"]),
         .testTarget(name: "MotionTests", dependencies: ["Motion", "Toy", "Puzzle", "Geometry"]),
         .testTarget(name: "SessionTests", dependencies: ["Session", "Motion", "Puzzle", "Toy"]),
+        .testTarget(name: "RecordsTests", dependencies: ["Records", "Session", "Motion", "Puzzle"]),
         // Rules the app's own code must keep, read from its sources in this repository.
         .testTarget(name: "AppRulesTests"),
     ]

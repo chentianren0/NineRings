@@ -84,8 +84,16 @@ public struct PuzzleSession: Sendable, Equatable {
     public private(set) var isSolving = false
     /// Why the last request did not play; cleared by the next thing that happens.
     public private(set) var note: Note?
+    /// How many times a move has been taken back, by undo or by dragging the slider back to its start: a count that only
+    /// grows, for whoever keeps a record of the play.
+    public private(set) var unmadeCount = 0
+    /// How many moves Solve has made: a count that only grows. A move counts as Solve's when Solve began it, even if a
+    /// tap takes over while it plays; one the person plays or drags to its end is theirs.
+    public private(set) var madeBySolveCount = 0
     /// Whether the move on the slider is made, that is, is the last of `made`.
     private var currentIsMade = false
+    /// Whether Solve began the move on the slider, and nothing the person did has carried it on since.
+    private var currentIsSolves = false
 
     /// A session with every ring on and no move made.
     public init() {
@@ -95,6 +103,18 @@ public struct PuzzleSession: Sendable, Equatable {
     /// A session resting in `state`, with no move made and none on the slider.
     public init(resting state: PuzzleState) {
         start = state
+    }
+
+    /// A session with `made` made from `start`, and the move on the slider as given, not playing: what a saved toy
+    /// brings back (see ``ToySnapshot``). The moves must be legal one after another; `current` is the last of them when
+    /// `currentIsMade`, and otherwise a move from where they end.
+    init(start: PuzzleState, made: [Move], current: Move?, progress: Double, currentIsMade: Bool, direction: Direction) {
+        self.start = start
+        self.made = made
+        self.current = current
+        self.progress = progress
+        self.currentIsMade = currentIsMade
+        self.direction = direction
     }
 
     /// A session at the start of `move`, with that move on the slider at `progress`, not playing.
@@ -122,6 +142,9 @@ public struct PuzzleSession: Sendable, Equatable {
     public var isPartWay: Bool {
         current != nil && progress > 0 && progress < 1
     }
+
+    /// Whether the move on the slider is among the moves made.
+    var isCurrentMade: Bool { currentIsMade }
 
     /// The motion of the move on the slider.
     public var motion: MoveMotion? { current.map(MoveMotion.init) }
@@ -254,6 +277,7 @@ public struct PuzzleSession: Sendable, Equatable {
         }
         guard canPlay else { return }
         note = nil
+        currentIsSolves = false
         if progress >= 1 {
             playNext()
         } else {
@@ -273,6 +297,7 @@ public struct PuzzleSession: Sendable, Equatable {
         queue.removeAll()
         isSolving = false
         note = nil
+        currentIsSolves = false
         if progress <= 0 && isPlaying {
             // The move has only just begun: it stops where it began.
             isPlaying = false
@@ -297,6 +322,7 @@ public struct PuzzleSession: Sendable, Equatable {
             made.append(move)
             current = move
             currentIsMade = true
+            currentIsSolves = false
             progress = 1
             direction = .forward
             note = nil
@@ -328,6 +354,7 @@ public struct PuzzleSession: Sendable, Equatable {
         isPlaying = false
         direction = .forward
         note = nil
+        currentIsSolves = false
         progress = min(max(newProgress, 0), 1)
         if progress >= 1 { settle(made: true) }
         if progress <= 0 { settle(made: false) }
@@ -386,8 +413,10 @@ public struct PuzzleSession: Sendable, Equatable {
         guard let current, isMade != currentIsMade else { return }
         if isMade {
             made.append(current)
+            if currentIsSolves { madeBySolveCount += 1 }
         } else {
             made.removeLast()
+            unmadeCount += 1
         }
         currentIsMade = isMade
     }
@@ -416,6 +445,7 @@ public struct PuzzleSession: Sendable, Equatable {
         note = nil
         current = move
         currentIsMade = false
+        currentIsSolves = isSolving
         progress = 0
         direction = .forward
         isPlaying = true

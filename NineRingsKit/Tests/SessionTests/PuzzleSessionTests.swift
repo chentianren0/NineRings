@@ -572,7 +572,46 @@ import simd
         #expect(session.queue == ringTwoOff.moves(to: .allOff))
     }
 
-    // MARK: Beginning at a chosen move
+    // MARK: Counts for the record
+
+    /// A move Solve began is Solve's, even when a tap takes over while it plays.
+    @Test func aMoveSolveBeganCountsAsSolvesWhenATapTakesOver() throws {
+        var session = PuzzleSession()
+        session.solve()
+        let moving = try #require(session.current?.ring)
+        session.tap(moving == 1 ? 2 : 1)
+        playOut(&session)
+        #expect(session.madeBySolveCount == 1)
+        #expect(session.moveCount >= 1)
+    }
+
+    /// Paused, and carried on by Play, a move Solve began is the person's.
+    @Test func aMoveCarriedOnByPlayIsThePersons() {
+        var session = PuzzleSession()
+        session.solve()
+        session.advance(by: 0.2 * aMove)
+        session.pause()
+        session.togglePlay()
+        session.advance(by: 10)
+        #expect(session.moveCount == 1)
+        #expect(session.madeBySolveCount == 0)
+    }
+
+    @Test func movesTakenBackAreCountedByUndoAndByTheSlider() {
+        var session = PuzzleSession()
+        session.tap(1)
+        playOut(&session)
+        session.undo()
+        playOut(&session)
+        session.tap(1)
+        playOut(&session)
+        session.scrub(to: 0.5)
+        #expect(session.unmadeCount == 1, "part way back, the move is still made")
+        session.scrub(to: 0)
+        #expect(session.unmadeCount == 2)
+    }
+
+
 
     @Test func aSessionCanBeginAtAWrittenMove() throws {
         for move in MoveMotion.written {

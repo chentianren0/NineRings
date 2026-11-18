@@ -21,6 +21,11 @@ public struct Congratulation: Sendable, Equatable {
 
     public init() {}
 
+    /// Not showing, and armed or not, as a kept toy brings it back.
+    public init(isArmed: Bool) {
+        self.isArmed = isArmed
+    }
+
     /// Takes in one change to the session. Returns true when this change is the moment to congratulate.
     @discardableResult
     public mutating func update(from before: PuzzleSession, to after: PuzzleSession) -> Bool {

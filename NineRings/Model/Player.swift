@@ -49,8 +49,7 @@ final class Player {
     var progress: Double {
         get { shownProgress }
         set {
-            play.scrub(to: newValue)
-            publish()
+            change { $0.scrub(to: newValue) }
         }
     }
     private var shownProgress: Double = 0
@@ -74,16 +73,29 @@ final class Player {
 
     /// When playing was last moved on, so that the next step covers exactly the time since.
     @ObservationIgnored private var lastStep: ContinuousClock.Instant?
+    /// Where the toy is kept between launches and finished plays are recorded; nil when nothing is kept.
+    @ObservationIgnored private let keeper: Keeper?
+    /// Since when the app has been in front with its time not yet given to the play; nil while it is not in front.
+    @ObservationIgnored private var frontSince: ContinuousClock.Instant?
 
-    /// A session with every ring on.
+    /// A session with every ring on, keeping nothing.
     init() {
         play = PlayState()
+        keeper = nil
         publish()
     }
 
-    /// A session at the start of `move`, with that move on the slider at `progress`.
+    /// The toy as `keeper` kept it, or every ring on when it kept none; kept there from now on.
+    init(keeper: Keeper?) {
+        play = keeper?.keptPlay() ?? PlayState()
+        self.keeper = keeper
+        publish()
+    }
+
+    /// A session at the start of `move`, with that move on the slider at `progress`, keeping nothing.
     init(move: Move, progress: Double = 0) {
         play = PlayState(PuzzleSession(at: move, progress: progress))
+        keeper = nil
         publish()
     }
 
@@ -115,43 +127,36 @@ final class Player {
     // MARK: Requests
 
     func tap(_ ring: Int) {
-        play.tap(ring)
-        publish()
+        change { $0.tap(ring) }
     }
 
     func togglePlay() {
-        play.togglePlay()
-        publish()
+        change { $0.togglePlay() }
     }
 
     /// Stops the move part way. A `quiet` pause says nothing: the screen pauses this way before it covers the toy for a
     /// jump, which says the news itself.
     func pause(quiet: Bool = false) {
-        play.pause(quiet: quiet)
-        publish()
+        change { $0.pause(quiet: quiet) }
     }
 
     func undo() {
-        play.undo()
-        publish()
+        change { $0.undo() }
     }
 
     func solve() {
-        play.solve()
-        publish()
+        change { $0.solve() }
     }
 
     /// Back to every ring on, at once. The screen covers the toy while this happens.
     func reset() {
-        play.reset()
-        publish()
+        change { $0.reset() }
     }
 
     /// Sets the toy where `move` begins and plays it, with the lesson closed. The screen covers the toy while it jumps
     /// there.
     func begin(at move: Move) {
-        play.begin(at: move)
-        publish()
+        change { $0.begin(at: move) }
     }
 
     // MARK: Setting the rings
@@ -159,27 +164,23 @@ final class Player {
     /// Starts setting the rings by hand, from the rings the toy has now. When a move is in hand the toy goes to rest at
     /// once, and the screen covers it (see `settingRingsStartJumps`).
     func startSettingRings() {
-        play.startSettingRings()
-        publish()
+        change { $0.startSettingRings() }
     }
 
     /// Sets the rings to `state` at once, while they are being set.
     func setRings(to state: PuzzleState) {
-        play.setRings(to: state)
-        publish()
+        change { $0.setRings(to: state) }
     }
 
     /// Makes the rings as set the toy, resting there with no move made.
     func finishSettingRings() {
-        play.finishSettingRings()
-        publish()
+        change { $0.finishSettingRings() }
     }
 
     /// Gives the toy back as it was before the rings were set. The screen covers it when it jumps (see
     /// `settingRingsCancelJumps`).
     func cancelSettingRings() {
-        play.cancelSettingRings()
-        publish()
+        change { $0.cancelSettingRings() }
     }
 
     var settingRingsStartJumps: Bool { play.settingRingsStartJumps }
@@ -200,9 +201,45 @@ final class Player {
         let elapsed = now - lastStep
         // One frame's step is capped, so that after a pause in the frames, such as time in the background, the move
         // carries on from where it was rather than jumping to its end.
-        let seconds = min(Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18, 0.1)
-        play.advance(by: seconds * speed.factor)
+        let seconds = min(Self.seconds(elapsed), 0.1)
+        change { $0.advance(by: seconds * speed.factor) }
+    }
+
+    // MARK: Keeping the play
+
+    /// Makes `request` to the play: the time in front so far goes to the play first, so that a play finished by it has
+    /// all of its time; then a finished play is recorded, the toy is kept when nothing is playing, and the views follow.
+    private func change(_ request: (inout PlayState) -> Void) {
+        giveTimeToPlay()
+        request(&play)
+        if let finished = play.finished { keeper?.record(finished) }
+        if !play.toy.isPlaying { keeper?.keep(play.snapshot) }
         publish()
+    }
+
+    /// The app has come to the front: its time counts toward the play from now.
+    func cameToFront() {
+        guard frontSince == nil else { return }
+        frontSince = .now
+    }
+
+    /// The app has left the front, or is quitting: its time stops counting, and the toy is kept as it is, a move
+    /// playing as stopped where it is.
+    func leftFront() {
+        giveTimeToPlay()
+        frontSince = nil
+        keeper?.keep(play.snapshot)
+    }
+
+    private func giveTimeToPlay() {
+        guard let since = frontSince else { return }
+        let now = ContinuousClock.now
+        play.spend(Self.seconds(now - since))
+        frontSince = now
+    }
+
+    private static func seconds(_ duration: Duration) -> Double {
+        Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18
     }
 
     /// Copies what the views read out of the session. Each property is Equatable, so setting it to the value it
@@ -239,22 +276,19 @@ final class Player {
     /// covers the toy while every ring goes on.
     func openLesson(at index: Int = 0) {
         guard lesson == nil else { return }
-        play.openLesson(at: index)
-        publish()
+        change { $0.openLesson(at: index) }
     }
 
     /// Closes the lesson: the toy is as it was before, or, on the step that gave it back, as the person has it there.
     func closeLesson() {
         guard lesson != nil else { return }
-        play.closeLesson()
-        publish()
+        change { $0.closeLesson() }
     }
 
     /// Goes to step `index` of the lesson and plays it from its start.
     func goToLessonStep(_ index: Int) {
         guard isInLesson else { return }
-        play.goToLessonStep(index)
-        publish()
+        change { $0.goToLessonStep(index) }
     }
 
     /// Whether going to step `index` moves the toy to another pose at once, so that the screen should cover it.
@@ -271,6 +305,7 @@ final class Player {
     /// A player over `session`, for the store-capture mode, which sets up states the other initializers do not.
     init(session: PuzzleSession) {
         play = PlayState(session)
+        keeper = nil
         publish()
     }
 
