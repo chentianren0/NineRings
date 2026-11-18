@@ -45,9 +45,17 @@ final class GameCenter {
     /// `-game-center off` leaves Game Center out of this launch and records nothing, for scripted runs that should not
     /// earn anything for the person signed in on this Mac. `-game-center reset` forgets what this device has earned
     /// and reported, so that earning an achievement again reports it again (Game Center keeps what it has taken).
-    private static var option: String? {
+    private static var option: String? { value(after: "-game-center") }
+
+    /// `-earn far_end,all_nine_back_on`: those achievements earned at launch, by their identifiers, to try reporting
+    /// and Apple's banner without playing hundreds of moves. The rules themselves are the package's tests.
+    private static var earnedAtLaunch: Set<Achievement> {
+        Set((value(after: "-earn") ?? "").split(separator: ",").compactMap { Achievement(rawValue: String($0)) })
+    }
+
+    private static func value(after option: String) -> String? {
         let arguments = ProcessInfo.processInfo.arguments
-        guard let index = arguments.firstIndex(of: "-game-center"), index + 1 < arguments.count else { return nil }
+        guard let index = arguments.firstIndex(of: option), index + 1 < arguments.count else { return nil }
         return arguments[index + 1]
     }
     #endif
@@ -67,6 +75,9 @@ final class GameCenter {
             if let error { log("not signed in: \(error.localizedDescription)") }
             reportPending()
         }
+        #if DEBUG
+        earn(Self.earnedAtLaunch)
+        #endif
     }
 
     #if os(iOS)
