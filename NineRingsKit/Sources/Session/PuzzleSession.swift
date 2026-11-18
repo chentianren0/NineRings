@@ -287,6 +287,22 @@ public struct PuzzleSession: Sendable, Equatable {
         isPlaying = true
     }
 
+    /// Makes `moves` at once, one after another from the state now, as if each had played to its end: each is among
+    /// the moves made, so undo takes them back, and the last is on the slider at its end. The toy rests, and each move
+    /// starts where the one before ends.
+    mutating func make(_ moves: [Move]) {
+        precondition(!isBusy, "moves are made at once only on a toy at rest")
+        for move in moves {
+            precondition(move.from == state, "ring \(move.ring)'s move starts where the toy rests")
+            made.append(move)
+            current = move
+            currentIsMade = true
+            progress = 1
+            direction = .forward
+            note = nil
+        }
+    }
+
     /// Back to every ring on, with no move made.
     public mutating func reset() {
         self = PuzzleSession()

@@ -119,7 +119,7 @@ import simd
     }
 
     @Test func backFromTheLastStepTakesTheToyAgainAsItIsThen() {
-        var run = LessonRun(opening: PuzzleSession(), at: steps.count - 1)
+        var run = LessonRun(opening: someToy, at: steps.count - 1)
         run.useToy { $0.tap(1) }
         run.advance(by: 0.3)
         let own = run.toy
@@ -133,6 +133,117 @@ import simd
         #expect(run.closingToy == paused, "closing from step 11 gives the toy back as it was")
         run.goForward()
         #expect(run.toy == paused, "and the last step gives it back again")
+    }
+
+    // MARK: The lesson's ending: its moves become the person's
+
+    /// The six moves the lesson plays: the first six of the shortest way from every ring on to every ring off.
+    private var lessonsMoves: [Move] {
+        var state = PuzzleState.allOn
+        return PuzzleState.allOn.moves(to: .allOff).prefix(6).map { ring in
+            defer { state = state.moving(ring) }
+            return Move(ring: ring, from: state)!
+        }
+    }
+
+    /// From a first launch, every ring on: the lesson played through to step 12 gives the toy back with its six moves
+    /// made, going on from where step 11 rests, with no jump; undo takes them back, one by one, to every ring on.
+    @Test func onAToyWithEveryRingOnTheLessonsMovesBecomeThePersons() {
+        var run = LessonRun(opening: PuzzleSession())
+        for _ in steps.indices.dropLast(2) {
+            playOut(&run)
+            run.goForward()
+        }
+        playOut(&run)
+        #expect(run.index == steps.count - 2)
+        #expect(!run.jumps(to: steps.count - 1), "step 12 goes on from where step 11 rests")
+        let before = run.toy.pose
+        run.goForward()
+        #expect(run.givesToyBack)
+        #expect(largestMove(from: before, to: run.toy.pose) < 0.01)
+        #expect(run.toy.state == PuzzleState("000101111"))
+        #expect(run.toy.made == lessonsMoves, "the six moves are made on the person's toy")
+        #expect(run.movesPlayedForThePerson == lessonsMoves, "played for the person, not by them")
+        #expect(!run.toy.isBusy && run.toy.note == nil)
+        #expect(run.closingToy == run.toy && !run.closingJumps, "closing keeps them")
+
+        for count in (0..<6).reversed() {
+            #expect(run.canUndo)
+            run.useToy { $0.undo() }
+            playOut(&run)
+            #expect(run.toy.made == Array(lessonsMoves.prefix(count)), "undo takes the moves back, the last first")
+        }
+        #expect(run.toy.state == .allOn)
+        #expect(!run.canUndo, "and no further than the toy had")
+    }
+
+    /// A toy resting with every ring on after moves of its own keeps them, with the lesson's six after them.
+    @Test func aToyBackAtEveryRingOnKeepsItsHistoryBeforeTheLessonsMoves() {
+        var toy = PuzzleSession()
+        toy.tap(1)
+        toy.advance(by: 100)
+        toy.tap(1)
+        toy.advance(by: 100)
+        #expect(toy.state == .allOn && !toy.isBusy)
+        let history = toy.made
+        var run = LessonRun(opening: toy, at: steps.count - 2)
+        run.goForward()
+        #expect(run.toy.made == history + lessonsMoves)
+        #expect(run.movesPlayedForThePerson == lessonsMoves)
+    }
+
+    /// A toy anywhere else, or with every ring on but a move begun, comes back as it was, as before.
+    @Test func aToyNotRestingWithEveryRingOnComesBackAsItWas() {
+        var begun = PuzzleSession()
+        begun.tap(1)
+        begun.advance(by: 0.2)
+        begun.pause()
+        #expect(begun.state == .allOn && begun.isPartWay)
+        var resting = PuzzleSession()
+        resting.tap(1)
+        resting.advance(by: 100)
+        for toy in [someToy, begun, resting, PuzzleSession(resting: .allOff)] {
+            var run = LessonRun(opening: toy, at: steps.count - 2)
+            run.goForward()
+            #expect(run.toy == toy)
+            #expect(run.movesPlayedForThePerson.isEmpty)
+        }
+    }
+
+    /// Back from step 12 takes the toy again with the lesson's moves in it: closing from step 11 keeps them, and step 12
+    /// gives the toy back as it is, not with the moves made twice.
+    @Test func backFromTheLastStepKeepsTheLessonsMovesOnce() {
+        var run = LessonRun(opening: PuzzleSession(), at: steps.count - 1)
+        let given = run.toy
+        #expect(given.made == lessonsMoves)
+        #expect(!run.jumps(to: steps.count - 2), "step 11 rests where the given toy does")
+        run.goBack()
+        #expect(run.before == given)
+        #expect(run.movesPlayedForThePerson.isEmpty)
+        #expect(run.closingToy == given, "closing from step 11 keeps the moves")
+        run.goForward()
+        #expect(run.toy == given, "made once")
+        #expect(run.movesPlayedForThePerson.isEmpty, "this time nothing is played for the person")
+
+        // Undone back to every ring on there, the next visit makes them again.
+        for _ in lessonsMoves {
+            run.useToy { $0.undo() }
+            playOut(&run)
+        }
+        run.goBack()
+        run.goForward()
+        #expect(run.toy.made == lessonsMoves)
+        #expect(run.movesPlayedForThePerson == lessonsMoves)
+    }
+
+    /// Closed part way, before step 12, the lesson gives back a toy with every ring on as it was: nothing made.
+    @Test func closingBeforeTheLastStepMakesNothing() {
+        for index in steps.indices.dropLast() {
+            var run = LessonRun(opening: PuzzleSession(), at: index)
+            playOut(&run)
+            #expect(run.closingToy == PuzzleSession(), "closing from \(steps[index].key)")
+            #expect(run.movesPlayedForThePerson.isEmpty)
+        }
     }
 
     @Test func goingToTheLastStepWhileOnItKeepsThePersonsPlay() {
