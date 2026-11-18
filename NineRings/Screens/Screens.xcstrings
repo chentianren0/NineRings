@@ -1019,19 +1019,19 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld partie nécessite une version plus récente de Nine Rings pour s’afficher ici."
+                  "value" : "%lld partie nécessite une version plus récente de Nine Rings pour s’afficher ici."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld parties nécessitent une version plus récente de Nine Rings pour s’afficher ici."
+                  "value" : "%lld parties nécessitent une version plus récente de Nine Rings pour s’afficher ici."
                 }
               },
               "zero" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld partie nécessite une version plus récente de Nine Rings pour s’afficher ici."
+                  "value" : "%lld partie nécessite une version plus récente de Nine Rings pour s’afficher ici."
                 }
               }
             }
@@ -1043,13 +1043,13 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld件のプレイを表示するには、新しいバージョンのNine Ringsが必要です。"
+                  "value" : "%lld件のプレイを表示するには、新しいバージョンのNine Ringsが必要です。"
                 }
               },
               "zero" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld件のプレイを表示するには、新しいバージョンのNine Ringsが必要です。"
+                  "value" : "%lld件のプレイを表示するには、新しいバージョンのNine Ringsが必要です。"
                 }
               }
             }
@@ -1079,13 +1079,13 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "有%lld筆記錄需要較新版本的Nine Rings才能在此顯示。"
+                  "value" : "有%lld筆記錄需要較新版本的Nine Rings才能在此顯示。"
                 }
               },
               "zero" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "有%lld筆記錄需要較新版本的Nine Rings才能在此顯示。"
+                  "value" : "有%lld筆記錄需要較新版本的Nine Rings才能在此顯示。"
                 }
               }
             }
