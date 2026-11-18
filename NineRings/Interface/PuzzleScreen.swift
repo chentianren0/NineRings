@@ -248,6 +248,12 @@ struct PuzzleScreen: View {
                 Label { Text("Settings", comment: "Menu item that opens the app's settings.") } icon: { Image(systemName: "gear") }
             }
             Button {
+                GameCenter.shared.showDashboard()
+            } label: {
+                Label { Text("menu.gameCenter", tableName: "Commands") } icon: { Image(systemName: "gamecontroller") }
+            }
+            .disabled(!GameCenter.shared.isSignedIn)
+            Button {
                 showsAbout = true
             } label: {
                 Label { Text("menu.about", tableName: "Screens") } icon: { Image(systemName: "info.circle") }

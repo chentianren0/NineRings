@@ -234,6 +234,16 @@ struct PuzzleCommands: Commands {
         }
         .keyboardShortcut("e", modifiers: .command)
         .disabled(!(state?.canSetRings ?? false))
+
+        Divider()
+
+        // The app's achievements, in Game Center's own dashboard. It needs no window, only a player signed in.
+        Button {
+            GameCenter.shared.showDashboard()
+        } label: {
+            Text("menu.gameCenter", tableName: "Commands")
+        }
+        .disabled(!GameCenter.shared.isSignedIn)
     }
 
     private var speed: Binding<PlaybackSpeed> {

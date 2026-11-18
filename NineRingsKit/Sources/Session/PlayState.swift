@@ -16,6 +16,8 @@ import Puzzle
 /// - The congratulation follows the person's own toy: their toy when the lesson is closed, and, on the lesson's last
 ///   step, the toy it gives back. Arriving there, opening and closing the lesson, and going to another step are not
 ///   moves: they never congratulate, and hide the card. Solve never congratulates (see ``Congratulation``).
+/// - Achievements follow the same toy, the person's own, and change for change as the congratulation does (see
+///   ``AchievementRule``).
 /// - What is said aloud follows ``Narration`` for every change that is heard, with these exceptions. A drag of the
 ///   slider says nothing: the slider says its own value. While the lesson holds the toy nothing is said: the step's
 ///   text says what the toy shows, and is heard whole. A move whose end congratulates does not say its ring is off:
@@ -49,6 +51,9 @@ public struct PlayState: Sendable, Equatable {
     public private(set) var hearing = Hearing()
     /// Whether the last change was the moment to congratulate: the card has just appeared.
     public private(set) var congratulates = false
+    public private(set) var achievementRule = AchievementRule()
+    /// What the last change earned.
+    public private(set) var earned: Set<Achievement> = []
     /// What the last change says aloud.
     public private(set) var narration = Narration()
     /// The play in progress: while the congratulation is armed.
@@ -242,6 +247,7 @@ public struct PlayState: Sendable, Equatable {
         own = PuzzleSession(resting: settingRings)
         self.settingRings = nil
         congratulation.set(settingRings)
+        achievementRule.set(settingRings)
         settle(jump: true, rebase: true, sayingWhereItRests: true, beginsPlay: true)
     }
 
@@ -283,6 +289,7 @@ public struct PlayState: Sendable, Equatable {
         narration = Narration()
         congratulates = false
         finished = nil
+        earned = []
     }
 
     /// How many moves the lesson has just made on the person's toy, giving it back: none unless it gives the toy back
@@ -318,11 +325,14 @@ public struct PlayState: Sendable, Equatable {
         }
         let wasShowing = congratulation.isShowing
         let judgedBefore = judged
+        earned = []
         if let persons {
             if rebase {
                 congratulation.dismiss()
             } else {
-                congratulation.update(from: judged, to: persons)
+                let finished = congratulation.update(from: judged, to: persons)
+                // Where the record of a finished play is written, its "shortest way" earns The Shortest Way here too.
+                earned = achievementRule.update(from: judged, to: persons, finished: finished)
             }
             judged = persons
         } else {
@@ -330,6 +340,10 @@ public struct PlayState: Sendable, Equatable {
         }
         congratulates = congratulation.isShowing && !wasShowing
         keepPlay(from: judgedBefore, to: persons, counting: !rebase, lessonMoves: lessonMoves, begins: beginsPlay)
+        // The record of a finished play tells the shortest way, from every ring on to every ring off.
+        if let finished, finished.isShortestWay, finished.startRings == .allOn, finished.endRings == .allOff {
+            earned.insert(.shortestWay)
+        }
         narration = narrate(from: before, to: toy, jump: jump, sayingWhereItRests: sayingWhereItRests, quiet: quiet)
     }
 

@@ -23,6 +23,7 @@ UI tests on each simulator (`--devices iphone-6.3,ipad-13,…`); see `StoreShots
 | Captions | `Captions.xcstrings` | The captions' texts, a String Catalog for the translators, outside the app so it does not ship |
 | Composer | `Sources/StoreComposer`, `Sources/store-compose` | Draws each picture (background, caption, capture, optional bezel), removes transparency, refuses wrong sizes, checks the result |
 | The script | `scripts/store-assets.sh` | Runs it all |
+| Achievement pictures | `Sources/StoreComposer/AchievementPictures.swift`, `Sources/achievement-pictures`, `AchievementPictures/` | Draws the four Game Center achievement pictures: `swift run --package-path StoreTools achievement-pictures` |
 
 Nothing here is part of the app: the Xcode project does not refer to this package. The tests check the composer, the
 app's own reading of the launch arguments (its files are linked into `Sources/StoreLaunch`), and that every moment is a

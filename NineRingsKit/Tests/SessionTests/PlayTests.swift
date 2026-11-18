@@ -202,6 +202,37 @@ import Testing
         #expect(state.play?.moves == 6)
     }
 
+    // MARK: The Shortest Way achievement
+
+    @Test func theShortestWayByHandEarnsItsAchievementWhenTheRecordIsWritten() {
+        var state = PlayState()
+        var earned: [Set<Achievement>] = []
+        for ring in PuzzleState.allOn.moves(to: .allOff) {
+            state.tap(ring)
+            while state.toy.isPlaying {
+                state.advance(by: 10)
+                if !state.earned.isEmpty { earned.append(state.earned) }
+            }
+        }
+        #expect(earned == [[.allNineOff, .shortestWay]])
+    }
+
+    @Test func aPlayWithAnUndoDoesNotEarnTheShortestWay() {
+        var state = PlayState()
+        play([1, 3], on: &state)
+        state.undo()
+        playOut(&state)
+        var earned: Set<Achievement> = []
+        for ring in state.toy.state.moves(to: .allOff) {
+            state.tap(ring)
+            while state.toy.isPlaying {
+                state.advance(by: 10)
+                earned.formUnion(state.earned)
+            }
+        }
+        #expect(earned == [.allNineOff])
+    }
+
     // MARK: The rule
 
     @Test func theShortestWayIsTheDistanceWithNoUndoAndNothingPlayedForThePerson() {
