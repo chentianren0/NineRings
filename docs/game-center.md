@@ -64,10 +64,12 @@ Xcode's editor, not by hand.
 
 ## What the owner does, in order
 
-1. **Turn on the capability.** The project already carries the Game Center entitlement. Build the app once in Xcode
-   for My Mac, then once for a device. With your account signed in, Xcode's automatic signing turns Game Center on
-   for the App ID `com.chentianren.PlayNineRings` and makes new profiles. Until that has happened once, a signed
-   build with `xcodebuild` needs `-allowProvisioningUpdates`.
+1. **Turn on the capability.** The Game Center entitlement and the Mac sandbox's two network keys come in a change of
+   their own, merged together with the first signed build. Build the app once in Xcode for My Mac, then once for a
+   device. With your account signed in, Xcode's automatic signing turns Game Center on for the App ID
+   `com.chentianren.PlayNineRings` and makes new profiles. Until that has happened once, a signed build with
+   `xcodebuild` needs `-allowProvisioningUpdates`. Without the capability the app works as before: Game Center
+   refuses it, the menu item stays disabled, and what is earned waits on the device.
 2. **Write down the achievements in the project.** In Xcode, choose File › New › File from Template, then iOS ›
    Other › GameKit Bundle. Name it `NineRings` and add it to the NineRings target. Add the four achievements from the
    table: identifier, a reference name (the English name will do), points, not hidden, not replayable, and an English
