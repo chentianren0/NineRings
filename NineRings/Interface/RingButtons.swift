@@ -32,7 +32,7 @@ struct RingButtons: View {
             }
         }
         .environment(\.layoutDirection, .leftToRight)
-        .animation(.snappy(duration: 0.25), value: markers)
+        .animation(ScreenMotion.small, value: markers)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Rings", comment: "Spoken name of the row of nine ring buttons."))
     }

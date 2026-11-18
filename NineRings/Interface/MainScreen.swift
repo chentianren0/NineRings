@@ -6,6 +6,8 @@ import SwiftUI
 struct MainScreen: View {
     @State private var player: Player
     @State private var rig: CameraRig
+    /// The screen's mode, and the one place it changes: the welcome page opens the lesson through it too.
+    @State private var modes: ScreenModes
     #if DEBUG
     @AppStorage(DesignKey.tallView) private var tallView = TallViewDesign.standard
     #else
@@ -20,12 +22,15 @@ struct MainScreen: View {
             player.setRings(to: rings)
         }
         #endif
+        let rig = CameraRig(framing: Framing.rings)
         self.player = player
-        rig = CameraRig(framing: Framing.rings)
+        self.rig = rig
+        modes = ScreenModes(player: player, rig: rig, showsLesson: LessonLaunchOptions.opensAtLaunch)
     }
 
     var body: some View {
-        PuzzleScreen(player: player, rig: rig)
+        PuzzleScreen(modes: modes)
+            .welcomeOnFirstLaunch(openLesson: modes.openLesson)
             .accessibilityLaunchTaps(player)
             .accessibilitySettings()
             .onChange(of: tallView, initial: true) { _, tallView in
@@ -33,6 +38,7 @@ struct MainScreen: View {
                 rig.showDefault()
             }
             .storeCapture(player: player, rig: rig)
+            .environment(modes)
             #if os(macOS)
             .frame(minHeight: 420)
             #endif

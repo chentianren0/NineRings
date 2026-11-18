@@ -28,6 +28,7 @@ struct ControlPanel: View {
     @Bindable var player: Player
     let style: Style
     @State private var width: CGFloat = 0
+    @Environment(\.reducesMotion) private var reducesMotion
 
     /// The largest text size the panel follows. Larger text would make the panel cover the toy on the smallest screens,
     /// the phone held sideways and the closed iPhone Duo; past it the panel keeps its size, and the ring buttons and
@@ -47,37 +48,50 @@ struct ControlPanel: View {
         style == .floating && width >= Self.ringsInRow + Self.rowSpacing + Self.transportInRow + 2 * Self.padding
     }
 
+    /// One view whatever its form, so that the ring buttons and the controls keep their identity, and move to their new
+    /// places, when the panel's width takes it from two rows to one or back: the caption above, and the rings and the
+    /// controls side by side or one above the other.
     var body: some View {
-        Group {
-            switch style {
-            case .beside:
-                VStack(alignment: .leading, spacing: 28) {
-                    caption(lines: 3)
-                    rings
-                    controls
-                }
-            case .floating where isOneRow:
-                VStack(alignment: .leading, spacing: 10) {
-                    caption(lines: 1)
-                    HStack(spacing: Self.rowSpacing) {
-                        rings
-                            .frame(width: Self.ringsInRow)
-                        controls
-                    }
-                }
-            case .floating:
-                VStack(alignment: .leading, spacing: 12) {
-                    caption(lines: 2)
-                    rings
-                    controls
-                }
+        VStack(alignment: .leading, spacing: captionSpacing) {
+            caption(lines: captionLines)
+            rowsLayout {
+                rings
+                    .frame(width: isOneRow ? Self.ringsInRow : nil)
+                controls
             }
         }
+        // With Reduce Motion the two forms are two views, so that one fades into the other where the buttons would
+        // otherwise travel to their new places.
+        .id(reducesMotion && isOneRow)
         .padding(Self.padding)
         .frame(maxWidth: .infinity)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .dynamicTypeSize(...Self.largestTextSize)
-        .animation(.snappy(duration: 0.25), value: player.isSettingRings)
+        // The width is read back after the layout that changed it, outside the change that changed it: the change of
+        // form follows with the screen's own animation.
+        .animation(ScreenMotion.modeChange(reducesMotion: reducesMotion), value: isOneRow)
+    }
+
+    private var rowsLayout: AnyLayout {
+        switch style {
+        case .beside: AnyLayout(VStackLayout(alignment: .leading, spacing: 28))
+        case .floating where isOneRow: AnyLayout(HStackLayout(spacing: Self.rowSpacing))
+        case .floating: AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+        }
+    }
+
+    private var captionLines: Int {
+        switch style {
+        case .beside: 3
+        case .floating: isOneRow ? 1 : 2
+        }
+    }
+
+    private var captionSpacing: CGFloat {
+        switch style {
+        case .beside: 28
+        case .floating: isOneRow ? 10 : 12
+        }
     }
 
     /// The ring buttons; dimmed while the lesson holds the toy, since asking for a ring then does nothing. (What is said
@@ -125,7 +139,7 @@ struct ControlPanel: View {
         }
         .font(style == .beside ? .body : .subheadline)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .animation(.snappy(duration: 0.25), value: refusal == nil)
+        .animation(ScreenMotion.small, value: refusal == nil)
         .accessibilityElement(children: .combine)
     }
 

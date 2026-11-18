@@ -28,7 +28,8 @@ struct LessonPanel: View {
             if let page = player.lessonPage {
                 content(page)
             } else {
-                // Only for the moment the toy is covered while the lesson opens.
+                // The lesson opens with its panel, in the same change; this is only for a panel the system shows on its
+                // own, as when it restores one, until the screen closes it.
                 Color.clear
             }
         }
@@ -77,7 +78,7 @@ struct LessonPanel: View {
                     .padding(.vertical, 12)
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: page.index)
+        .animation(ScreenMotion.lessonStep, value: page.index)
         .onChange(of: page.index) {
             // The text changed under the button that was pressed: say where the reader is and the step's text to someone
             // who cannot see it. The step's own moves are not narrated, so the text is heard whole.
