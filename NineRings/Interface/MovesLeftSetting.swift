@@ -3,7 +3,10 @@ import SwiftUI
 /// The setting for the count of moves left in the control panel, in a section of its own with a line on what it shows.
 /// On at first.
 struct MovesLeftSetting: View {
-    @AppStorage(MovesLeft.isShownKey) private var showsMovesLeft = true
+    /// Where the setting is kept: whether the control panel shows the count.
+    static let key = "settings.movesLeft"
+
+    @AppStorage(Self.key) private var showsMovesLeft = true
 
     var body: some View {
         Section {
