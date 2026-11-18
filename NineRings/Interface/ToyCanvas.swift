@@ -265,7 +265,9 @@ private final class CanvasDriver {
             scene.apply(pose)
             // A jump since the last frame: the parts that changed place fade across rather than snap.
             if player.jumps != drawnJumps, let drawnPose {
-                scene.crossFade(from: drawnPose, to: pose, duration: ScreenMotion.crossFade(reducesMotion: rig.reducesMotion))
+                let duration = ScreenMotion.crossFade(reducesMotion: rig.reducesMotion)
+                scene.crossFade(from: drawnPose, to: pose, duration: duration)
+                rig.toyJumped(fadingOver: duration)
             }
             drawn = key
             drawnPose = pose

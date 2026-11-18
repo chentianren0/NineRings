@@ -19,13 +19,21 @@ final class ToyScene {
     private let bar: ModelEntity
     private let sword: ModelEntity
     private let shadow: ModelEntity
-    /// Parts fading across after a jump: for each part that changed place, a copy left where it was, fading out, while
-    /// the part itself fades in where it is now.
-    private var fade: Fade?
+    /// Copies of parts left where they were before a jump, each fading out on its own.
+    private var ghosts: [Ghost] = []
+    /// Parts that jumped, each fading in on its own where it is now, by the part's object.
+    private var arriving: [ObjectIdentifier: Arriving] = [:]
 
-    private struct Fade {
-        var ghosts: [Entity]
-        var parts: [ModelEntity]
+    private struct Ghost {
+        let entity: Entity
+        /// How much of the part showed where the copy was left: all of it, or less where the part was still fading in.
+        let from: Float
+        var elapsed: Double = 0
+        let duration: Double
+    }
+
+    private struct Arriving {
+        let part: ModelEntity
         var elapsed: Double = 0
         let duration: Double
     }
@@ -82,52 +90,64 @@ final class ToyScene {
     }
 
     /// Shows the jump from `old` to the pose now applied as the parts that changed place fading across, over `duration`
-    /// seconds; a jump during another's fade ends that one first. Nothing fades where nothing changed place.
+    /// seconds. Nothing fades where nothing changed place. Each part fades on its own: a part that jumps again while it
+    /// fades leaves a copy as faint as it shows now and starts fading in afresh, and fades already under way go on.
     func crossFade(from old: ToyPose, to new: ToyPose, duration: Double) {
-        endFade()
         let moved = new.parts(movedFrom: old)
         guard !moved.isEmpty, duration > 0 else { return }
-        var ghosts: [Entity] = [], parts: [ModelEntity] = []
         func leave(_ part: ModelEntity, at pose: PartPose) {
             let ghost = part.clone(recursive: false)
             ghost.name = ""
-            // Only the part itself can be tapped.
+            // Only the part itself can be tapped, and the copy fades from what showed of the part.
             ghost.components.remove(CollisionComponent.self)
             ghost.components.remove(InputTargetComponent.self)
+            ghost.components.remove(OpacityComponent.self)
             place(ghost, at: pose)
             toy.addChild(ghost)
-            ghosts.append(ghost)
-            parts.append(part)
+            ghosts.append(Ghost(entity: ghost, from: shownOpacity(of: part), duration: duration))
+            arriving[ObjectIdentifier(part)] = Arriving(part: part, duration: duration)
         }
         for number in moved.rings.sorted() { leave(rings[number - 1], at: old.ring(number)) }
         for number in moved.rods.sorted() { leave(rods[number - 1], at: old.rod(number)) }
         if moved.bar { leave(bar, at: old.bar) }
         if moved.sword { leave(sword, at: old.sword) }
-        fade = Fade(ghosts: ghosts, parts: parts, duration: duration)
-        showFade()
+        showFades()
     }
 
-    /// Moves a fade on by `seconds`. Cheap when nothing fades, so it can be called every frame.
+    /// Moves the fades on by `seconds`. Cheap when nothing fades, so it can be called every frame.
     func advanceFade(by seconds: Double) {
-        guard var current = fade else { return }
-        current.elapsed += seconds
-        fade = current
-        if current.elapsed >= current.duration { endFade() } else { showFade() }
+        guard !ghosts.isEmpty || !arriving.isEmpty else { return }
+        for index in ghosts.indices { ghosts[index].elapsed += seconds }
+        for key in arriving.keys { arriving[key]?.elapsed += seconds }
+        for ghost in ghosts where ghost.elapsed >= ghost.duration { ghost.entity.removeFromParent() }
+        ghosts.removeAll { $0.elapsed >= $0.duration }
+        for (key, part) in arriving where part.elapsed >= part.duration {
+            part.part.components.remove(OpacityComponent.self)
+            arriving[key] = nil
+        }
+        showFades()
     }
 
-    private func showFade() {
-        guard let fade else { return }
-        let t = Float(min(fade.elapsed / fade.duration, 1))
-        let (out, into) = CrossFadeStyle.current.opacities(at: t)
-        for ghost in fade.ghosts { ghost.components.set(OpacityComponent(opacity: out)) }
-        for part in fade.parts { part.components.set(OpacityComponent(opacity: into)) }
+    /// How much of `part` shows now: all of it, unless it is fading in.
+    private func shownOpacity(of part: ModelEntity) -> Float {
+        guard let fade = arriving[ObjectIdentifier(part)] else { return 1 }
+        return CrossFadeStyle.current.opacities(at: Self.progress(fade.elapsed, fade.duration)).into
     }
 
-    private func endFade() {
-        guard let fade else { return }
-        for ghost in fade.ghosts { ghost.removeFromParent() }
-        for part in fade.parts { part.components.remove(OpacityComponent.self) }
-        self.fade = nil
+    private func showFades() {
+        let style = CrossFadeStyle.current
+        for ghost in ghosts {
+            let out = style.opacities(at: Self.progress(ghost.elapsed, ghost.duration)).out
+            ghost.entity.components.set(OpacityComponent(opacity: ghost.from * out))
+        }
+        for fade in arriving.values {
+            let into = style.opacities(at: Self.progress(fade.elapsed, fade.duration)).into
+            fade.part.components.set(OpacityComponent(opacity: into))
+        }
+    }
+
+    private static func progress(_ elapsed: Double, _ duration: Double) -> Float {
+        Float(min(elapsed / duration, 1))
     }
 
     /// Lays the shadow on an imagined table at height `floor`, in millimetres; it stays there while the toy
