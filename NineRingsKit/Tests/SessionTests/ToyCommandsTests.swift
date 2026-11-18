@@ -27,6 +27,16 @@ import Testing
         #expect(PuzzleState.rings.filter(commands.canMove) == [1, 2])
     }
 
+    /// While ring 1 comes off, Move Ring offers what a tap would do: ring 3 next, not ring 1 again, nor ring 2, which
+    /// cannot move once ring 1 is off.
+    @Test func whileAMovePlaysTheRingsFollowWhatATapWouldDo() {
+        var session = PuzzleSession()
+        session.tap(1)
+        #expect(PuzzleState.rings.filter(commands(session).canMove) == [3])
+        session.tap(3)
+        #expect(PuzzleState.rings.filter(commands(session).canMove) == [1])
+    }
+
     @Test func nothingToUndoAndNoMoveToStepAtTheStart() {
         let commands = commands(PuzzleSession())
         #expect(!commands.canUndoMove)

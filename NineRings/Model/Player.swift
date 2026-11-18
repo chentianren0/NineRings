@@ -101,8 +101,8 @@ final class Player {
     /// The toy as it is now.
     var pose: ToyPose { session.pose }
 
-    /// The state the ring buttons show: the toy's, or the one it was in when the move in hand began. Read through the
-    /// markers, so that a view reading it follows it.
+    /// The state the ring buttons show: while a move is in hand, the one the toy is about to be in (see
+    /// `PlayState.markers`). Read through the markers, so that a view reading it follows it.
     var shownState: PuzzleState {
         PuzzleState(bits: markers.reduce(0) { $1.isOn ? $0 | 1 << ($1.ring - 1) : $0 })
     }
@@ -210,7 +210,7 @@ final class Player {
     private func publish() {
         shownProgress = session.progress
         isPlaying = session.isPlaying
-        markers = session.markers
+        markers = play.markers
         status = session.status
         stages = session.stages
         canPlay = lesson?.canPlay ?? session.canPlay

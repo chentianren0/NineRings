@@ -30,8 +30,9 @@ public struct Congratulation: Sendable, Equatable {
             isArmed = true
             return false
         }
-        // A move made forward that leaves every ring off, with the toy at rest: the queue may hold a ring that
-        // starts at once, and then the toy only passes through every ring off.
+        // A move made forward that leaves every ring off, with the toy at rest. From every ring off only ring 1 can
+        // move, which a tap during the last move does not queue (see `PuzzleSession.tap`), so a ring waiting then is
+        // refused and the toy rests; a session played otherwise could still pass through.
         let arrived = after.state == .allOff && !after.isBusy && after.moveCount > before.moveCount
         guard arrived, isArmed else { return false }
         isArmed = false
