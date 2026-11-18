@@ -17,8 +17,7 @@ approve.
 | `far_end` | The Far End | Reach the arrangement with only ring 9 on: the far end of the puzzle's one path. | You reached the far end, 511 moves from every ring off. | 20 |
 
 None is hidden, and none can be earned again: each says something about the puzzle, and the locked ones show what
-there is to find. Each needs a picture, 1024 × 1024 pixels (PNG, TIF or JPG, sRGB or Display P3). Game Center shows it
-inside a circle, so its content should stay in the middle.
+there is to find. Each needs a picture (step 4 below).
 
 ## How the app decides
 
@@ -64,26 +63,45 @@ Xcode's editor, not by hand.
 
 ## What the owner does, in order
 
-1. **Turn on the capability.** The Game Center entitlement and the Mac sandbox's two network keys come in a change of
-   their own, merged together with the first signed build. Build the app once in Xcode for My Mac, then once for a
-   device. With your account signed in, Xcode's automatic signing turns Game Center on for the App ID
-   `com.chentianren.PlayNineRings` and makes new profiles. Until that has happened once, a signed build with
-   `xcodebuild` needs `-allowProvisioningUpdates`. Without the capability the app works as before: Game Center
-   refuses it, the menu item stays disabled, and what is earned waits on the device.
-2. **Write down the achievements in the project.** In Xcode, choose File › New › File from Template, then iOS ›
-   Other › GameKit Bundle. Name it `NineRings` and add it to the NineRings target. Add the four achievements from the
-   table: identifier, a reference name (the English name will do), points, not hidden, not replayable, and an English
-   localization with the name, both texts and the picture. A session can commit the file once it exists.
-3. **Try it on this Mac.** Edit the scheme: Run › Options › GameKit Configuration › Enable Debug Mode. Make sure you
-   are signed in to Game Center (System Settings › Game Center). Run the app from Xcode. Game Center greets you, and
-   Puzzle › Game Center opens the dashboard. To see the banners, run with the arguments
-   `-game-center reset -earn all_nine_off,all_nine_back_on,far_end`, or play: All Nine Off comes with the
-   congratulation. Each banner should show once. A second launch with only `-earn …` shows none.
-4. **Try it on iPhone and iPad** the same way, from Xcode, signed in to Game Center in Settings.
-5. **App Store Connect.** Create the app record if there is none. In the GameKit file's editor, use the More (…)
-   button to push the configuration. Then, in App Store Connect, turn Game Center on for the version that will ship it.
-6. **Translations.** The achievements' names and texts in French, Japanese and both Chinese scripts go into the
-   GameKit file's localizations, with the other new texts (issue 74).
+1. **Sign in to Xcode.** In Xcode › Settings › Accounts, sign in to the account of the team that signs the app. The
+   first signed build after the capability lands uses it to turn Game Center on for the App ID
+   `com.chentianren.PlayNineRings` and to make the profiles.
+2. **The capability.** The Game Center entitlement and the Mac sandbox's two network keys are on their own branch,
+   `claude/game-center-capability`. A session builds it once for the Mac and once for iPhone and iPad through Xcode,
+   checks Game Center on this Mac, and the branch merges right after, so that `main` never carries an entitlement
+   with no profile behind it. Until then the app works as before: Game Center refuses it, the menu item stays
+   disabled, and what is earned waits on the device.
+3. **Add the achievements in App Store Connect.** In **Apps**, choose Nine Rings, then **Game Center** in the sidebar.
+   For each row of the table above, in that order:
+   1. In **Achievements**, click **Add Achievement** (or **+** once there is one).
+   2. **Reference Name**: the English name. **Achievement ID**: the identifier, exactly as written. It can never be
+      changed. Click **Create**.
+   3. **Point Value**: from the table. Leave **Hidden** and **Achievable More Than Once** off.
+   4. In **Achievement Localization**, click **Add Localization** and choose English. **Display Name**: the name.
+      **Pre-earned Description** and **Earned Description**: the two texts. **Image**: the achievement's picture.
+      Click **Save**, then **Save** again.
+
+   Once an achievement is live, it can't be deleted and its points can't be changed.
+4. **The pictures.** Four, one for each achievement, each a different picture: 1024 × 1024 pixels, `.png` or `.jpeg`,
+   RGB, at least 72 ppi. Game Center shows them inside a circle, so keep what matters in the middle. A natural choice is
+   the toy in the arrangement each one names: every ring off, every ring on, only ring 9 on, and for The Shortest Way
+   perhaps the toy part way along. A session can render them from the app itself (its store-capture mode sets any
+   arrangement and view) if you would like.
+5. **Turn Game Center on for the version.** In **Apps**, choose Nine Rings, then the version that will ship this, in
+   the sidebar. Scroll down, tick **Game Center**, and add the four achievements to the version. They are reviewed
+   with it, and players see them only once they are approved.
+6. **Try it on a device.** On iPhone or iPad, sign in to Game Center in Settings; on the Mac, in System Settings ›
+   Game Center. Run the app from Xcode. Game Center greets you, and Puzzle › Game Center (on iPhone, the toolbar's
+   More menu) opens the dashboard, with the achievements marked as prerelease. To see the banners without hundreds of
+   moves, run with the arguments `-game-center reset -earn all_nine_off,all_nine_back_on,far_end`. Each banner should
+   show once, and a second launch with only `-earn …` shows none. All Nine Off also comes with the congratulation,
+   in play.
+7. **If you like, keep the achievements in the project too.** In Xcode, File › New › File from Template, then iOS ›
+   Other › GameKit Bundle, added to the NineRings target, then **Pull from App Store Connect** from its More (…)
+   button. With the scheme's Run › Options › GameKit Configuration › Enable Debug Mode on, Debug › GameKit › Manage
+   Game Progress shows and resets progress on a device without touching App Store Connect.
+8. **Translations.** The names and texts in French, Japanese and both Chinese scripts are added as further
+   localizations of each achievement, with the other new texts (issue 74).
 
 ## Privacy
 
