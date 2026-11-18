@@ -6,7 +6,9 @@ import Puzzle
 /// The lesson plays the first six moves of the shortest way from every ring on to every ring off, so each step
 /// starts where the last one ended and the toy never jumps: ring 1 off, ring 3 off, ring 1 on, ring 2 off, ring 1 off,
 /// ring 5 off. Ring 3's move is held after the sword has moved away, where the reason for the rule can be seen. The last
-/// step, "your turn", gives the person's own toy back, as it was before the lesson, to play with while its text is up.
+/// step, "your turn", gives the person's own toy back to play with while its text is up: when it rested with every ring
+/// on, where the lesson begins, it comes back with the lesson's six moves made, and goes on from where the lesson ended;
+/// otherwise as it was before the lesson.
 ///
 /// The words are not here. Each step names its text by a key in the app's `Lesson` String Catalog, where the English
 /// and its translations live.
@@ -49,8 +51,8 @@ public struct LessonStep: Sendable, Equatable {
         case hold(Move, afterStage: String)
         /// The rest of a move held at the end of the stage named by `afterStage`, played from there to its end.
         case finish(Move, afterStage: String)
-        /// The person's own toy, given back as it was before the lesson, with its history, theirs to play with: the
-        /// lesson shows nothing of its own.
+        /// The person's own toy, given back with its history, theirs to play with: the lesson shows nothing of its own.
+        /// When the toy rested where the lesson begins, the lesson's moves are made on it first (see ``LessonRun``).
         case givenBack
     }
 

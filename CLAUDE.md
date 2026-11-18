@@ -8,7 +8,7 @@ An app for iPhone, iPad and Mac that shows how the nine linked rings puzzle work
 - `NineRings/` and `NineRings.xcodeproj` are the app, in SwiftUI and RealityKit.
 
 ## Rules
-- Only one simulator runs at a time, because of memory. Ask before you boot one, and shut it down when you finish.
+- Only one simulator runs at a time, because of memory. Shut it down when you finish.
 - The repository is public: no local paths, no account names other than the user's, and no photos or footage in any tracked file, commit, pull request or issue.
 
 ## Pull requests
