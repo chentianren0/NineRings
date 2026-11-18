@@ -481,6 +481,18 @@
         }
       }
     },
+    "tip.lesson.open" : {
+      "comment" : "The button in the tip 'Learn the Rule': it opens the lesson on how the puzzle works.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show the Lesson"
+          }
+        }
+      }
+    },
     "tip.lesson.title" : {
       "comment" : "Title of the tip that points at the Lesson button. It appears once, the first time a ring the person asked to move could not move, for someone who has not opened the lesson.",
       "extractionState" : "manual",

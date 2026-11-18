@@ -46,7 +46,7 @@ struct PuzzleScreen: View {
         NavigationStack {
             ArrangementView {
                 Controls(player: player, panelFrame: $panelFrame, hasOwnHalf: $isHalfFolded, lessonSheet: lessonSheet,
-                         stepsAside: controlsStepAside) {
+                         stepsAside: controlsStepAside, openLesson: { showsLesson = true }) {
                     jump { player.reset() }
                 }
                 .accessibilitySortPriority(1)
@@ -250,7 +250,7 @@ struct PuzzleScreen: View {
                 }
                 .accessibilityAddTraits(showsLesson ? .isSelected : [])
                 .help(Text("Show how the puzzle works", comment: "Tooltip on the Lesson button."))
-                .lessonTip(player: player, lessonShown: showsLesson)
+                .lessonTip(player: player, lessonShown: showsLesson) { showsLesson = true }
             }
         }
         #if os(iOS)
@@ -367,6 +367,8 @@ private struct Controls: View {
     let lessonSheet: CGRect
     /// Whether the controls step aside for the lesson.
     let stepsAside: Bool
+    /// Opens the lesson, from its tip.
+    let openLesson: () -> Void
     /// Puts every ring back on, from the congratulation.
     let putBack: () -> Void
     @Environment(\.overlayArrangementZIndex) private var zIndex
@@ -393,6 +395,7 @@ private struct Controls: View {
                     CongratulationCard(player: player, putBack: putBack)
                         .transition(.blurReplace)
                 }
+                LessonTipView(openLesson: openLesson)
                 ControlPanel(player: player, style: .beside)
             }
             .animation(.smooth(duration: 0.4), value: player.isCongratulating)
@@ -431,14 +434,18 @@ private struct Controls: View {
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { panelFrame = $0 }
             .overlay(alignment: .top) {
                 // The reason a ring cannot move floats above the panel, over the toy, taking no room, so that the
-                // panel keeps its height and the toy does not move.
-                if let refusal = ControlPanel.refusal(in: player.status) {
-                    RefusalBubble(text: refusal)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .visualEffect { content, proxy in
-                            content.offset(y: -proxy.size.height - 10)
-                        }
-                        .appearingOverToy(reducesMotion: reducesMotion)
+                // panel keeps its height and the toy does not move. The lesson's tip, where it is inline, floats above
+                // it.
+                VStack(spacing: 10) {
+                    LessonTipView(openLesson: openLesson)
+                    if let refusal = ControlPanel.refusal(in: player.status) {
+                        RefusalBubble(text: refusal)
+                            .appearingOverToy(reducesMotion: reducesMotion)
+                    }
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                .visualEffect { content, proxy in
+                    content.offset(y: -proxy.size.height - 10)
                 }
             }
             .animation(.snappy(duration: 0.25), value: ControlPanel.refusal(in: player.status) == nil)

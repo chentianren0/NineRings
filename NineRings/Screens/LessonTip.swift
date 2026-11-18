@@ -11,9 +11,14 @@ import TipKit
 /// - It is gone for good once the lesson is opened, by any way (the toolbar, the welcome page, the menu bar, Help),
 ///   whether it has shown or not, or once it is closed.
 /// - What TipKit knows is kept on the device, in the app's own container; nothing is synced.
+/// - On the Mac it is a popover on the Lesson button. On iPhone and iPad a popover on a toolbar button never appears
+///   (seen in the simulator, even with the rules overridden), so it is inline, above the line that says why the ring
+///   cannot move. Either way its button opens the lesson.
 struct LessonTip: Tip {
     /// A ring the person asked to move was refused by the rule.
     static let ringRefused = Tips.Event(id: "ringRefused")
+    /// The action that opens the lesson.
+    static let openLessonAction = "openLesson"
 
     var title: Text {
         Text("tip.lesson.title", tableName: "Screens")
@@ -35,13 +40,36 @@ struct LessonTip: Tip {
         MaxDisplayCount(1)
     }
 
+    var actions: [Action] {
+        Action(id: Self.openLessonAction) {
+            Text("tip.lesson.open", tableName: "Screens")
+        }
+    }
+
+    /// Whether the tip shows inline, by the status line, rather than as a popover on the Lesson button. In a debug
+    /// build `-lesson-tip-style popover` or `inline` chooses, to compare them.
+    static var isInline: Bool {
+        #if DEBUG
+        switch LaunchValue.value(after: "-lesson-tip-style") {
+        case "popover": return false
+        case "inline": return true
+        default: break
+        }
+        #endif
+        #if os(iOS)
+        return true
+        #else
+        return false
+        #endif
+    }
+
     /// Loads the tips, once, at launch. In a debug build, `-lesson-tip show` shows the tip whatever its rules, to see it,
     /// and `-lesson-tip reset` forgets everything TipKit knows first, as on a first launch. (TipKit's own
     /// `-com.apple.TipKit.ShowTips LessonTip` also shows it.)
     @MainActor
     static func configure() {
         #if DEBUG
-        switch LaunchValue.lessonTip {
+        switch LaunchValue.value(after: "-lesson-tip") {
         case "reset": try? Tips.resetDatastore()
         case "show": Tips.showTipsForTesting([LessonTip.self])
         default: break
@@ -53,9 +81,9 @@ struct LessonTip: Tip {
 
     #if DEBUG
     private enum LaunchValue {
-        static var lessonTip: String? {
+        static func value(after option: String) -> String? {
             let arguments = ProcessInfo.processInfo.arguments
-            guard let index = arguments.firstIndex(of: "-lesson-tip"), index + 1 < arguments.count else { return nil }
+            guard let index = arguments.firstIndex(of: option), index + 1 < arguments.count else { return nil }
             return arguments[index + 1]
         }
     }
@@ -63,21 +91,38 @@ struct LessonTip: Tip {
 }
 
 extension View {
-    /// Puts the lesson's tip on this view, the Lesson button: it learns of refused rings from `player`, and is put away
-    /// for good when `lessonShown` turns true.
-    func lessonTip(player: Player, lessonShown: Bool) -> some View {
-        modifier(LessonTipModifier(player: player, lessonShown: lessonShown))
+    /// Puts the lesson's tip on this view, the Lesson button: it learns of refused rings from `player`, is put away for
+    /// good when `lessonShown` turns true, and its button calls `openLesson`. Where the tip is inline, this only keeps
+    /// its rules, and ``LessonTipView`` shows it.
+    func lessonTip(player: Player, lessonShown: Bool, openLesson: @escaping () -> Void) -> some View {
+        modifier(LessonTipModifier(player: player, lessonShown: lessonShown, openLesson: openLesson))
+    }
+}
+
+/// The lesson's tip inline, where it is not a popover: by the status line. It takes no room until the tip shows.
+struct LessonTipView: View {
+    let openLesson: () -> Void
+
+    var body: some View {
+        if LessonTip.isInline {
+            TipView(LessonTip()) { action in
+                if action.id == LessonTip.openLessonAction { openLesson() }
+            }
+        }
     }
 }
 
 private struct LessonTipModifier: ViewModifier {
     let player: Player
     let lessonShown: Bool
+    let openLesson: () -> Void
     private let tip = LessonTip()
 
     func body(content: Content) -> some View {
         content
-            .popoverTip(tip)
+            .popoverTip(LessonTip.isInline ? nil : tip) { action in
+                if action.id == LessonTip.openLessonAction { openLesson() }
+            }
             .onChange(of: isRefused) { _, refused in
                 if refused { LessonTip.ringRefused.sendDonation() }
             }
