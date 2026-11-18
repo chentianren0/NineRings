@@ -6,9 +6,11 @@ import UniformTypeIdentifiers
 /// The pictures of the app's four Game Center achievements, drawn here as a few flat shapes, so that they can be made
 /// again: `swift run --package-path StoreTools achievement-pictures`.
 ///
-/// They speak the ring buttons' language: a ring that is on is a filled disc, a ring that is off is an outline, ring 1
-/// on the left and ring 9 on the right, in the blue of a ring that is on. The sword is a bar in a lighter blue behind the
-/// row. Game Center cuts each picture to a circle as wide as it is, so everything stays well inside one.
+/// They speak the ring buttons' language: a ring that is on is a filled disc and a ring that is off is an outline, in
+/// the blue of a ring that is on. The nine rings stand in three rows of three, ring 1 at the top left and ring 9 at the
+/// bottom right, so that each is large enough to read when the picture is small; The Shortest Way is one straight arrow
+/// from a filled ring to an outline. Game Center cuts each picture to a circle as wide as it is, so everything stays
+/// well inside one.
 ///
 /// App Store Connect asks for a `.png` or `.jpeg` of 1024 × 1024 pixels, at least 72 ppi, RGB. These are sRGB PNGs with
 /// no alpha channel, marked 72 ppi.
@@ -22,11 +24,10 @@ public enum AchievementPictures {
     }
 
     public static let size = 1024
-    /// The background, the blue of a ring that is on, and the sword's lighter blue.
+    /// The background, and the blue of a ring that is on.
     static let background = CGColor(srgbRed: 0.965, green: 0.969, blue: 0.976, alpha: 1)
     /// The ring buttons' disc for a ring that is on: the system blue, #007AFF, darkened by 30% (see `RingButtons.onFill`).
     static let ring = CGColor(srgbRed: 0, green: 0.335, blue: 0.7, alpha: 1)
-    static let sword = CGColor(srgbRed: 0.62, green: 0.75, blue: 0.9, alpha: 1)
     /// How far from the middle anything is drawn: the circle Game Center keeps has a radius of 512.
     public static let contentRadius = 470.0
 
@@ -35,9 +36,9 @@ public enum AchievementPictures {
         context.setFillColor(background)
         context.fill(CGRect(x: 0, y: 0, width: size, height: size))
         switch picture {
-        case .allNineOff: drawRow(on: [], in: context)
-        case .allNineBackOn: drawRow(on: Set(1...9), in: context)
-        case .farEnd: drawRow(on: [9], in: context)
+        case .allNineOff: drawGrid(on: [], in: context)
+        case .allNineBackOn: drawGrid(on: Set(1...9), in: context)
+        case .farEnd: drawGrid(on: [9], in: context)
         case .shortestWay: drawStraightThere(in: context)
         }
         guard let image = context.makeImage() else { throw ComposerError.unwritable(URL(filePath: "/")) }
@@ -59,22 +60,23 @@ public enum AchievementPictures {
 
     private static let middle = Double(size) / 2
 
-    /// Nine rings on the sword, ring 1 on the left; those in `on` are filled.
-    private static func drawRow(on: Set<Int>, in context: CGContext) {
-        let diameter = 90.0
-        let gap = 13.0
-        let width = 9 * diameter + 8 * gap
+    /// The nine rings as three rows of three, ring 1 at the top left and ring 9 at the bottom right, in reading order;
+    /// those in `on` are filled. In a row of nine across the circle a ring could be no wider than about 100 pixels;
+    /// three rows let each be twice that, as heavy as the two rings of The Shortest Way, so that on and off still read
+    /// when the picture is small.
+    private static func drawGrid(on: Set<Int>, in context: CGContext) {
+        let diameter = 204.0
+        let gap = 46.0
+        let width = 3 * diameter + 2 * gap
         let left = middle - width / 2
-        // The sword: a bar through the rings' middles, a little longer than the row, its ends rounded.
-        let swordHeight = 22.0
-        let overhang = 10.0
-        let swordRect = CGRect(x: left - overhang, y: middle - swordHeight / 2, width: width + 2 * overhang, height: swordHeight)
-        context.setFillColor(sword)
-        context.addPath(CGPath(roundedRect: swordRect, cornerWidth: swordHeight / 2, cornerHeight: swordHeight / 2, transform: nil))
-        context.fillPath()
+        let top = middle + width / 2
         for ring in 1...9 {
-            let x = left + Double(ring - 1) * (diameter + gap)
-            drawRing(in: CGRect(x: x, y: middle - diameter / 2, width: diameter, height: diameter), isOn: on.contains(ring), context: context)
+            let column = Double((ring - 1) % 3)
+            let row = Double((ring - 1) / 3)
+            let x = left + column * (diameter + gap)
+            // The context's y grows upwards: row 0 is at the top.
+            let y = top - diameter - row * (diameter + gap)
+            drawRing(in: CGRect(x: x, y: y, width: diameter, height: diameter), isOn: on.contains(ring), context: context)
         }
     }
 
@@ -110,9 +112,6 @@ public enum AchievementPictures {
             context.fillEllipse(in: rect)
         } else {
             let line = rect.width * 0.22
-            // A ring that is off is off the sword: its hole shows the background, not the bar.
-            context.setFillColor(background)
-            context.fillEllipse(in: rect)
             context.setStrokeColor(ring)
             context.setLineWidth(line)
             context.strokeEllipse(in: rect.insetBy(dx: line / 2, dy: line / 2))
