@@ -1,49 +1,29 @@
 import Foundation
 import Session
 
-/// Takes the lesson through its steps on the screen: the player's toy, the camera, and the cover over the toy while
-/// it moves to another pose at once.
+/// Takes the lesson through its steps on the screen: the player's toy and the camera.
 ///
 /// The steps and the toy follow ``LessonRun``, through the player. This adds what the screen does around it: the camera
 /// is the person's as the toy is, so opening remembers it, and closing, or the step that gives the toy back, flies back
 /// to it, while going from that step to another remembers it again; each other step flies the camera to the step's
-/// view; and whenever a change would move the toy at once, it happens under the cover, as Reset does.
+/// view. Every change happens at once: where it sets the toy somewhere else, the 3D view fades the parts that change
+/// place (see `ToyScene.crossFade`).
 struct LessonGuide {
     let player: Player
     let rig: CameraRig
-    /// Hides the toy, makes the change, and shows the toy again. Where the toy is not on screen, it just makes it.
-    var cover: (@escaping () -> Void) -> Void = { $0() }
-    /// Whether the lesson is wanted open now, as the panel is. A change made under the cover comes a moment later, so
-    /// it checks this again then: opened and closed within the cover, the lesson stays as the panel last asked.
-    var isWanted: () -> Bool = { true }
 
     /// Opens the lesson at its first step, with every ring on: at a launch option's step, the first time, in a debug
     /// build.
     func open() {
         guard !player.isInLesson else { return }
-        let index = LessonLaunchOptions.takeStep() ?? 0
         rig.remember()
-        cover {
-            guard isWanted(), !player.isInLesson else { return }
-            player.openLesson(at: index)
-            showStepView()
-        }
+        player.openLesson(at: LessonLaunchOptions.takeStep() ?? 0)
+        showStepView()
     }
 
     /// Closes the lesson: the toy and the camera go back to how they were.
     func close() {
         guard player.isInLesson else { return }
-        let change = {
-            guard !isWanted(), player.isInLesson else { return }
-            player.closeLesson()
-            rig.flyBack()
-        }
-        if player.lessonClosingJumps { cover(change) } else { change() }
-    }
-
-    /// Closes the lesson at once, with no cover: for a lesson found open when its panel is already gone.
-    func closeNow() {
-        guard player.isInLesson, !isWanted() else { return }
         player.closeLesson()
         rig.flyBack()
     }
@@ -64,13 +44,9 @@ struct LessonGuide {
     }
 
     private func go(to index: Int) {
-        let leavesOwnToy = player.lessonPage?.givesToyBack == true && Lesson.steps[index].show != .givenBack
-        let change = {
-            if leavesOwnToy { rig.remember() }
-            player.goToLessonStep(index)
-            showStepView()
-        }
-        if player.lessonJumps(to: index) { cover(change) } else { change() }
+        if player.lessonPage?.givesToyBack == true, Lesson.steps[index].show != .givenBack { rig.remember() }
+        player.goToLessonStep(index)
+        showStepView()
     }
 
     /// Flies the camera to where the step is seen from: from above, or the standard view, which is the side view on a
