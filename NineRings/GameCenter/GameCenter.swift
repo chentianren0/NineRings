@@ -116,18 +116,19 @@ final class GameCenter {
             return reported
         }
         Task {
-            defer { isReporting = false }
             do {
                 try await GKAchievement.report(achievements)
-                ledger.markReported(pending)
-                save()
-                log("reported \(pending.map(\.rawValue).sorted())")
             } catch {
                 // Kept as pending: reported again at the next sign-in, earning or launch.
+                isReporting = false
                 log("could not report \(pending.map(\.rawValue).sorted()): \(error.localizedDescription)")
                 return
             }
-            // Anything earned while this report was on its way.
+            ledger.markReported(pending)
+            save()
+            log("reported \(pending.map(\.rawValue).sorted())")
+            // Cleared before reporting what was earned while this report was on its way, which would otherwise wait.
+            isReporting = false
             reportPending()
         }
     }
