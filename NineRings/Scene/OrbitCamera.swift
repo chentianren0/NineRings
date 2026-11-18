@@ -43,6 +43,15 @@ struct Viewport: Equatable {
         size.width <= leftInset + rightInset + 1 || size.height <= topInset + bottomInset + 1
     }
 
+    /// Whether the uncovered part differs from `other`'s by a step, as when a panel or a sheet arrives or goes, rather
+    /// than by the few points a frame that a window being resized moves.
+    func differsByAStep(from other: Viewport) -> Bool {
+        let step: CGFloat = 24
+        return abs(size.width - other.size.width) > step || abs(size.height - other.size.height) > step
+            || abs(topInset - other.topInset) > step || abs(bottomInset - other.bottomInset) > step
+            || abs(leftInset - other.leftInset) > step || abs(rightInset - other.rightInset) > step
+    }
+
     /// The uncovered part's width over its height.
     var aspectRatio: CGFloat {
         isEmpty ? 1 : (size.width - leftInset - rightInset) / (size.height - topInset - bottomInset)

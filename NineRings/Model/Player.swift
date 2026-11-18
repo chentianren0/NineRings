@@ -113,6 +113,10 @@ final class Player {
     /// The toy as it is now.
     var pose: ToyPose { session.pose }
 
+    /// How many times the toy has jumped: been set at once where some of its parts are somewhere else (see `PlayState`).
+    /// The 3D view shows a jump as those parts fading across, and reads this once a frame, unobserved.
+    var jumps: Int { play.jumps }
+
     /// The state the ring buttons show: while a move is in hand, the one the toy is about to be in (see
     /// `PlayState.markers`). Read through the markers, so that a view reading it follows it.
     var shownState: PuzzleState {
@@ -134,10 +138,9 @@ final class Player {
         change { $0.togglePlay() }
     }
 
-    /// Stops the move part way. A `quiet` pause says nothing: the screen pauses this way before it covers the toy for a
-    /// jump, which says the news itself.
-    func pause(quiet: Bool = false) {
-        change { $0.pause(quiet: quiet) }
+    /// Stops the move part way.
+    func pause() {
+        change { $0.pause() }
     }
 
     func undo() {
@@ -148,13 +151,12 @@ final class Player {
         change { $0.solve() }
     }
 
-    /// Back to every ring on, at once. The screen covers the toy while this happens.
+    /// Back to every ring on, at once.
     func reset() {
         change { $0.reset() }
     }
 
-    /// Sets the toy where `move` begins and plays it, with the lesson closed. The screen covers the toy while it jumps
-    /// there.
+    /// Sets the toy where `move` begins and plays it, with the lesson closed.
     func begin(at move: Move) {
         change { $0.begin(at: move) }
     }
@@ -162,7 +164,7 @@ final class Player {
     // MARK: Setting the rings
 
     /// Starts setting the rings by hand, from the rings the toy has now. When a move is in hand the toy goes to rest at
-    /// once, and the screen covers it (see `settingRingsStartJumps`).
+    /// once.
     func startSettingRings() {
         change { $0.startSettingRings() }
     }
@@ -177,14 +179,11 @@ final class Player {
         change { $0.finishSettingRings() }
     }
 
-    /// Gives the toy back as it was before the rings were set. The screen covers it when it jumps (see
-    /// `settingRingsCancelJumps`).
+    /// Gives the toy back as it was before the rings were set.
     func cancelSettingRings() {
         change { $0.cancelSettingRings() }
     }
 
-    var settingRingsStartJumps: Bool { play.settingRingsStartJumps }
-    var settingRingsCancelJumps: Bool { play.settingRingsCancelJumps }
 
     /// Hides the congratulation, as its Done button does.
     func dismissCongratulation() {
@@ -272,8 +271,7 @@ final class Player {
     /// that shows something of its own rather than give the toy back.
     var lessonHoldsToy: Bool { lessonPage.map { !$0.givesToyBack } ?? false }
 
-    /// Opens the lesson at step `index`, counted from 0, keeping the toy as it is to give back on closing. The screen
-    /// covers the toy while every ring goes on.
+    /// Opens the lesson at step `index`, counted from 0, keeping the toy as it is to give back on closing.
     func openLesson(at index: Int = 0) {
         guard lesson == nil else { return }
         change { $0.openLesson(at: index) }
@@ -290,14 +288,6 @@ final class Player {
         guard isInLesson else { return }
         change { $0.goToLessonStep(index) }
     }
-
-    /// Whether going to step `index` moves the toy to another pose at once, so that the screen should cover it.
-    func lessonJumps(to index: Int) -> Bool {
-        lesson?.jumps(to: index) ?? false
-    }
-
-    /// Whether closing the lesson moves the toy to another pose at once.
-    var lessonClosingJumps: Bool { lesson?.closingJumps ?? false }
 
     #if DEBUG
     // MARK: Store pictures

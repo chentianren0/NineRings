@@ -13,6 +13,8 @@ struct NineRingsApp: App {
             Task { await Capture.run(request) }
         }
         #endif
+        // The lesson's tip; what it knows stays on the device.
+        LessonTip.configure()
     }
 
     var body: some Scene {

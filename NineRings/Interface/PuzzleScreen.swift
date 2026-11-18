@@ -7,10 +7,13 @@ import SwiftUI
 /// on one half and the controls on the other. On a wide screen the room goes to the toy, and the lesson opens beside
 /// it, as an inspector, rather than over it.
 struct PuzzleScreen: View {
-    let player: Player
-    let rig: CameraRig
+    /// The screen's mode, and the one place it changes.
+    let modes: ScreenModes
+    private var player: Player { modes.player }
+    private var rig: CameraRig { modes.rig }
+    private var showsLesson: Bool { modes.showsLesson }
+    private var mode: ScreenMode { modes.mode }
 
-    @State private var showsLesson = LessonLaunchOptions.opensAtLaunch
     /// Whether the screen has appeared, after which the lesson opens only when asked.
     @State private var hasAppeared = false
     /// When the inspector's binding last set the lesson closed, to tell the system presenting it again from opening it.
@@ -19,8 +22,6 @@ struct PuzzleScreen: View {
     // them, as they open the Settings window and the About panel on the Mac.
     @State private var showsSettings = ScreenLaunchOptions.opensSettings
     @State private var showsAbout = ScreenLaunchOptions.opensAbout
-    /// How much of the toy a plain cover hides, while the toy jumps to another state.
-    @State private var cover = 0.0
     /// Where the floating controls are, in the global coordinate space, so that the toy is framed clear of them.
     @State private var panelFrame: CGRect = .null
     /// Where the lesson's panel is, in the global coordinate space: a column beside the toy on a wide screen, a sheet
@@ -28,7 +29,7 @@ struct PuzzleScreen: View {
     @State private var lessonFrame: CGRect = .null
     /// Whether the controls have a half of their own, as on a half-folded iPhone Duo.
     @State private var isHalfFolded = false
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.reducesMotion) private var reducesMotion
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -46,25 +47,15 @@ struct PuzzleScreen: View {
         NavigationStack {
             ArrangementView {
                 Controls(player: player, panelFrame: $panelFrame, hasOwnHalf: $isHalfFolded, lessonSheet: lessonSheet,
-                         stepsAside: controlsStepAside) {
-                    jump { player.reset() }
-                }
+                         stepsAside: controlsStepAside, openLesson: modes.openLesson, putBack: modes.reset)
                 .accessibilitySortPriority(1)
             } secondary: {
                 // VoiceOver meets the toy first, then the controls.
                 ToyCanvas(player: player, rig: rig, covers: [panelFrame, lessonFrame]) { player.tap($0) }
                     .accessibilitySortPriority(2)
-                    .overlay {
-                        Backdrop.color(for: colorScheme)
-                            .opacity(cover)
-                            .ignoresSafeArea()
-                            .allowsHitTesting(false)
-                            .accessibilityHidden(true)
-                    }
             }
             .arrangementViewStyle(.overlay)
-            .puzzleCommands(PuzzleActions(player: player, rig: rig, showsLesson: $showsLesson, lesson: lesson,
-                                          reset: { jump { player.reset() } }, settingRings: settingRings))
+            .puzzleCommands(PuzzleActions(player: player, rig: rig, modes: modes))
             .navigationTitle(Text("Nine Rings", comment: "The window's title."))
             .toolbar(removing: .title)
             #if os(iOS)
@@ -78,14 +69,14 @@ struct PuzzleScreen: View {
             // last run would, is refused.
             .inspector(isPresented: Binding(get: { showsLesson }, set: { presented in
                 if presented {
-                    if let closed = inspectorClosedAt, closed.duration(to: .now) < .seconds(1) { showsLesson = true }
+                    if let closed = inspectorClosedAt, closed.duration(to: .now) < .seconds(1) { modes.showsLesson = true }
                     inspectorClosedAt = nil
                 } else {
                     inspectorClosedAt = .now
-                    showsLesson = false
+                    modes.showsLesson = false
                 }
             })) {
-                LessonPanel(player: player, guide: lesson) { showsLesson = false }
+                LessonPanel(player: player, guide: modes.lesson) { modes.closeLesson() }
                     .inspectorColumnWidth(min: 300, ideal: 360, max: 440)
                     #if os(iOS)
                     // On a phone the inspector is a sheet. It stops half way up, so that the toy the text speaks of
@@ -111,17 +102,15 @@ struct PuzzleScreen: View {
                 // lesson left open would come back at launch: until the screen has appeared, keep it closed, unless a
                 // debug option asked for it.
                 guard hasAppeared || !shows || LessonLaunchOptions.opensAtLaunch else {
-                    showsLesson = false
+                    modes.showsLesson = false
                     return
                 }
-                if shows { lesson.open() } else { lesson.close() }
+                // The toolbar, the menu bar and the panel change the lesson and the panel together; this follows the
+                // panel where the system alone changed it, as when a swipe down closes the sheet.
+                modes.followLessonPanel()
             }
             .onAppear { hasAppeared = true }
-            // The toy is the lesson's only while its panel is open. Should the panel go without closing the lesson, as
-            // when it goes in the middle of the cover's change, the toy comes back to the person at once.
-            .onChange(of: player.lessonPage != nil) { _, inLesson in
-                if inLesson, !showsLesson { lesson.closeNow() }
-            }
+            .onChange(of: reducesMotion, initial: true) { _, reduces in modes.reducesMotion = reduces }
             #if os(iOS)
             // Settings hold little: on a phone the sheet stops at half height. About, with its text and links, is a
             // full sheet. On an iPad each is the system's form sheet.
@@ -176,10 +165,6 @@ struct PuzzleScreen: View {
         #endif
     }
 
-    private var lesson: LessonGuide {
-        LessonGuide(player: player, rig: rig, cover: jump, isWanted: { showsLesson })
-    }
-
     /// Where the puzzle's toolbar items go: the trailing end, on every device.
     private static var trailing: ToolbarItemPlacement {
         #if os(macOS)
@@ -202,53 +187,57 @@ struct PuzzleScreen: View {
         // With no title in the window's toolbar, items gather at the leading end unless something pushes them over.
         ToolbarSpacer(.flexible)
         #endif
-        if player.isSettingRings {
+        // The View menu keeps its place in every mode, so that it is never taken out and put back; the items around it
+        // follow the mode.
+        ToolbarItem(id: "view", placement: Self.trailing) {
+            viewMenu
+        }
+        if mode == .settingRings {
             // Setting the rings is a mode, as editing is in Apple's apps: the toolbar offers only the way out, Cancel to
             // give the toy back as it was, Done to keep the rings as set, and the View menu, to see them from anywhere.
-            ToolbarItem(placement: Self.trailing) {
-                viewMenu
-            }
             ToolbarSpacer(.fixed, placement: Self.trailing)
-            ToolbarItem(placement: .cancellationAction) {
+            ToolbarItem(id: "cancel", placement: .cancellationAction) {
                 Button(role: .cancel) {
-                    settingRings.cancel()
+                    modes.cancelSettingRings()
                 }
                 .keyboardShortcut(.cancelAction)
                 .help(Text("Put the rings back as they were", comment: "Tooltip on the Cancel button while the rings are set by hand."))
             }
-            ToolbarItem(placement: .confirmationAction) {
+            ToolbarItem(id: "done", placement: .confirmationAction) {
                 Button(role: .confirm) {
-                    settingRings.finish()
+                    modes.finishSettingRings()
                 }
                 .keyboardShortcut(.defaultAction)
                 .help(Text("Keep the rings as set", comment: "Tooltip on the Done button while the rings are set by hand."))
             }
         } else {
-            ToolbarItemGroup(placement: Self.trailing) {
-                viewMenu
+            ToolbarItem(id: "setRings", placement: Self.trailing) {
                 Button {
-                    settingRings.start()
+                    modes.startSettingRings()
                 } label: {
                     Label { Text("Set Rings", comment: "Toolbar button that starts setting the rings by hand: each ring button then puts its ring on or takes it off at once.") } icon: { Image(systemName: "pencil") }
                 }
-                .disabled(showsLesson)
+                .disabled(mode == .lesson)
                 .help(Text("Choose which rings are on", comment: "Tooltip on the Set Rings button."))
+            }
+            ToolbarItem(id: "reset", placement: Self.trailing) {
                 Button {
-                    jump { player.reset() }
+                    modes.reset()
                 } label: {
                     Label { Text("Reset", comment: "Toolbar button that puts every ring back on.") } icon: { Image(systemName: "arrow.counterclockwise") }
                 }
                 .help(Text("Put every ring back on", comment: "Tooltip on the Reset button."))
             }
             ToolbarSpacer(.fixed, placement: Self.trailing)
-            ToolbarItem(placement: Self.trailing) {
+            ToolbarItem(id: "lesson", placement: Self.trailing) {
                 Button {
-                    showsLesson.toggle()
+                    modes.toggleLesson()
                 } label: {
                     Label { Text("Lesson", comment: "Toolbar button that shows or hides the lesson on how the puzzle works.") } icon: { Image(systemName: "book") }
                 }
-                .accessibilityAddTraits(showsLesson ? .isSelected : [])
+                .accessibilityAddTraits(mode == .lesson ? .isSelected : [])
                 .help(Text("Show how the puzzle works", comment: "Tooltip on the Lesson button."))
+                .lessonTip(player: player, lessonShown: modes.showsLesson, openLesson: modes.openLesson)
             }
         }
         #if os(iOS)
@@ -286,52 +275,6 @@ struct PuzzleScreen: View {
             Label { Text("View", comment: "Toolbar menu of the places to see the toy from.") } icon: { Image(systemName: "cube") }
         }
     }
-
-    /// Setting the rings by hand, with a cover over the toy where it jumps.
-    private var settingRings: SettingRings {
-        SettingRings(player: player, cover: jump)
-    }
-
-    /// Covers the toy, makes a change that moves it to another state at once, and uncovers it, so that the jump
-    /// is calm.
-    private func jump(_ change: @escaping () -> Void) {
-        // Quietly: the jump says what the toy has become, and "Paused" would only come before it.
-        player.pause(quiet: true)
-        withAnimation(.easeIn(duration: 0.25)) {
-            cover = 1
-        } completion: {
-            change()
-            withAnimation(.easeOut(duration: 0.4)) { cover = 0 }
-        }
-    }
-}
-
-/// Starting, finishing and cancelling the setting of the rings, as the toolbar and the menu bar do them: where the toy
-/// jumps, to rest from a move in hand or back to how it was, under the screen's cover.
-struct SettingRings {
-    let player: Player
-    let cover: (@escaping () -> Void) -> Void
-
-    func start() {
-        guard !player.isSettingRings else { return }
-        if player.settingRingsStartJumps {
-            cover { player.startSettingRings() }
-        } else {
-            player.startSettingRings()
-        }
-    }
-
-    func finish() {
-        player.finishSettingRings()
-    }
-
-    func cancel() {
-        if player.settingRingsCancelJumps {
-            cover { player.cancelSettingRings() }
-        } else {
-            player.cancelSettingRings()
-        }
-    }
 }
 
 /// The places to see the toy from, as the toolbar's View menu and the menu bar's View menu name them.
@@ -365,6 +308,8 @@ private struct Controls: View {
     let lessonSheet: CGRect
     /// Whether the controls step aside for the lesson.
     let stepsAside: Bool
+    /// Opens the lesson, from its tip.
+    let openLesson: () -> Void
     /// Puts every ring back on, from the congratulation.
     let putBack: () -> Void
     @Environment(\.overlayArrangementZIndex) private var zIndex
@@ -391,9 +336,10 @@ private struct Controls: View {
                     CongratulationCard(player: player, putBack: putBack)
                         .transition(.blurReplace)
                 }
+                LessonTipView(openLesson: openLesson)
                 ControlPanel(player: player, style: .beside)
             }
-            .animation(.smooth(duration: 0.4), value: player.isCongratulating)
+            .animation(ScreenMotion.card, value: player.isCongratulating)
             .frame(maxWidth: 560)
             .padding(.horizontal, 16)
             .padding(.top, lessonSheet.isNull ? 0 : 12)
@@ -429,17 +375,21 @@ private struct Controls: View {
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { panelFrame = $0 }
             .overlay(alignment: .top) {
                 // The reason a ring cannot move floats above the panel, over the toy, taking no room, so that the
-                // panel keeps its height and the toy does not move.
-                if let refusal = ControlPanel.refusal(in: player.status) {
-                    RefusalBubble(text: refusal)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .visualEffect { content, proxy in
-                            content.offset(y: -proxy.size.height - 10)
-                        }
-                        .appearingOverToy(reducesMotion: reducesMotion)
+                // panel keeps its height and the toy does not move. The lesson's tip, where it is inline, floats above
+                // it.
+                VStack(spacing: 10) {
+                    LessonTipView(openLesson: openLesson)
+                    if let refusal = ControlPanel.refusal(in: player.status) {
+                        RefusalBubble(text: refusal)
+                            .appearingOverToy(reducesMotion: reducesMotion)
+                    }
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                .visualEffect { content, proxy in
+                    content.offset(y: -proxy.size.height - 10)
                 }
             }
-            .animation(.snappy(duration: 0.25), value: ControlPanel.refusal(in: player.status) == nil)
+            .animation(ScreenMotion.small, value: ControlPanel.refusal(in: player.status) == nil)
             .frame(maxWidth: 720)
             .padding(.horizontal, 12)
             .padding(.bottom, 8 + lift)
