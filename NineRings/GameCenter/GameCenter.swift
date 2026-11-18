@@ -11,6 +11,9 @@ import Session
 ///   once, or when one signs in later, or at the next launch if reporting failed.
 /// - No player identifier is read, and nothing goes anywhere but to Game Center.
 /// - The store pictures and the capture mode leave it off, so that its banners never show in them.
+/// - On the Mac it needs the App Sandbox's incoming and outgoing network connections, as Apple's "Initializing and
+///   configuring Game Center" asks: the project's build settings `ENABLE_INCOMING_NETWORK_CONNECTIONS` and
+///   `ENABLE_OUTGOING_NETWORK_CONNECTIONS`, beside the entitlement.
 @MainActor
 @Observable
 final class GameCenter {
