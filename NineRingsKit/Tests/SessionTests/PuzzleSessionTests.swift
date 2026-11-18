@@ -585,8 +585,8 @@ import simd
         #expect(session.moveCount >= 1)
     }
 
-    /// Paused, and carried on by Play, a move Solve began is the person's.
-    @Test func aMoveCarriedOnByPlayIsThePersons() {
+    /// A move belongs to whoever began it: paused and carried on by Play, or dragged to its end, Solve's move is Solve's.
+    @Test func aMoveSolveBeganStaysSolvesHoweverItIsCarriedOn() {
         var session = PuzzleSession()
         session.solve()
         session.advance(by: 0.2 * aMove)
@@ -594,7 +594,35 @@ import simd
         session.togglePlay()
         session.advance(by: 10)
         #expect(session.moveCount == 1)
-        #expect(session.madeBySolveCount == 0)
+        #expect(session.madeBySolveCount == 1)
+        session.advance(by: 0.2 * aMove)
+        session.scrub(to: 1)
+        #expect(session.moveCount == 2)
+        #expect(session.madeBySolveCount == 2)
+    }
+
+    /// Sent back before it ends and played again, Solve's move is still Solve's: Solve chose its ring.
+    @Test func aMoveSolveBeganStaysSolvesAfterBeingSentBack() {
+        var session = PuzzleSession()
+        session.solve()
+        session.advance(by: 0.3 * aMove)
+        session.undo()
+        playOut(&session)
+        session.togglePlay()
+        playOut(&session)
+        #expect(session.moveCount == 1 && session.unmadeCount == 0)
+        #expect(session.madeBySolveCount == 1)
+    }
+
+    /// A move of Solve's that ended, taken back by the slider and made again, was undone: made again, it is the person's.
+    @Test func aSolveMoveTakenBackAndMadeAgainIsThePersons() {
+        var session = PuzzleSession(resting: PuzzleState("100000000")!)
+        session.solve()
+        session.advance(by: 10)
+        #expect(session.madeBySolveCount == 1 && session.state == .allOff)
+        session.scrub(to: 0)
+        session.scrub(to: 1)
+        #expect(session.madeBySolveCount == 1 && session.unmadeCount == 1)
     }
 
     @Test func movesTakenBackAreCountedByUndoAndByTheSlider() {
@@ -611,38 +639,36 @@ import simd
         #expect(session.unmadeCount == 2)
     }
 
-    /// Pressing Undo takes a move back, also one that has not ended.
-    @Test func undoDuringAMoveThatHasNotEndedCounts() {
+    /// A move stands once it ends: one sent back before it ended, by Undo or the slider, is not taken back.
+    @Test func aMoveThatHasNotEndedSentBackIsNotAnUndo() {
         var session = PuzzleSession()
         session.tap(2)
         session.advance(by: 0.3 * aMove)
         session.undo()
         playOut(&session)
         #expect(session.state == .allOn && session.moveCount == 0)
-        #expect(session.unmadeCount == 1)
-    }
-
-    @Test func undoAtTheVeryBeginningOfAMoveCounts() {
-        var session = PuzzleSession()
         session.tap(2)
         session.undo()
         #expect(!session.isPlaying && session.progress == 0)
-        #expect(session.unmadeCount == 1)
-    }
-
-    /// Dragging the slider back to the start of a move in hand takes it back, as Undo does.
-    @Test func aMoveInHandDraggedBackToItsStartCounts() {
-        var session = PuzzleSession()
         session.tap(2)
         session.advance(by: 0.3 * aMove)
         session.scrub(to: 0)
-        #expect(session.unmadeCount == 1)
         session.scrub(to: 0.2)
         session.scrub(to: 0)
-        #expect(session.unmadeCount == 2, "carried forward and dragged back again: a second time")
+        #expect(session.unmadeCount == 0)
     }
 
-    /// One move taken back counts once: Undo resumed after a pause, or the slider dragged on to the start, finishes it.
+    /// The finger wobbling at the slider's start, after a move was taken back, takes nothing more back.
+    @Test func aWobbleAtTheSlidersStartCountsOnce() {
+        var session = PuzzleSession()
+        session.tap(1)
+        playOut(&session)
+        for progress in [0.5, 0, 0.01, 0, 0.005, 0] { session.scrub(to: progress) }
+        #expect(session.unmadeCount == 1)
+    }
+
+    /// One move taken back counts once, when it arrives at its start: Undo resumed after a pause, or the slider dragged on
+    /// to the start, finishes it.
     @Test func aMoveTakenBackCountsOnce() {
         var session = PuzzleSession()
         session.tap(1)
@@ -653,15 +679,16 @@ import simd
         session.undo()
         session.advance(by: 0.2 * aMove)
         session.pause()
-        #expect(session.unmadeCount == 1)
+        #expect(session.unmadeCount == 0, "it still stands until it arrives at its start")
         session.scrub(to: session.progress / 2)
         session.scrub(to: 0)
         #expect(session.unmadeCount == 1)
         #expect(session.moveCount == 0)
     }
 
-    /// Undo, then Play carrying the move forward again, then Undo: taken back twice.
-    @Test func aMoveCarriedForwardAndTakenBackAgainCountsTwice() {
+    /// An undo counts when the move arrives back at its start: Undo, then Play carrying it forward, then Undo again
+    /// all the way, is one.
+    @Test func anUndoCountsWhenTheMoveArrivesAtItsStart() {
         var session = PuzzleSession()
         session.tap(1)
         playOut(&session)
@@ -669,9 +696,10 @@ import simd
         session.advance(by: 0.2 * aMove)
         session.togglePlay()
         session.togglePlay()
+        #expect(session.unmadeCount == 0)
         session.undo()
         playOut(&session)
-        #expect(session.unmadeCount == 2)
+        #expect(session.unmadeCount == 1)
     }
 
 

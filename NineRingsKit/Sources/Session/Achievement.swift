@@ -31,7 +31,8 @@ extension PuzzleState {
 /// - The other two are journeys along the one path, made by the person's own moves: from every ring off to every ring
 ///   on (All Nine Back On), and from every ring on or every ring off to only ring 9 on (The Far End). A journey counts
 ///   once the toy has been at its start, and it is earned by a move made forward that leaves the toy resting at its
-///   end, as the congratulation is. An undo arriving there does not count, and neither does a move that Solve played.
+///   end, as the congratulation is. An undo arriving there does not count, and neither does a move that Solve began,
+///   however it was carried on.
 /// - Resting at a journey's end in any other way, such as by Reset or by an undo, means the journey must start again.
 ///   The toy passing through it, with another ring waiting, changes nothing.
 /// - Rings set by hand start a journey only from its start: setting the rings next to the far end and moving one ring
@@ -96,7 +97,9 @@ public struct AchievementRule: Sendable, Equatable {
             if starts.contains(before.state) || starts.contains(after.state) { isUnderWay = true }
             guard after.state == end, !after.isBusy else { return false }
             defer { isUnderWay = false }
+            // A move Solve began is Solve's however it is carried on (``PuzzleSession/madeBySolveCount``).
             return isUnderWay && after.moveCount > before.moveCount && !before.isSolving
+                && after.madeBySolveCount == before.madeBySolveCount
         }
 
         mutating func set(_ state: PuzzleState) {

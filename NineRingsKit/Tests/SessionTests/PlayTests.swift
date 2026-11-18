@@ -107,26 +107,69 @@ import Testing
         #expect(state.play?.moves == 4 && state.play?.undos == 3)
     }
 
-    /// Pressing Undo counts as an undo, also during a move that has not ended.
-    @Test func undoDuringAMoveThatHasNotEndedCounts() {
+    /// A move stands once it ends: Undo during a move that has not ended sends it back, and is not an undo.
+    @Test func undoDuringAMoveThatHasNotEndedIsNotAnUndo() {
         var state = PlayState()
         state.tap(2)
         state.advance(by: 0.3 * aMove)
         state.undo()
         playOut(&state)
         #expect(state.toy.state == .allOn)
-        #expect(state.play?.undos == 1)
+        #expect(state.play?.undos == 0)
         #expect(state.play?.moves == 0)
     }
 
-    @Test func aWrongRingTakenBackDuringItsMoveKeepsTheShortestWayFromBeingEarned() throws {
+    /// A wrong ring sent back before its move ended costs nothing: the shortest way after it is still earned.
+    @Test func aWrongRingSentBackBeforeItsMoveEndsCostsNothing() {
         var state = PlayState()
         state.tap(2)
         state.advance(by: 0.3 * aMove)
         state.undo()
         playOut(&state)
         let earned = earn(PuzzleState.allOn.moves(to: .allOff), on: &state)
-        #expect(earned == [.allNineOff])
+        #expect(earned == [.allNineOff, .shortestWay])
+    }
+
+    /// The finger wobbling at the slider's start, in a play just begun, takes nothing back.
+    @Test func aWobbleAtTheSlidersStartCostsNothing() {
+        var state = PlayState()
+        play([1], on: &state)
+        state.scrub(to: 0)
+        #expect(state.play?.undos == 0, "back at every ring on: a new play")
+        for progress in [0.01, 0, 0.005, 0] { state.scrub(to: progress) }
+        #expect(state.play?.undos == 0)
+        #expect(state.play?.moves == 0)
+    }
+
+    /// Solve chose every ring: pausing and playing each move, or dragging the last to its end, earns nothing and leaves
+    /// no record.
+    @Test(arguments: [false, true]) func solveCarriedOnMoveByMoveEarnsNothing(dragsTheLast: Bool) {
+        var state = PlayState()
+        state.solve()
+        var earned: Set<Achievement> = []
+        var finished: [PlayRecord] = []
+        var steps = 0
+        while state.toy.state != .allOff || state.toy.isBusy {
+            state.advance(by: 0.3 * aMove)
+            if state.toy.isPlaying {
+                if dragsTheLast && state.toy.queue.isEmpty {
+                    // A drag goes through the values between: the first ends Solve, the last makes the move.
+                    state.scrub(to: 0.6)
+                    state.scrub(to: 1)
+                } else {
+                    state.pause()
+                    state.togglePlay()
+                    state.advance(by: 10)
+                }
+            }
+            earned.formUnion(state.earned)
+            if let record = state.finished { finished.append(record) }
+            steps += 1
+            precondition(steps < 2_000, "Solve never ended")
+        }
+        #expect(earned.isEmpty)
+        #expect(finished.isEmpty)
+        #expect(!state.isCongratulating)
     }
 
     @Test func aMoveStoppedPartWayIsNotCountedUntilItEnds() {
@@ -363,18 +406,18 @@ import Testing
         #expect(restored.toy.state == .allOff)
     }
 
-    @Test func undosKeepCountingOnceAcrossALaunch() throws {
+    @Test func anUndoStoppedPartWayCountsWhenItArrivesAfterALaunch() throws {
         var state = PlayState()
         play([1, 3], on: &state)
         state.undo()
         state.advance(by: 0.3 * aMove)
         state.pause()
         state.scrub(to: 0.4)
-        #expect(state.play?.undos == 1)
+        #expect(state.play?.undos == 0, "the move still stands")
         var restored = try relaunch(state)
         restored.scrub(to: 0)
         #expect(restored.toy.moveCount == 1)
-        #expect(restored.play?.undos == 1, "dragging on to the start finishes the same undo")
+        #expect(restored.play?.undos == 1)
     }
 
     // MARK: The rule

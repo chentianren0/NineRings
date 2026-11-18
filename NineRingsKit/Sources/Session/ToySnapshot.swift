@@ -10,8 +10,8 @@ import Puzzle
 ///   it is anywhere but at the end of the last move made, the rings waiting their turn and whether Solve is under way,
 ///   the play in progress with its id and counts, and the journeys toward achievements under way.
 /// - The toy comes back as it was, only paused: a move playing is kept as stopped where it is, and play carries on
-///   from there, with the rings waiting and the rest of a Solve. What the record counts of the move on the slider is
-///   kept with it: whether Solve began it, and whether it is being taken back.
+///   from there, with the rings waiting and the rest of a Solve. Whether Solve began the move on the slider is kept with
+///   it, since the record counts that move as Solve's.
 /// - At most ``movesKept`` moves are kept: the oldest are folded into the start, so that undo goes back that far and
 ///   no further. The play's counts are kept whole.
 /// - Brought back, the moves are checked one by one against the rule; a snapshot that breaks it brings nothing back.
@@ -31,10 +31,8 @@ public struct ToySnapshot: Sendable, Equatable, Codable {
         var isMade: Bool
         /// Whether it was going back, toward its start, when it stopped.
         var isUndoing: Bool
-        /// Whether Solve began it, and nothing the person did has carried it on since.
+        /// Whether Solve began it.
         var isSolves: Bool
-        /// Whether it is being taken back, and counted as an undo already.
-        var isTakenBack: Bool
     }
 
     /// The arrangement the moves start from.
@@ -73,7 +71,7 @@ public struct ToySnapshot: Sendable, Equatable, Codable {
             // A move taken back all the way, or never begun, rests where it starts: the slider keeps it there.
             slider = Slider(
                 ring: current.ring, progress: toy.progress, isMade: toy.isCurrentMade, isUndoing: toy.direction == .backward,
-                isSolves: toy.currentIsSolves, isTakenBack: toy.currentIsTakenBack
+                isSolves: toy.currentIsSolves
             )
         }
     }
@@ -123,8 +121,8 @@ public struct ToySnapshot: Sendable, Equatable, Codable {
         }
         return PuzzleSession(
             start: start.state, made: made, current: current, progress: slider.progress, currentIsMade: slider.isMade,
-            direction: slider.isUndoing ? .backward : .forward, currentIsSolves: slider.isSolves,
-            currentIsTakenBack: slider.isTakenBack, queue: queue, isSolving: isSolving
+            direction: slider.isUndoing ? .backward : .forward, currentIsSolves: slider.isSolves, queue: queue,
+            isSolving: isSolving
         )
     }
 

@@ -52,6 +52,8 @@ final class Player {
             change { $0.scrub(to: newValue) }
         }
     }
+    /// Whether the slider is being dragged: the toy is kept once the drag ends, not at every value on the way.
+    @ObservationIgnored private var isDragging = false
     private var shownProgress: Double = 0
     private(set) var isPlaying = false
     private(set) var markers: [PuzzleSession.Marker] = []
@@ -207,13 +209,24 @@ final class Player {
     // MARK: Keeping the play
 
     /// Makes `request` to the play: the time in front so far goes to the play first, so that a play finished by it has
-    /// all of its time; then a finished play is recorded, the toy is kept when nothing is playing, and the views follow.
+    /// all of its time; then a finished play is recorded, the toy is kept when nothing is playing and the slider is not
+    /// being dragged, and the views follow.
     private func change(_ request: (inout PlayState) -> Void) {
         giveTimeToPlay()
         request(&play)
         if let finished = play.finished { keeper?.record(finished) }
-        if !play.toy.isPlaying { keeper?.keep(play.snapshot) }
+        if !play.toy.isPlaying && !isDragging { keeper?.keep(play.snapshot) }
         publish()
+    }
+
+    /// The slider is being dragged, or has been let go: playing stops as the drag begins, and the toy is kept as it ends.
+    func dragging(_ isDragging: Bool) {
+        self.isDragging = isDragging
+        if isDragging {
+            pause()
+        } else if !play.toy.isPlaying {
+            keeper?.keep(play.snapshot)
+        }
     }
 
     /// The app has come to the front: its time counts toward the play from now.

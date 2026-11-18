@@ -84,21 +84,17 @@ public struct PuzzleSession: Sendable, Equatable {
     public private(set) var isSolving = false
     /// Why the last request did not play; cleared by the next thing that happens.
     public private(set) var note: Note?
-    /// How many times a move has been taken back: a count that only grows, for whoever keeps a record of the play.
-    /// Pressing Undo takes a move back, also one that has not ended, and so does dragging the slider back to the start of
-    /// the move on it. A move taken back counts once: Undo resumed after a pause, or the slider dragged on toward the
-    /// start, goes on taking back the same move. Carrying the move forward again, by Play or the slider, ends that.
+    /// How many times a move has been taken back: a count that only grows, for whoever keeps a record of the play. A move
+    /// stands once it ends; taking it back, by Undo or by dragging the slider back to its start, counts once, when it
+    /// arrives there. A move stopped before it ended and sent back to its start never stood, and is not counted.
     public private(set) var unmadeCount = 0
-    /// How many moves Solve has made: a count that only grows. A move counts as Solve's when Solve began it, even if a
-    /// tap takes over while it plays; one the person plays or drags to its end is theirs.
+    /// How many moves Solve has made: a count that only grows. A move belongs to whoever began it: one Solve began is
+    /// Solve's however it is carried on, by Play, by the slider or by a tap that takes over, since Solve chose its ring.
     public private(set) var madeBySolveCount = 0
     /// Whether the move on the slider is made, that is, is the last of `made`.
     private var currentIsMade = false
-    /// Whether Solve began the move on the slider, and nothing the person did has carried it on since.
+    /// Whether Solve began the move on the slider.
     private(set) var currentIsSolves = false
-    /// Whether the move on the slider is being taken back, and counted in `unmadeCount`, and has not been carried
-    /// forward since.
-    private(set) var currentIsTakenBack = false
 
     /// A session with every ring on and no move made.
     public init() {
@@ -115,7 +111,7 @@ public struct PuzzleSession: Sendable, Equatable {
     /// is the last of them when `currentIsMade`, and otherwise a move from where they end.
     init(
         start: PuzzleState, made: [Move], current: Move?, progress: Double, currentIsMade: Bool, direction: Direction,
-        currentIsSolves: Bool = false, currentIsTakenBack: Bool = false, queue: [Int] = [], isSolving: Bool = false
+        currentIsSolves: Bool = false, queue: [Int] = [], isSolving: Bool = false
     ) {
         self.start = start
         self.made = made
@@ -124,7 +120,6 @@ public struct PuzzleSession: Sendable, Equatable {
         self.currentIsMade = currentIsMade
         self.direction = direction
         self.currentIsSolves = currentIsSolves
-        self.currentIsTakenBack = currentIsTakenBack
         self.queue = queue
         self.isSolving = isSolving
     }
@@ -289,13 +284,11 @@ public struct PuzzleSession: Sendable, Equatable {
         }
         guard canPlay else { return }
         note = nil
-        currentIsSolves = false
         if progress >= 1 {
             playNext()
         } else {
             // Forward even when an undo was paused part way: play makes the move, undo unmakes it.
             direction = .forward
-            currentIsTakenBack = false
             isPlaying = true
         }
     }
@@ -310,22 +303,20 @@ public struct PuzzleSession: Sendable, Equatable {
         queue.removeAll()
         isSolving = false
         note = nil
-        currentIsSolves = false
         if progress <= 0 && isPlaying {
             // The move has only just begun: it stops where it began.
             isPlaying = false
-            countTakingBack()
             return
         }
         if progress <= 0, let previous = made.last {
             self.current = previous
             currentIsMade = true
-            currentIsTakenBack = false
+            // It was counted when it was made; made again after an undo, it is the person's.
+            currentIsSolves = false
             progress = 1
         }
         direction = .backward
         isPlaying = true
-        countTakingBack()
     }
 
     /// Makes `moves` at once, one after another from the state now, as if each had played to its end: each is among
@@ -339,7 +330,6 @@ public struct PuzzleSession: Sendable, Equatable {
             current = move
             currentIsMade = true
             currentIsSolves = false
-            currentIsTakenBack = false
             progress = 1
             direction = .forward
             note = nil
@@ -371,17 +361,9 @@ public struct PuzzleSession: Sendable, Equatable {
         isPlaying = false
         direction = .forward
         note = nil
-        currentIsSolves = false
-        let newProgress = min(max(newProgress, 0), 1)
-        let wasAway = progress > 0
-        // Dragged forward, the move is carried on; dragged back, a move being taken back goes on being taken back.
-        if newProgress > progress { currentIsTakenBack = false }
-        progress = newProgress
+        progress = min(max(newProgress, 0), 1)
         if progress >= 1 { settle(made: true) }
-        if progress <= 0 {
-            if wasAway { countTakingBack() }
-            settle(made: false)
-        }
+        if progress <= 0 { settle(made: false) }
         // During a solve's last move the queue is already empty. Dragged away from playing, that move is all that
         // is left of the solve, and play or a tap now decides what comes next: solving is over, so Solve is
         // offered again.
@@ -440,15 +422,11 @@ public struct PuzzleSession: Sendable, Equatable {
             if currentIsSolves { madeBySolveCount += 1 }
         } else {
             made.removeLast()
+            unmadeCount += 1
+            // Taken back, it was undone; made again, it is the person's.
+            currentIsSolves = false
         }
         currentIsMade = isMade
-    }
-
-    /// Counts the move on the slider as taken back, unless it is being taken back already.
-    private mutating func countTakingBack() {
-        guard !currentIsTakenBack else { return }
-        currentIsTakenBack = true
-        unmadeCount += 1
     }
 
     /// Begins the next ring in the queue that can play, or stops the queue at the first that cannot.
@@ -476,7 +454,6 @@ public struct PuzzleSession: Sendable, Equatable {
         current = move
         currentIsMade = false
         currentIsSolves = isSolving
-        currentIsTakenBack = false
         progress = 0
         direction = .forward
         isPlaying = true

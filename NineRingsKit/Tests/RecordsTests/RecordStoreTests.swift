@@ -171,10 +171,12 @@ import Testing
                 #expect(isFixedType, "\(entity.name).\(attribute.name) is \(attribute.valueType)")
             }
         }
+        // CloudKit's rules: no relationships, no unique values, and a default for every field.
         for entity in RecordStore.schema.entities {
             #expect(entity.relationships.isEmpty, "\(entity.name)")
             for attribute in entity.attributes {
                 #expect(!attribute.isUnique, "\(entity.name).\(attribute.name)")
+                #expect(attribute.defaultValue != nil, "\(entity.name).\(attribute.name) has no default")
             }
         }
     }

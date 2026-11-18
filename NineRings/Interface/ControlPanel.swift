@@ -291,7 +291,7 @@ private struct MoveSlider: View {
         Slider(value: $player.progress, in: 0...1) {
             Text("Progress", comment: "Spoken name of the slider that runs through the move.")
         } onEditingChanged: { editing in
-            if editing { player.pause() }
+            player.dragging(editing)
         }
         .labelsHidden()
         .disabled(!player.hasMove || player.lessonHoldsToy)

@@ -53,10 +53,12 @@ struct MainScreen: View {
 extension View {
     /// Tells `player` when the app comes to the front and leaves it, so that the play counts its time there and the
     /// toy is kept as the app leaves. On iPhone and iPad that is the scene's phase. On the Mac a window stays active
-    /// behind other apps, so it is the app being the active one, and quitting.
+    /// behind other apps, so it is the app being the active one, and quitting; and closing the window, which leaves the
+    /// app running, so that the window the Dock opens next brings the toy back as it was.
     func keepsPlay(_ player: Player, scenePhase: ScenePhase) -> some View {
         #if os(macOS)
         onAppear { if NSApplication.shared.isActive { player.cameToFront() } }
+            .onDisappear { player.leftFront() }
             .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in player.cameToFront() }
             .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in player.leftFront() }
             .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in player.leftFront() }

@@ -117,9 +117,9 @@ import Testing
         restored.togglePlay()
         playOut(&restored)
         #expect(restored.state == .allOff)
-        // Counted since the relaunch: every move but the first, made before it, and the one on the slider, which Play
-        // carried on and so is the person's.
-        #expect(restored.madeBySolveCount == 339)
+        // Counted since the relaunch: every move but the first, made before it. The one on the slider is Solve's too,
+        // though Play carried it on.
+        #expect(restored.madeBySolveCount == 340)
     }
 
     /// A move Solve began stays Solve's: a tap that takes over carries it on as Solve's.
@@ -198,7 +198,7 @@ import Testing
             {"isSolving":false,"journeys":["far_end"],"moves":[1,3],"play":{"earlierMoves":0,\
             "id":"8F5C7A55-5D7B-4C55-9C35-0E2B4B5D7E11","moves":2,"movesPlayedForThePerson":0,"secondsSpent":12.5,\
             "startRings":"111111111","startedAt":1000000,"undos":0},"queue":[2],\
-            "slider":{"isMade":false,"isSolves":false,"isTakenBack":false,"isUndoing":false,"progress":0.25,"ring":1},\
+            "slider":{"isMade":false,"isSolves":false,"isUndoing":false,"progress":0.25,"ring":1},\
             "start":"111111111"}
             """
         let snapshot = try #require(ToySnapshot(data: Data(json.utf8), format: 1))
