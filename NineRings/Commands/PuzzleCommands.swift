@@ -2,15 +2,12 @@ import Puzzle
 import Session
 import SwiftUI
 
-/// What the window in front gives the menu bar to act on: its toy, its camera, its lesson, and Reset as the screen
-/// does it, under a cover. With no such window in front, such as when Settings is, the commands are disabled.
+/// What the window in front gives the menu bar to act on: its toy, its camera, and its modes, which change as the
+/// screen changes them. With no such window in front, such as when Settings is, the commands are disabled.
 struct PuzzleActions {
     let player: Player
     let rig: CameraRig
-    let showsLesson: Binding<Bool>
-    let lesson: LessonGuide
-    let reset: () -> Void
-    let settingRings: SettingRings
+    let modes: ScreenModes
 }
 
 extension FocusedValues {
@@ -78,7 +75,7 @@ struct PuzzleCommands: Commands {
             progress: player.progress,
             stages: player.stages,
             lessonHoldsToy: player.lessonHoldsToy,
-            lessonIsOpen: puzzle?.showsLesson.wrappedValue ?? false,
+            lessonIsOpen: puzzle?.modes.showsLesson ?? false,
             isSettingRings: player.isSettingRings
         )
     }
@@ -112,7 +109,7 @@ struct PuzzleCommands: Commands {
 
         CommandGroup(replacing: .help) {
             Button {
-                puzzle?.showsLesson.wrappedValue = true
+                puzzle?.modes.openLesson()
             } label: {
                 Text("menu.help", tableName: "Commands")
             }
@@ -213,7 +210,7 @@ struct PuzzleCommands: Commands {
         .disabled(!(state?.canSolvePuzzle ?? false))
 
         Button {
-            puzzle?.reset()
+            puzzle?.modes.reset()
         } label: {
             Text("menu.reset", tableName: "Commands")
         }
@@ -226,9 +223,9 @@ struct PuzzleCommands: Commands {
         Button {
             guard let puzzle else { return }
             if puzzle.player.isSettingRings {
-                puzzle.settingRings.finish()
+                puzzle.modes.finishSettingRings()
             } else {
-                puzzle.settingRings.start()
+                puzzle.modes.startSettingRings()
             }
         } label: {
             state?.isSettingRings == true
@@ -261,10 +258,10 @@ struct PuzzleCommands: Commands {
 
     @ViewBuilder
     private var lessonItems: some View {
-        let shows = puzzle?.showsLesson.wrappedValue ?? false
+        let shows = puzzle?.modes.showsLesson ?? false
         let page = puzzle?.player.lessonPage
         Button {
-            puzzle?.showsLesson.wrappedValue.toggle()
+            puzzle?.modes.toggleLesson()
         } label: {
             shows ? Text("menu.hideLesson", tableName: "Commands") : Text("menu.showLesson", tableName: "Commands")
         }
@@ -274,7 +271,7 @@ struct PuzzleCommands: Commands {
         Divider()
 
         Button {
-            puzzle?.lesson.goBack()
+            puzzle?.modes.lesson.goBack()
         } label: {
             Text("menu.previousStep", tableName: "Commands")
         }
@@ -282,7 +279,7 @@ struct PuzzleCommands: Commands {
         .disabled(!(page?.canGoBack ?? false))
 
         Button {
-            puzzle?.lesson.goForward()
+            puzzle?.modes.lesson.goForward()
         } label: {
             Text("menu.nextStep", tableName: "Commands")
         }
@@ -290,7 +287,7 @@ struct PuzzleCommands: Commands {
         .disabled(!(page?.canGoForward ?? false))
 
         Button {
-            puzzle?.lesson.replay()
+            puzzle?.modes.lesson.replay()
         } label: {
             Text("menu.playStepAgain", tableName: "Commands")
         }

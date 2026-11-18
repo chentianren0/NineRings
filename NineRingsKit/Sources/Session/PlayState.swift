@@ -50,6 +50,9 @@ public struct PlayState: Sendable, Equatable {
     public private(set) var earned: Set<Achievement> = []
     /// What the last change says aloud.
     public private(set) var narration = Narration()
+    /// How many times the toy shown has jumped: been set at once where some of its parts are somewhere else. The screen
+    /// shows a jump as the parts that change place fading across, where every other change moves them.
+    public private(set) var jumps = 0
 
     /// The person's toy as the congratulation last saw it.
     private var judged: PuzzleSession
@@ -72,6 +75,13 @@ public struct PlayState: Sendable, Equatable {
     }
 
     public var isSettingRings: Bool { settingRings != nil }
+
+    /// The ring buttons: as the toy is about to be, so that a ring marked as able to move is one a tap would move. While
+    /// the lesson holds the toy no ring can be asked for, and they follow the toy move by move as it plays.
+    public var markers: [PuzzleSession.Marker] {
+        let lessonHoldsToy = lesson.map { !$0.givesToyBack } ?? false
+        return toy.markers(asPlanned: !lessonHoldsToy)
+    }
 
     public var isCongratulating: Bool { congratulation.isShowing }
 
@@ -264,7 +274,10 @@ public struct PlayState: Sendable, Equatable {
         let before = heard
         hearing = jump ? Hearing() : Hearing(from: heard, to: toy, tapped: tapped)
         heard = toy
-        if jump { framed = toy }
+        if jump {
+            framed = toy
+            if !toy.pose.isClose(to: before.pose) { jumps += 1 }
+        }
         let wasShowing = congratulation.isShowing
         earned = []
         if let persons {

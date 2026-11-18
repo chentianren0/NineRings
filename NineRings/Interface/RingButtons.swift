@@ -2,8 +2,9 @@ import Session
 import SwiftUI
 
 /// Nine buttons, ring 1 on the left, on the tip's side as the toy is first seen. A filled disc is a ring that is
-/// on, an outline one that is off; a short bar under it marks a ring that can move now; an orange outline marks the
-/// ring in the way of the ring just refused. Pressing one, or its number key, asks to move its ring. The numbers and
+/// on, an outline one that is off; a short bar under it marks a ring that a tap would move; an orange outline marks the
+/// ring in the way of the ring just refused. While a move is in hand they show the toy as it is about to be, once the
+/// rings asked for have moved, so that the bar agrees with what a tap does (see `PlayState.markers`). Pressing one, or its number key, asks to move its ring. The numbers and
 /// outlines meet the contrast Apple asks for: the off rings' in the primary colour, the on rings' bold.
 ///
 /// Nothing is told by colour alone: on and off are filled and outlined, and with Differentiate Without Color the ring
@@ -31,7 +32,7 @@ struct RingButtons: View {
             }
         }
         .environment(\.layoutDirection, .leftToRight)
-        .animation(.snappy(duration: 0.25), value: markers)
+        .animation(ScreenMotion.small, value: markers)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Rings", comment: "Spoken name of the row of nine ring buttons."))
     }
