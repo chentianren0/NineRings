@@ -8,12 +8,14 @@ import AppKit
 /// and a value: `-welcome.seen NO` shows the welcome page again, `-welcome.seen YES` keeps it away, and
 /// `-settings.sounds NO` turns sounds off.
 enum ScreenLaunchOptions {
+    #if DEBUG
     private static let arguments = ProcessInfo.processInfo.arguments
 
     private static func value(after option: String) -> String? {
         guard let index = arguments.firstIndex(of: option), index + 1 < arguments.count else { return nil }
         return arguments[index + 1]
     }
+    #endif
 
     /// `-play-last-move` opens the toy one move before every ring is off and plays that move, so that the
     /// congratulation comes up.

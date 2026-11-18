@@ -117,6 +117,30 @@ import Testing
         #expect(try store.keptToy(installation: "A") != nil)
     }
 
+    /// A store that cannot be written: clearing throws, and every play is still there, in the store and in what is read
+    /// from it, with nothing left waiting to be saved.
+    @Test func clearingAStoreThatCannotBeWrittenLeavesEveryPlay() throws {
+        let folder = URL.temporaryDirectory.appending(path: "PlayHistoryTests-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let plays = [play(finishedAt: 2_000), play(finishedAt: 1_000)]
+        do {
+            let writable = RecordStore(container: try RecordStore.deviceContainer(in: .folder(folder)))
+            for record in plays {
+                try writable.record(record, madeOn: .Mac, appVersion: "1.4")
+            }
+        }
+        let readOnly = ModelConfiguration(
+            "Device", schema: RecordStore.schema, url: folder.appending(path: "Device.store"), allowsSave: false,
+            cloudKitDatabase: .none
+        )
+        let store = RecordStore(container: try ModelContainer(for: RecordStore.schema, configurations: readOnly))
+        #expect(throws: (any Error).self) { try store.clearHistory() }
+        #expect(try store.playHistory().plays == plays)
+        #expect(!store.container.mainContext.hasChanges, "the deletes were rolled back")
+        let reopened = RecordStore(container: try RecordStore.deviceContainer(in: .folder(folder)))
+        #expect(try reopened.playHistory().plays == plays)
+    }
+
     @Test func playsRecordedAfterClearingShow() throws {
         try store.record(play(finishedAt: 1_000), madeOn: .Mac, appVersion: "1.4")
         try store.clearHistory()
