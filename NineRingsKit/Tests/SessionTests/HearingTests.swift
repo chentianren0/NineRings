@@ -95,6 +95,17 @@ import Testing
         #expect(refused == [4])
     }
 
+    /// A ring asked for again while it moves changes nothing, so nothing is heard and nothing refused.
+    @Test func aRepeatedTapIsHeardAsNothing() {
+        var session = PuzzleSession()
+        session.tap(1)
+        session.advance(by: 0.5)
+        let before = session
+        session.tap(1)
+        #expect(session == before)
+        #expect(Hearing(from: before, to: session, tapped: 1) == Hearing())
+    }
+
     /// Reset and starting at a chosen move are jumps: nothing is heard.
     @Test func jumpsAreSilent() {
         var session = PuzzleSession()
