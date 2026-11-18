@@ -41,7 +41,8 @@ or at the next launch if reporting failed. Each one is reported once, with Apple
 identifier, so an achievement earned with nobody signed in goes to whoever signs in first on that device.
 
 Game Center signs in when the window first appears, as Apple advises. Without a player the app works the same, and
-the Game Center menu item is disabled. That item opens Game Center's dashboard, through `GKAccessPoint`; the floating
+the Game Center menu item is disabled. That is also what happens on a device in Lockdown Mode, where Game Center is
+off for every app. That item opens Game Center's dashboard, through `GKAccessPoint`; the floating
 access point is never shown. The menu item is at the end of the Puzzle menu. On iPhone and iPad it is also in the
 toolbar's More menu.
 
@@ -55,7 +56,7 @@ banner can be tried without hundreds of moves.
 Since Xcode 16.3 the achievements can live in the project, in a GameKit configuration file. Xcode can push that file
 to App Store Connect and pull it back. With the scheme's **GameKit Configuration › Enable Debug Mode** on, Xcode's
 **Game Progress Manager** (Debug › GameKit › Manage Game Progress) shows and resets progress on a real device
-(iOS 18.4 or macOS 15.4 and later). This Mac counts as one. Nothing reaches App Store Connect while Debug Mode is on.
+(iOS 18.4 or macOS 15.4 and later). A Mac counts as one, but not a device in Lockdown Mode, where Game Center is off. Nothing reaches App Store Connect while Debug Mode is on.
 The simulator cannot do this.
 
 The file is Xcode's own format: a package that holds the pictures too. Like the String Catalogs, it is written by
@@ -90,8 +91,8 @@ Xcode's editor, not by hand.
 5. **Turn Game Center on for the version.** In **Apps**, choose Nine Rings, then the version that will ship this, in
    the sidebar. Scroll down, tick **Game Center**, and add the four achievements to the version. They are reviewed
    with it, and players see them only once they are approved.
-6. **Try it on a device.** On iPhone or iPad, sign in to Game Center in Settings; on the Mac, in System Settings ›
-   Game Center. Run the app from Xcode. Game Center greets you, and Puzzle › Game Center (on iPhone, the toolbar's
+6. **Try it on a device that is not in Lockdown Mode**, since Game Center is off there. On iPhone or iPad, sign in to
+   Game Center in Settings; on a Mac, in System Settings › Game Center. Run the app from Xcode. Game Center greets you, and Puzzle › Game Center (on iPhone, the toolbar's
    More menu) opens the dashboard, with the achievements marked as prerelease. To see the banners without hundreds of
    moves, run with the arguments `-game-center reset -earn all_nine_off,all_nine_back_on,far_end`. Each banner should
    show once, and a second launch with only `-earn …` shows none. All Nine Off also comes with the congratulation,
