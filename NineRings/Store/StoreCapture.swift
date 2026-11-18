@@ -72,15 +72,16 @@ enum StoreCapture {
         #endif
     }
 
-    /// The player the arguments ask for, or nil outside the mode.
-    static func player() -> Player? {
+    /// The player the arguments ask for, kept in `keeper`, or nil outside the mode. The launch keeps its records in
+    /// memory (`LaunchOptions.recordPlace`), so nothing the picture sets up reaches a file.
+    static func player(keeper: Keeper) -> Player? {
         #if DEBUG
         guard let launch else { return nil }
         if launch.congratulation {
             // The last move, made as dragging the slider to its end makes it: the congratulation follows from the rule,
             // as it does for a move played.
             guard let last = Move(ring: 1, from: PuzzleState("100000000")!) else { fail("no last move") }
-            let player = Player(move: last)
+            let player = Player(move: last, keeper: keeper)
             player.progress = 1
             return player
         }
@@ -88,9 +89,9 @@ enum StoreCapture {
         if let ring = launch.move {
             let move = launch.state == nil ? Player.moves.first { $0.ring == ring } : Move(ring: ring, from: state)
             guard let move else { fail("ring \(ring) cannot move with the rings at \(state)") }
-            return Player(move: move, progress: launch.progress ?? 0)
+            return Player(move: move, progress: launch.progress ?? 0, keeper: keeper)
         }
-        let player = Player(session: PuzzleSession(resting: state))
+        let player = Player(session: PuzzleSession(resting: state), keeper: keeper)
         if let ring = launch.refuse {
             guard state.block(for: ring) != nil else { fail("ring \(ring) can move with the rings at \(state): nothing to refuse") }
             player.tap(ring)

@@ -15,10 +15,12 @@ struct MainScreen: View {
     private let tallView = TallViewDesign.standard
     #endif
 
-    init() {
-        let player = StoreCapture.player()
-            ?? LaunchOptions.move.map { Player(move: $0, progress: LaunchOptions.startProgress ?? 0) }
-            ?? Player(keeper: LaunchOptions.keepsToy ? Keeper() : nil)
+    /// The screen over the launch's one keeper, which the player brings the toy back from, keeps it in, and records
+    /// finished plays in. A window made again, as the Mac's Dock makes it, gets the same keeper.
+    init(keeper: Keeper) {
+        let player = StoreCapture.player(keeper: keeper)
+            ?? LaunchOptions.move.map { Player(move: $0, progress: LaunchOptions.startProgress ?? 0, keeper: keeper) }
+            ?? Player(keeper: keeper)
         #if DEBUG
         if let rings = LaunchOptions.settingRings {
             player.startSettingRings()

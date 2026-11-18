@@ -1,6 +1,7 @@
 import Foundation
 import Motion
 import Puzzle
+import Records
 
 /// Options read from the launch arguments.
 enum LaunchOptions {
@@ -19,20 +20,43 @@ enum LaunchOptions {
         return Double(arguments[index + 1])
     }
 
-    /// Whether the person's toy is kept between launches. A release build always keeps it. A debug build keeps it
-    /// unless `-keeps-toy NO` is passed or another option sets up the toy (`-move`, `-set-rings`), so that a launch for
-    /// a picture starts where it says and leaves the toy kept as it was.
-    static var keepsToy: Bool {
+    /// Where this launch keeps its records: the kept toy and the finished plays.
+    /// - A release build keeps them in the device's store, in the app's folder.
+    /// - A debug build keeps them in a store in a folder of its own, never the release build's file: signed for this
+    ///   device, it shares the App Store version's container.
+    /// - A debug launch that sets up its own toy (`-keeps-toy NO`, `-move`, `-set-rings`, `-play-last-move`, the store's
+    ///   pictures, the frame capture) or asks for sample plays (`-sample-plays`) keeps them in memory. Plays are recorded
+    ///   and can be read during the launch, and nothing reaches a file, so that such a launch starts where it says and
+    ///   leaves what is kept as it was.
+    static var recordPlace: RecordStore.Place {
+        #if DEBUG
+        keepsRecordsInMemory ? .memory : .folder(RecordStore.debugFolder)
+        #else
+        .folder(RecordStore.folder)
+        #endif
+    }
+
+    /// `-sample-plays 3` fills this launch's store, in memory, with three finished plays, each different (see
+    /// `PlayRecord.samples`); `-sample-plays 0` leaves it empty. None in a release build.
+    static var samplePlays: Int {
         #if DEBUG
         let arguments = ProcessInfo.processInfo.arguments
-        if let index = arguments.firstIndex(of: "-keeps-toy"), index + 1 < arguments.count, arguments[index + 1] == "NO" { return false }
-        return move == nil && settingRings == nil
+        guard let index = arguments.firstIndex(of: "-sample-plays"), index + 1 < arguments.count else { return 0 }
+        return max(0, Int(arguments[index + 1]) ?? 0)
         #else
-        return true
+        return 0
         #endif
     }
 
     #if DEBUG
+    private static var keepsRecordsInMemory: Bool {
+        let arguments = ProcessInfo.processInfo.arguments
+        let keepsNoToy = arguments.firstIndex(of: "-keeps-toy").map { $0 + 1 < arguments.count && arguments[$0 + 1] == "NO" } ?? false
+        let setsUpToy = keepsNoToy || move != nil || settingRings != nil || ScreenLaunchOptions.playsLastMove
+            || StoreCapture.isActive || Capture.request != nil
+        return setsUpToy || arguments.contains("-sample-plays")
+    }
+
     /// `-set-rings 110100000` opens the app setting the rings by hand, set to that arrangement: nine digits, ring 1
     /// first, 1 for on.
     static var settingRings: PuzzleState? {
