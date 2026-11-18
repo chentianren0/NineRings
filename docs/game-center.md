@@ -1,12 +1,12 @@
 # Game Center
 
 Nine Rings has four Game Center achievements. This page says what each one is, how the app decides it is earned, what
-can be tried without App Store Connect, and what the owner does to turn it on.
+can be tried without App Store Connect, and what the user does to turn it on.
 
 ## The achievements
 
 The identifier is what the code reports and what Game Center knows the achievement by. It must be entered exactly as
-written here, and it can never change once the achievement is live. The names and texts are drafts, for the owner to
+written here, and it can never change once the achievement is live. The names and texts are drafts, for the user to
 approve.
 
 | Identifier | Name | Before it is earned | Once it is earned | Points |
@@ -62,7 +62,7 @@ The simulator cannot do this.
 The file is Xcode's own format: a package that holds the pictures too. Like the String Catalogs, it is written by
 Xcode's editor, not by hand.
 
-## What the owner does, in order
+## What the user does, in order
 
 1. **Sign in to Xcode.** In Xcode › Settings › Accounts, sign in to the account of the team that signs the app. The
    first signed build after the capability lands uses it to turn Game Center on for the App ID
