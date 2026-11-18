@@ -34,6 +34,7 @@ struct MainScreen: View {
                 rig.showDefault()
             }
             .storeCapture(player: player, rig: rig)
+            .onAppear { GameCenter.shared.start() }
             #if os(macOS)
             .frame(minHeight: 420)
             #endif

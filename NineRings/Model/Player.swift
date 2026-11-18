@@ -221,6 +221,7 @@ final class Player {
         isCongratulating = play.isCongratulating
         isSettingRings = play.isSettingRings
         sound.publish(play.hearing, congratulates: play.congratulates)
+        GameCenter.shared.earn(play.earned)
         Announcer.say(play.narration)
     }
 

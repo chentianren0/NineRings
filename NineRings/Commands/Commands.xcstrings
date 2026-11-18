@@ -37,6 +37,18 @@
         }
       }
     },
+    "menu.gameCenter" : {
+      "comment" : "Puzzle menu item, and on iPhone and iPad an item of the toolbar's More menu, that opens Game Center's dashboard for this app, with its achievements. Apple's name for the service: keep it as Apple writes it in each language.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Game Center"
+          }
+        }
+      }
+    },
     "menu.help" : {
       "comment" : "Help menu item that opens the lesson, which is the app's help. 'Nine Rings' is the app's name.",
       "extractionState" : "manual",
