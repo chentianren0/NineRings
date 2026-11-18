@@ -3,8 +3,8 @@ import Puzzle
 import Session
 import SwiftUI
 
-/// The controls of the puzzle: a line saying what is happening, the nine ring buttons, and a row with undo, play
-/// or pause, the slider through the move, the speed and solve.
+/// The controls of the puzzle: a line saying what is happening, with how many moves are left beside it, the nine ring
+/// buttons, and a row with undo, play or pause, the slider through the move, the speed and solve.
 ///
 /// Floating over the toy, the panel keeps one height, so that the toy, framed above it, never jumps: the line keeps
 /// its lines, and the reason a ring cannot move shows in a bubble above the panel. Where the panel is wide enough,
@@ -28,6 +28,9 @@ struct ControlPanel: View {
     @Bindable var player: Player
     let style: Style
     @State private var width: CGFloat = 0
+    @AppStorage(MovesLeftSetting.key) private var showsMovesLeft = true
+    /// Whether the count of moves left has stepped aside, leaving the status the whole line.
+    @State private var countStepsAside = false
     @Environment(\.reducesMotion) private var reducesMotion
 
     /// The largest text size the panel follows. Larger text would make the panel cover the toy on the smallest screens,
@@ -120,10 +123,44 @@ struct ControlPanel: View {
         return Sentences.status(status)
     }
 
-    /// The line that says what is happening, holding the place of `lines` lines, so that the panel keeps its height.
-    /// Floating, it goes on saying what it said while a refusal shows in the bubble above; beside the toy, it says the
-    /// refusal itself.
+    /// The line that says what is happening, with the count of moves left beside it unless Settings hides it, in the form
+    /// that leaves the line room for what it says (see `MovesLeft`). The count is one line, so that showing it or hiding
+    /// it leaves the panel's height as it was.
     private func caption(lines: Int) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 0) {
+            status(lines: lines)
+                // Where the count has stepped aside, VoiceOver still hears it, after what the status says.
+                .accessibilityValue(Text(movesLeft: player.shownState.rank), isEnabled: showsMovesLeft && countStepsAside)
+            if showsMovesLeft {
+                MovesLeft(state: player.shownState, lineWidth: width - 2 * Self.padding, lines: lines, stepsAside: $countStepsAside) {
+                    longestStatus
+                }
+                .transition(.opacity)
+            }
+        }
+        .font(style == .beside ? .body : .subheadline)
+        .animation(ScreenMotion.small, value: showsMovesLeft)
+    }
+
+    /// The longest thing the status line says, as it says it, for the count beside it to leave room for. Floating, the
+    /// opening sentence, as long as the longest a move says, since a reason a ring cannot move shows in the bubble
+    /// above; beside the toy, those reasons, the longest by far.
+    @ViewBuilder
+    private var longestStatus: some View {
+        switch style {
+        case .floating:
+            Text(Sentences.status(.resting(.allOn)))
+        case .beside:
+            ZStack(alignment: .topLeading) {
+                RefusalLabel(text: Sentences.blocked(9, by: .earlierRingOn(7)))
+                RefusalLabel(text: Sentences.blocked(9, by: .previousRingOff(8)))
+            }
+        }
+    }
+
+    /// The status line, holding the place of `lines` lines, so that the panel keeps its height. Floating, it goes on
+    /// saying what it said while a refusal shows in the bubble above; beside the toy, it says the refusal itself.
+    private func status(lines: Int) -> some View {
         ZStack(alignment: .topLeading) {
             Text(verbatim: String(repeating: "\n", count: lines - 1) + " ").hidden().accessibilityHidden(true)
             if style == .beside, let refusal {
@@ -137,7 +174,6 @@ struct ControlPanel: View {
                     .transition(.opacity)
             }
         }
-        .font(style == .beside ? .body : .subheadline)
         .frame(maxWidth: .infinity, alignment: .leading)
         .animation(ScreenMotion.small, value: refusal == nil)
         .accessibilityElement(children: .combine)
