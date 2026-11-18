@@ -33,7 +33,7 @@ struct InstallationKeychain {
 
     /// What the keychain holds. Any answer but an id or "no such item" is a keychain that cannot be used now, as in a
     /// build without the keychain's entitlement, or on an iPhone not yet unlocked since it started.
-    func read() -> InstallationID.Keychain {
+    func read() -> InstallationID.Copy {
         var query = item
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne

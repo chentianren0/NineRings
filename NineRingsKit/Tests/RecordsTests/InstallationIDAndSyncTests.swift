@@ -1,40 +1,77 @@
+import Foundation
 @testable import Records
 import Testing
 
-/// The installation's id, from the keychain and the device's store; and what the app does with its two stores as sync
-/// goes on and off.
+/// The installation's id, from the keychain, the copy left out of backups and the device's store; and what the app does
+/// with its two stores as sync goes on and off.
 @Suite struct InstallationIDAndSyncTests {
-    private func resolve(_ keychain: InstallationID.Keychain, store: String?) -> InstallationID.Resolution {
-        InstallationID.resolve(keychain: keychain, store: store) { "NEW" }
+    typealias Copy = InstallationID.Copy
+
+    private func resolve(keychain: Copy, apart: Copy, store: String?) -> InstallationID.Resolution {
+        InstallationID.resolve(keychain: keychain, leftOutOfBackups: apart, store: store) { "NEW" }
     }
+
+    /// A new id, written to every place that can be used, and given the store's toy when it keeps one.
+    private func newID(from store: String?, keychain: Bool = true, apart: Bool = true) -> InstallationID.Resolution {
+        .init(id: "NEW", writesKeychain: keychain, writesCopyLeftOutOfBackups: apart, givesToyFrom: store)
+    }
+
+    private let kept = InstallationID.Resolution(id: "A", writesKeychain: false, writesCopyLeftOutOfBackups: false, givesToyFrom: nil)
 
     // MARK: The installation's id
 
-    @Test func theKeychainsIDIsKeptWhenTheStoreHasItToo() {
-        #expect(resolve(.holds("A"), store: "A") == .init(id: "A", writesKeychain: false, givesToyFrom: nil))
+    @Test func theIDStandsWhenEveryPlaceHoldsTheStoresID() {
+        #expect(resolve(keychain: .holds("A"), apart: .holds("A"), store: "A") == kept)
     }
 
     @Test func aFirstLaunchMakesAnID() {
-        #expect(resolve(.holdsNone, store: nil) == .init(id: "NEW", writesKeychain: true, givesToyFrom: nil))
+        #expect(resolve(keychain: .holdsNone, apart: .holdsNone, store: nil) == newID(from: nil))
     }
 
     /// A store restored from another device's backup keeps a toy under that device's id, and the keychain here has none,
     /// or another: the installation takes a new id, and the toy goes on under it.
-    @Test(arguments: [InstallationID.Keychain.holdsNone, .holds("B")])
-    func aStoreFromAnotherDeviceGivesItsToyToANewID(keychain: InstallationID.Keychain) {
-        #expect(resolve(keychain, store: "A") == .init(id: "NEW", writesKeychain: true, givesToyFrom: "A"))
+    @Test(arguments: [Copy.holdsNone, .holds("B")])
+    func aStoreFromAnotherDeviceGivesItsToyToANewID(keychain: Copy) {
+        #expect(resolve(keychain: keychain, apart: .holdsNone, store: "A") == newID(from: "A"))
+        #expect(resolve(keychain: keychain, apart: .holds("B"), store: "A") == newID(from: "A"))
+    }
+
+    /// A store restored onto the same device: the keychain item comes back with it, but the copy left out of backups does
+    /// not, and the store's count of changes went back to the backup's. The installation takes a new id, and the toy goes
+    /// on under it, so that no change is named twice.
+    @Test func aStoreRestoredOntoTheSameDeviceGivesItsToyToANewID() {
+        #expect(resolve(keychain: .holds("A"), apart: .holdsNone, store: "A") == newID(from: "A"))
     }
 
     /// The keychain's id with no toy in the store, as after the app was removed and installed again: the store's count of
     /// changes is lost, so the id is not taken up again.
     @Test func anIDWhoseStoreIsGoneIsNotTakenUpAgain() {
-        #expect(resolve(.holds("A"), store: nil) == .init(id: "NEW", writesKeychain: true, givesToyFrom: nil))
+        #expect(resolve(keychain: .holds("A"), apart: .holds("A"), store: nil) == newID(from: nil))
     }
 
-    /// Without a keychain, the store's id stays, and nothing is written.
-    @Test func withoutAKeychainTheStoresIDStays() {
-        #expect(resolve(.unusable, store: "A") == .init(id: "A", writesKeychain: false, givesToyFrom: nil))
-        #expect(resolve(.unusable, store: nil) == .init(id: "NEW", writesKeychain: false, givesToyFrom: nil))
+    /// A place that cannot be used is left out, and nothing is written there.
+    @Test func aPlaceThatCannotBeUsedIsLeftOut() {
+        #expect(resolve(keychain: .unusable, apart: .holds("A"), store: "A") == kept)
+        #expect(resolve(keychain: .holds("A"), apart: .unusable, store: "A") == kept)
+        #expect(resolve(keychain: .unusable, apart: .unusable, store: "A") == kept)
+        #expect(resolve(keychain: .unusable, apart: .holdsNone, store: "A") == newID(from: "A", keychain: false))
+        #expect(resolve(keychain: .holdsNone, apart: .unusable, store: "A") == newID(from: "A", apart: false))
+        #expect(resolve(keychain: .unusable, apart: .unusable, store: nil) == newID(from: nil, keychain: false, apart: false))
+    }
+
+    // MARK: The copy left out of backups
+
+    @Test func theCopyLeftOutOfBackupsIsReadAsWritten() throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "NineRings test \(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let copy = InstallationID.CopyLeftOutOfBackups(folder: folder)
+        #expect(copy.read() == .holdsNone, "none before it is written, as after a restore")
+        #expect(copy.write("A"))
+        #expect(copy.read() == .holds("A"))
+        #expect(copy.write("B"))
+        #expect(copy.read() == .holds("B"))
+        let values = try RecordStore.cloudFolder(in: folder).resourceValues(forKeys: [.isExcludedFromBackupKey])
+        #expect(values.isExcludedFromBackup == true, "its folder is left out of backups")
     }
 
     // MARK: Sync going on and off
