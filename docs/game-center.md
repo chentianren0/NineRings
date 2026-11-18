@@ -6,8 +6,7 @@ can be tried without App Store Connect, and what the user does to turn it on.
 ## The achievements
 
 The identifier is what the code reports and what Game Center knows the achievement by. It must be entered exactly as
-written here, and it can never change once the achievement is live. The names and texts are drafts, for the user to
-approve.
+written here, and it can never change once the achievement is live.
 
 | Identifier | Name | Before it is earned | Once it is earned | Points |
 |---|---|---|---|---|
@@ -84,10 +83,8 @@ Xcode's editor, not by hand.
 
    Once an achievement is live, it can't be deleted and its points can't be changed.
 4. **The pictures.** Four, one for each achievement, each a different picture: 1024 × 1024 pixels, `.png` or `.jpeg`,
-   RGB, at least 72 ppi. Game Center shows them inside a circle, so keep what matters in the middle. A natural choice is
-   the toy in the arrangement each one names: every ring off, every ring on, only ring 9 on, and for The Shortest Way
-   perhaps the toy part way along. A session can render them from the app itself (its store-capture mode sets any
-   arrangement and view) if you would like.
+   RGB, at least 72 ppi. Game Center shows them inside a circle, so keep what matters in the middle. They are not in the
+   repository yet: the art is being chosen.
 5. **Turn Game Center on for the version.** In **Apps**, choose Nine Rings, then the version that will ship this, in
    the sidebar. Scroll down, tick **Game Center**, and add the four achievements to the version. They are reviewed
    with it, and players see them only once they are approved.
