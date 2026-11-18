@@ -469,38 +469,26 @@
         }
       }
     },
-    "welcome.continue" : {
-      "comment" : "The welcome page's one button, which closes it for good.",
+    "tip.lesson.message" : {
+      "comment" : "Text of the tip that points at the Lesson button, under its title 'Learn the Rule'. It appears once, the first time a ring could not move.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Continue"
+            "value" : "The lesson shows in a few steps which rings can move, and why."
           }
-        },
-        "fr" : {
+        }
+      }
+    },
+    "tip.lesson.title" : {
+      "comment" : "Title of the tip that points at the Lesson button. It appears once, the first time a ring the person asked to move could not move, for someone who has not opened the lesson.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
           "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Continuer"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "続ける"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "继续"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "繼續"
+            "state" : "translated",
+            "value" : "Learn the Rule"
           }
         }
       }
@@ -705,6 +693,30 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "移動環"
+          }
+        }
+      }
+    },
+    "welcome.startLesson" : {
+      "comment" : "The welcome page's first button, the suggested way in: it closes the page and opens the lesson on how the puzzle works.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start the Lesson"
+          }
+        }
+      }
+    },
+    "welcome.startPlaying" : {
+      "comment" : "The welcome page's second button: it closes the page and leaves the toy to play with, without the lesson.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start Playing"
           }
         }
       }

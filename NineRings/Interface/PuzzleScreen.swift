@@ -117,6 +117,7 @@ struct PuzzleScreen: View {
                 if shows { lesson.open() } else { lesson.close() }
             }
             .onAppear { hasAppeared = true }
+            .welcomeOnFirstLaunch { showsLesson = true }
             // The toy is the lesson's only while its panel is open. Should the panel go without closing the lesson, as
             // when it goes in the middle of the cover's change, the toy comes back to the person at once.
             .onChange(of: player.lessonPage != nil) { _, inLesson in
@@ -249,6 +250,7 @@ struct PuzzleScreen: View {
                 }
                 .accessibilityAddTraits(showsLesson ? .isSelected : [])
                 .help(Text("Show how the puzzle works", comment: "Tooltip on the Lesson button."))
+                .lessonTip(player: player, lessonShown: showsLesson)
             }
         }
         #if os(iOS)
