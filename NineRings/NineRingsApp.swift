@@ -2,6 +2,10 @@ import SwiftUI
 
 @main
 struct NineRingsApp: App {
+    /// The launch's one keeper of records: made here once, so that its store is opened once however many times a
+    /// window is made, and given to every scene.
+    @State private var keeper: Keeper
+
     init() {
         #if os(macOS)
         // One window, so no window tabs, and no tab items in the View and Window menus.
@@ -15,6 +19,7 @@ struct NineRingsApp: App {
         #endif
         // The lesson's tip; what it knows stays on the device.
         LessonTip.configure()
+        _keeper = State(initialValue: Keeper(place: LaunchOptions.recordPlace, samplePlays: LaunchOptions.samplePlays))
     }
 
     var body: some Scene {
@@ -25,6 +30,7 @@ struct NineRingsApp: App {
         WindowGroup {
             root
         }
+        .environment(keeper)
         .defaultSize(width: 1100, height: 720)
         .commands {
             PuzzleCommands()
@@ -38,6 +44,7 @@ struct NineRingsApp: App {
         Settings {
             SettingsWindow()
         }
+        .environment(keeper)
         #endif
     }
 
@@ -45,10 +52,10 @@ struct NineRingsApp: App {
     private var root: some View {
         #if DEBUG
         if Capture.request == nil {
-            MainScreen()
+            MainScreen(keeper: keeper)
         }
         #else
-        MainScreen()
+        MainScreen(keeper: keeper)
         #endif
     }
 }

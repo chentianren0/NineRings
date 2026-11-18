@@ -88,16 +88,17 @@ final class Player {
     }
 
     /// The toy as `keeper` kept it, or every ring on when it kept none; kept there from now on.
-    init(keeper: Keeper?) {
-        play = keeper?.keptPlay() ?? PlayState()
+    init(keeper: Keeper) {
+        play = keeper.keptPlay() ?? PlayState()
         self.keeper = keeper
         publish()
     }
 
-    /// A session at the start of `move`, with that move on the slider at `progress`, keeping nothing.
-    init(move: Move, progress: Double = 0) {
+    /// A session at the start of `move`, with that move on the slider at `progress`, kept in `keeper` from now on when
+    /// one is given.
+    init(move: Move, progress: Double = 0, keeper: Keeper? = nil) {
         play = PlayState(PuzzleSession(at: move, progress: progress))
-        keeper = nil
+        self.keeper = keeper
         publish()
     }
 
@@ -306,10 +307,11 @@ final class Player {
     #if DEBUG
     // MARK: Store pictures
 
-    /// A player over `session`, for the store-capture mode, which sets up states the other initializers do not.
-    init(session: PuzzleSession) {
+    /// A player over `session`, kept in `keeper`, for the store-capture mode, which sets up states the other
+    /// initializers do not.
+    init(session: PuzzleSession, keeper: Keeper) {
         play = PlayState(session)
-        keeper = nil
+        self.keeper = keeper
         publish()
     }
 

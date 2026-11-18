@@ -11,7 +11,7 @@ import Testing
     private let store: RecordStore
 
     init() throws {
-        store = RecordStore(container: try RecordStore.deviceContainer(inMemory: true))
+        store = RecordStore(container: try RecordStore.deviceContainer(in: .memory))
     }
 
     private var context: ModelContext { store.container.mainContext }
@@ -184,7 +184,7 @@ import Testing
     /// The device's store is named apart, and set never to sync. `CloudKitDatabase` is not Equatable, so it is told by
     /// how SwiftData describes it, which tells `.none` from `.automatic`.
     @Test(arguments: [true, false]) func theDevicesStoreNeverSyncs(inMemory: Bool) {
-        let configuration = RecordStore.deviceConfiguration(inMemory: inMemory)
+        let configuration = RecordStore.deviceConfiguration(in: inMemory ? .memory : .folder(RecordStore.folder))
         #expect(configuration.name == "Device")
         let described = String(reflecting: configuration.cloudKitDatabase)
         #expect(described == String(reflecting: ModelConfiguration.CloudKitDatabase.none))

@@ -24,21 +24,39 @@ public final class RecordStore {
         URL.applicationSupportDirectory.appending(path: "NineRings", directoryHint: .isDirectory)
     }
 
-    /// The device's own store, which never syncs: `cloudKitDatabase` is `.none` explicitly, so that the iCloud
-    /// entitlement, once the app has it, does not make it sync. In memory for tests.
-    public static func deviceConfiguration(inMemory: Bool = false) -> ModelConfiguration {
-        if inMemory {
-            return ModelConfiguration("Device", schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
-        }
-        return ModelConfiguration("Device", schema: schema, url: folder.appending(path: "Device.store"), cloudKitDatabase: .none)
+    /// The folder a debug build keeps its stores in: one of its own, beside ``folder``. A debug build signed for a
+    /// device shares the App Store version's container on it, Application Support included, so that only a folder of
+    /// its own keeps its test plays out of the person's history.
+    public static var debugFolder: URL {
+        URL.applicationSupportDirectory.appending(path: "NineRings Debug", directoryHint: .isDirectory)
     }
 
-    /// A container for the device's own store.
-    public static func deviceContainer(inMemory: Bool = false) throws -> ModelContainer {
-        if !inMemory {
+    /// Where a build keeps its stores. The app chooses once, at launch: a release build in ``folder``, a debug build in
+    /// ``debugFolder`` or in memory. Every store is opened in a place, so that no build reaches a file by default.
+    public enum Place: Sendable, Equatable {
+        /// In files in this folder.
+        case folder(URL)
+        /// In memory: the records last as long as the launch, and nothing reaches a file.
+        case memory
+    }
+
+    /// The device's own store in `place`, which never syncs: `cloudKitDatabase` is `.none` explicitly, so that the
+    /// iCloud entitlement, once the app has it, does not make it sync.
+    public static func deviceConfiguration(in place: Place) -> ModelConfiguration {
+        switch place {
+        case .folder(let folder):
+            ModelConfiguration("Device", schema: schema, url: folder.appending(path: "Device.store"), cloudKitDatabase: .none)
+        case .memory:
+            ModelConfiguration("Device", schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
+        }
+    }
+
+    /// A container for the device's own store in `place`.
+    public static func deviceContainer(in place: Place) throws -> ModelContainer {
+        if case .folder(let folder) = place {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         }
-        return try ModelContainer(for: schema, configurations: deviceConfiguration(inMemory: inMemory))
+        return try ModelContainer(for: schema, configurations: deviceConfiguration(in: place))
     }
 
     public let container: ModelContainer
