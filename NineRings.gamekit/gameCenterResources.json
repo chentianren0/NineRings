@@ -1,0 +1,117 @@
+{
+  "meta" : {
+    "version" : "2024-11-15"
+  },
+  "resources" : {
+    "achievementImages" : {
+      "all_nine_back_on-en-US" : [
+        {
+          "localID" : "all_nine_back_on-en-US",
+          "url" : "en-US\/AchievementImage-all_nine_back_on-en-US.png"
+        }
+      ],
+      "all_nine_off-en-US" : [
+        {
+          "localID" : "all_nine_off-en-US",
+          "url" : "en-US\/AchievementImage-all_nine_off-en-US.png"
+        }
+      ],
+      "far_end-en-US" : [
+        {
+          "localID" : "far_end-en-US",
+          "url" : "en-US\/AchievementImage-far_end-en-US.png"
+        }
+      ],
+      "shortest_way-en-US" : [
+        {
+          "localID" : "shortest_way-en-US",
+          "url" : "en-US\/AchievementImage-shortest_way-en-US.png"
+        }
+      ]
+    },
+    "achievementLocalizations" : {
+      "all_nine_back_on" : [
+        {
+          "afterEarnedDescription" : "You put all nine rings back on the sword.",
+          "beforeEarnedDescription" : "From every ring off, put every ring back on.",
+          "locale" : "en-US",
+          "localID" : "all_nine_back_on-en-US",
+          "name" : "All Nine Back On"
+        }
+      ],
+      "all_nine_off" : [
+        {
+          "afterEarnedDescription" : "You took all nine rings off the sword.",
+          "beforeEarnedDescription" : "Take every ring off the sword.",
+          "locale" : "en-US",
+          "localID" : "all_nine_off-en-US",
+          "name" : "All Nine Off"
+        }
+      ],
+      "far_end" : [
+        {
+          "afterEarnedDescription" : "You reached the far end, 511 moves from every ring off.",
+          "beforeEarnedDescription" : "Reach the arrangement with only ring 9 on: the far end of the puzzle's one path.",
+          "locale" : "en-US",
+          "localID" : "far_end-en-US",
+          "name" : "The Far End"
+        }
+      ],
+      "shortest_way" : [
+        {
+          "afterEarnedDescription" : "You took every ring off the shortest way: 341 moves.",
+          "beforeEarnedDescription" : "From every ring on, take every ring off in 341 moves, with no Undo and no help.",
+          "locale" : "en-US",
+          "localID" : "shortest_way-en-US",
+          "name" : "The Shortest Way"
+        }
+      ]
+    },
+    "achievements" : [
+      {
+        "activityProperties" : {
+
+        },
+        "archived" : false,
+        "points" : 20,
+        "referenceName" : "All Nine Off",
+        "repeatable" : false,
+        "showBeforeEarned" : true,
+        "vendorIdentifier" : "all_nine_off"
+      },
+      {
+        "activityProperties" : {
+
+        },
+        "archived" : false,
+        "points" : 20,
+        "referenceName" : "The Far End",
+        "repeatable" : false,
+        "showBeforeEarned" : true,
+        "vendorIdentifier" : "far_end"
+      },
+      {
+        "activityProperties" : {
+
+        },
+        "archived" : false,
+        "points" : 40,
+        "referenceName" : "The Shortest Way",
+        "repeatable" : false,
+        "showBeforeEarned" : true,
+        "vendorIdentifier" : "shortest_way"
+      },
+      {
+        "activityProperties" : {
+
+        },
+        "archived" : false,
+        "points" : 20,
+        "referenceName" : "All Nine Back On",
+        "repeatable" : false,
+        "showBeforeEarned" : true,
+        "vendorIdentifier" : "all_nine_back_on"
+      }
+    ]
+  }
+}
