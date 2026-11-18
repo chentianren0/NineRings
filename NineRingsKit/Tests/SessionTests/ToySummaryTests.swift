@@ -24,6 +24,17 @@ import Testing
         #expect(summary.onCount == 6)
     }
 
+    /// Told from the ring buttons while ring 1 comes off: the toy as it is about to be, and the rings a tap would move.
+    @Test func fromTheMarkersItTellsTheToyAsItIsAboutToBe() {
+        var session = PuzzleSession()
+        session.tap(1)
+        let summary = ToySummary(session.markers)
+        #expect(summary.state == PuzzleState.allOn.moving(1))
+        #expect(summary.on == [2...9])
+        #expect(summary.movable == [3])
+        #expect(ToySummary(PuzzleSession().markers) == ToySummary(.allOn))
+    }
+
     /// Ring 1 can always move, and the ring after the first ring on, when there is one: never more than two.
     @Test func theMovableRingsAreRingOneAndTheOneAfterTheFirstRingOn() {
         #expect(ToySummary(PuzzleState("001100000")!).movable == [1, 4])

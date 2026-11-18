@@ -259,6 +259,21 @@ import simd
         #expect(run.toy.state == moves[1].to)
     }
 
+    /// While the lesson holds the toy no ring can be asked for, so the ring buttons follow the toy move by move, not the
+    /// end of the step. Given back, they show what a tap would do.
+    @Test func whileTheLessonHoldsTheToyTheRingButtonsFollowIt() {
+        var play = PlayState()
+        play.openLesson(at: 7)
+        guard case .play(let moves) = steps[7].show else { Issue.record("step 8 plays moves"); return }
+        play.advance(by: frame)
+        #expect(play.markers == play.toy.markers(asPlanned: false))
+        #expect(play.markers.map(\.isOn) == PuzzleState.rings.map(moves[0].from.isOn))
+        play.goToLessonStep(steps.count - 1)
+        play.tap(1)
+        #expect(play.markers == play.toy.markers)
+        #expect(play.markers != play.toy.markers(asPlanned: false))
+    }
+
     @Test func pageSaysWhereYouAre() {
         let run = LessonRun(opening: PuzzleSession(), at: 2)
         #expect(run.page == LessonRun.Page(index: 2, count: 12, key: "lesson.sword", view: .top, canGoBack: true, canGoForward: true, canReplay: false, givesToyBack: false))

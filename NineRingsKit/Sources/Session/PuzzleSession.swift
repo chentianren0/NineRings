@@ -12,8 +12,14 @@ import Toy
 /// The rules it keeps:
 /// - Tapping a ring asks to move it. A legal move plays; the state changes when it ends. A move the rule forbids
 ///   does not play, and `note` says why.
-/// - While a move is in hand (playing, or stopped part way), a tap joins the queue. Each ring in the queue is
-///   judged when its turn comes, against the state then; the first that cannot play stops the queue, with its note.
+/// - While a move is in hand (playing, or stopped part way), a tap joins the queue and play goes on. Each ring in the
+///   queue is judged when its turn comes, against the state then; the first that cannot play stops the queue, with its
+///   note.
+/// - A tap on the ring that would move just before it, the last ring waiting or else the ring moving, is not queued:
+///   moving one ring twice in a row always cancels out, and the shortest way never does it. While solving, a tap on
+///   another ring takes over and drops the rest of the way; a tap on the ring moving changes nothing, and Solve goes on.
+/// - The markers show the toy as it is about to be, once the move in hand and the rings waiting have played, so that
+///   a ring marked as able to move is one a tap would move.
 /// - Play runs the move on the slider forward, toward the move being made. Undo runs it backward.
 /// - Dragging the slider stops playing. At progress 1 the move is made, at 0 it is not.
 public struct PuzzleSession: Sendable, Equatable {
@@ -47,8 +53,11 @@ public struct PuzzleSession: Sendable, Equatable {
     public struct Marker: Sendable, Equatable, Identifiable {
         public let ring: Int
         public let isOn: Bool
-        /// What stops the ring from moving now, or nil when the rule lets it move.
+        /// What stops the ring from moving, in the state the toy is about to rest in, or nil when the rule lets it.
         public let block: PuzzleState.Block?
+        /// Whether a tap now would move the ring: the rule lets it, it is not the ring that would move just before it,
+        /// and no ring asked before it will be refused.
+        public let canMove: Bool
         /// Whether this ring is the one moving, or stopped part way, now.
         public let isMoving: Bool
         /// Whether this ring was just asked to move and the rule refused.
@@ -57,7 +66,6 @@ public struct PuzzleSession: Sendable, Equatable {
         public let isBlocking: Bool
 
         public var id: Int { ring }
-        public var canMove: Bool { block == nil }
     }
 
     /// The state the moves were made from: all rings on, unless the session began at a chosen move.
@@ -137,10 +145,16 @@ public struct PuzzleSession: Sendable, Equatable {
         return .resting(state)
     }
 
-    /// The nine rings, ring 1 first, as they are in `state`.
-    public var markers: [Marker] {
-        let state = state
-        let moving = isPlaying || isPartWay ? current?.ring : nil
+    /// The nine rings, ring 1 first, as they will be once the move in hand and the rings waiting have played: what a tap
+    /// now would do.
+    public var markers: [Marker] { markers(asPlanned: true) }
+
+    /// The nine rings, ring 1 first: `asPlanned`, as ``markers`` has them; otherwise as they are in `state`, following
+    /// the toy move by move, each ring able to move when the rule lets it, as a toy that cannot be asked shows them.
+    public func markers(asPlanned: Bool) -> [Marker] {
+        let (state, isOpen) = asPlanned ? plannedState : (state, true)
+        let previous = asPlanned ? previousRequest : nil
+        let moving = movingRing
         let refused: (ring: Int, blocking: Int)? = {
             guard case .blocked(let ring, let block) = note else { return nil }
             return (ring, block.blockingRing)
@@ -151,6 +165,7 @@ public struct PuzzleSession: Sendable, Equatable {
                 ring: ring,
                 isOn: state.isOn(ring),
                 block: block,
+                canMove: isOpen && block == nil && ring != previous,
                 isMoving: ring == moving,
                 isRefused: ring == refused?.ring,
                 isBlocking: ring == refused?.blocking
@@ -184,19 +199,46 @@ public struct PuzzleSession: Sendable, Equatable {
         return direction == .forward ? current.to : current.from
     }
 
+    /// The ring of the move in hand, playing or stopped part way.
+    private var movingRing: Int? {
+        isPlaying || isPartWay ? current?.ring : nil
+    }
+
+    /// The ring that would move just before a ring tapped now: the last ring waiting, or the ring moving. While solving
+    /// a tap drops the rest of the way, so it is the ring moving.
+    private var previousRequest: Int? {
+        isSolving ? movingRing : queue.last ?? movingRing
+    }
+
+    /// The state a ring tapped now is judged in when its turn comes: once the move in hand has ended and the rings
+    /// waiting have played. While solving a tap drops the rest of the way, so the solve's rings are left out. `isOpen` is
+    /// false when a ring waiting will be refused, which drops every ring after it.
+    private var plannedState: (state: PuzzleState, isOpen: Bool) {
+        var state = settledState
+        guard !isSolving else { return (state, true) }
+        for ring in queue {
+            guard state.block(for: ring) == nil else { return (state, false) }
+            state = state.moving(ring)
+        }
+        return (state, true)
+    }
+
     // MARK: - What it does
 
-    /// Asks to move `ring`. With a move in hand the ring waits in the queue and play goes on; otherwise it plays
-    /// now if it can, or `note` says why not.
+    /// Asks to move `ring`. With a move in hand the ring waits in the queue, unless it is the ring that would move just
+    /// before it, and play goes on; otherwise it plays now if it can, or `note` says why not.
     public mutating func tap(_ ring: Int) {
         precondition(PuzzleState.rings.contains(ring), "rings are numbered 1 to 9")
         if isBusy {
-            if isSolving {
-                // Asking for a ring takes over from solving: the rest of the way is dropped.
-                queue.removeAll()
-                isSolving = false
+            // The same ring twice in a row would cancel out: the tap only plays on what is in hand.
+            if ring != previousRequest {
+                if isSolving {
+                    // Asking for a ring takes over from solving: the rest of the way is dropped.
+                    queue.removeAll()
+                    isSolving = false
+                }
+                queue.append(ring)
             }
-            queue.append(ring)
             resume()
             return
         }

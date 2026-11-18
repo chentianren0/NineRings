@@ -4,7 +4,8 @@ import Motion
 /// never hidden.
 ///
 /// It reads what the screen already shows, so that a menu and a button never disagree:
-/// - A ring can be asked to move when the rule lets it move now. A ring the rule forbids is disabled, rather than
+/// - A ring can be asked to move when its marker says a tap would move it: while a move is in hand, judged in the
+///   state the toy is about to be in (see ``PuzzleSession/markers``). A ring the rule forbids is disabled, rather than
 ///   asked and refused: in a menu, the reason cannot be shown.
 /// - While the lesson holds the toy, every command that would change the toy is disabled: moving a ring, undo,
 ///   solve, reset and the stage steps. Play and pause stay, because they play the lesson's own move.

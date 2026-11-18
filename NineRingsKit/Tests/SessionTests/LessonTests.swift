@@ -48,6 +48,14 @@ import Testing
 
     /// Every move is legal, since a `Move` exists only when the rule allows it; and they are the first moves of the
     /// shortest way from every ring on to every ring off.
+    /// The lesson plays a step's moves through the toy's ring taps, which do not queue one ring twice in a row.
+    @Test func noStepAsksForOneRingTwiceInARow() {
+        for step in Lesson.steps {
+            guard case .play(let moves) = step.show else { continue }
+            #expect(zip(moves, moves.dropFirst()).allSatisfy { $0.ring != $1.ring }, "\(step.key)")
+        }
+    }
+
     @Test func theMovesAreTheFirstMovesOfTheShortestWay() {
         let played = movesPlayed
         let shortest = PuzzleState.allOn.moves(to: .allOff)

@@ -97,16 +97,26 @@ import Testing
         #expect(driver.moments == 0)
     }
 
-    @Test func aTapDuringSolveTakesOverAndTheLastMoveIsThenThePersons() {
-        // Solve begins its only move, ring 1 off. A tap on ring 1 while it plays takes over from Solve and waits its
-        // turn: when Solve's move ends, ring 1 goes straight back on. Then the person takes it off by hand.
+    @Test func aTapOnTheRingSolveIsMovingLeavesTheMoveToSolve() {
+        // Solve begins its only move, ring 1 off. A tap on ring 1 while it plays would only move it back, so it changes
+        // nothing: the move stays Solve's, and Solve's last move does not congratulate.
         var driver = Driver(atStart(of: oneBeforeTheEnd, ring: 1))
         driver.change { $0.solve() }
         driver.change { $0.tap(1) }
+        #expect(driver.session.isSolving)
         driver.playOut()
-        #expect(driver.session.state == oneBeforeTheEnd)
-        #expect(driver.moments == 0, "the toy only passed through every ring off")
+        #expect(driver.session.state == .allOff)
+        #expect(driver.moments == 0)
+        #expect(!driver.congratulation.isArmed)
+    }
+
+    @Test func aTapDuringSolveTakesOverAndTheMovesAfterAreThePersons() {
+        // Solve begins ring 2 off from rings 1 and 2 on. A tap on ring 1 takes over: Solve's move ends, then ring 1
+        // comes off as the person's own move, the last one.
+        var driver = Driver(atStart(of: twoOn, ring: 2))
+        driver.change { $0.solve() }
         driver.change { $0.tap(1) }
+        #expect(!driver.session.isSolving)
         driver.playOut()
         #expect(driver.session.state == .allOff)
         #expect(driver.moments == 1)
@@ -159,13 +169,25 @@ import Testing
         #expect(driver.moments == 1)
     }
 
-    @Test func aRingQueuedAfterTheLastMoveTakesTheMomentAway() {
+    /// From every ring off only ring 1 can move, and asking for it again during the last move changes nothing: the
+    /// last move rests with every ring off and congratulates.
+    @Test func ringOneAskedAgainDuringTheLastMoveStillCongratulates() {
         var driver = Driver(atStart(of: oneBeforeTheEnd, ring: 1))
         driver.change { $0.tap(1) }
-        driver.change { $0.tap(1) }   // asked while the last move plays: ring 1 goes back on at once
+        driver.change { $0.tap(1) }
         driver.playOut()
-        #expect(driver.session.state == oneBeforeTheEnd)
-        #expect(driver.moments == 0)
-        #expect(driver.congratulation.isArmed, "the toy never rested with every ring off")
+        #expect(driver.session.state == .allOff)
+        #expect(driver.moments == 1)
+    }
+
+    /// A ring waiting after the last move is refused when its turn comes, so the toy rests with every ring off.
+    @Test func aRefusedRingAfterTheLastMoveStillCongratulates() {
+        var driver = Driver(atStart(of: oneBeforeTheEnd, ring: 1))
+        driver.change { $0.tap(1) }
+        driver.change { $0.tap(2) }
+        driver.playOut()
+        #expect(driver.session.state == .allOff)
+        #expect(driver.session.note == .blocked(ring: 2, block: .previousRingOff(1)))
+        #expect(driver.moments == 1)
     }
 }
