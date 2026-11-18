@@ -30,6 +30,64 @@
         }
       }
     },
+    "%lld left" : {
+      "comment" : "In the control panel, where there is little room: how many moves the toy is from every ring off, such as 341 left with every ring on. In full it reads 341 moves left.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld left"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld left"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld left"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld moves left" : {
+      "comment" : "In the control panel, how many moves the toy is from every ring off, such as 341 moves left with every ring on. VoiceOver reads it so too.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld move left"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld moves left"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld moves left"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "All nine rings are on the sword. Click a ring to move it." : {
       "comment" : "Status at the start, with every ring on, on the Mac. A ring is clicked in the 3D view or by its numbered button.",
       "localizations" : {

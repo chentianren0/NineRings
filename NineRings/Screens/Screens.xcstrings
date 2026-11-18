@@ -397,6 +397,30 @@
         }
       }
     },
+    "settings.movesLeft" : {
+      "comment" : "A switch in settings. When on, the control panel shows how many moves the toy is from every ring off, such as 341 moves left.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moves Left"
+          }
+        }
+      }
+    },
+    "settings.movesLeft.detail" : {
+      "comment" : "The line under the Moves Left switch in settings, saying what it does.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows how many moves are left to take every ring off."
+          }
+        }
+      }
+    },
     "settings.sounds" : {
       "comment" : "A switch in settings that turns the app's sounds on or off.",
       "extractionState" : "manual",
