@@ -9,9 +9,9 @@ An app for iPhone, iPad and Mac that shows how the nine linked rings puzzle work
 
 ## Rules
 - Only one simulator runs at a time, because of memory. Ask before you boot one, and shut it down when you finish.
-- The repository is public: no local paths, no account names other than the owner's, and no photos or footage in any tracked file, commit, pull request or issue.
+- The repository is public: no local paths, no account names other than the user's, and no photos or footage in any tracked file, commit, pull request or issue.
 
 ## Pull requests
 - Run the tests that cover your change, and one build if the app is touched. GitHub runs the whole suite on every pull request.
 - Important work is reviewed by an Opus session before it is merged. Small interface work may not need a review.
-- A change to this file is merged only after the owner has reviewed it.
+- A change to this file is merged only after the user has reviewed it.
