@@ -65,7 +65,8 @@ import Testing
         driver.walk(to: .allOff)
         #expect(driver.play.isCongratulating)
         #expect(driver.count(.allNineOff) == 1)
-        #expect(driver.counts.keys.sorted { $0.rawValue < $1.rawValue } == [.allNineOff])
+        // The walk is the shortest way, by hand: the record of the play earns The Shortest Way at the same moment.
+        #expect(driver.counts.keys.sorted { $0.rawValue < $1.rawValue } == [.allNineOff, .shortestWay])
     }
 
     @Test func solveEarnsNothing() {

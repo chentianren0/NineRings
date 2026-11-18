@@ -5,8 +5,8 @@ import Puzzle
 /// Whoever drives a ``PuzzleSession`` shows it the session before and after each change, with ``update(from:to:)``.
 /// The rules it keeps:
 /// - It is shown when a move made forward ends with every ring off and nothing else in hand, so that the toy rests
-///   there. A move undone does not count, and neither does a move that Solve played: the text says the person took
-///   the rings off.
+///   there. A move undone does not count, and neither does a move that Solve began, however it was carried on: the
+///   text says the person took the rings off.
 /// - Once every ring has come off, it is not shown again until every ring is on again, by Reset or by moves. Putting
 ///   ring 1 back on and taking it off again is exploring, not solving the puzzle again. Rings set by hand count
 ///   the same way: they arm it only when every ring is on (see ``set(_:)``).
@@ -20,6 +20,11 @@ public struct Congratulation: Sendable, Equatable {
     public private(set) var isArmed = true
 
     public init() {}
+
+    /// Not showing, and armed or not, as a kept toy brings it back.
+    public init(isArmed: Bool) {
+        self.isArmed = isArmed
+    }
 
     /// Takes in one change to the session. Returns true when this change is the moment to congratulate.
     @discardableResult
@@ -36,8 +41,9 @@ public struct Congratulation: Sendable, Equatable {
         let arrived = after.state == .allOff && !after.isBusy && after.moveCount > before.moveCount
         guard arrived, isArmed else { return false }
         isArmed = false
-        // During Solve's last move its queue is empty but the session is still solving; the move ending clears it.
-        guard !before.isSolving else { return false }
+        // During Solve's last move its queue is empty but the session is still solving; the move ending clears it. A move
+        // Solve began stays Solve's however it is carried on, by Play or by the slider (``PuzzleSession/madeBySolveCount``).
+        guard !before.isSolving, after.madeBySolveCount == before.madeBySolveCount else { return false }
         isShowing = true
         return true
     }

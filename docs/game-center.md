@@ -31,9 +31,14 @@ person's own toy, as the congratulation does:
   Solve or the lesson.
 - Resting at a journey's end some other way, such as by Reset, means the journey starts again. Rings set by hand
   start a journey only from its start, so setting the rings next to the far end and moving one ring does not count.
-- **The Shortest Way** waits for the record of a finished play (issue 70), which counts undos and moves played for
-  the person. Until that lands, nothing earns it. Where that record is written, at the moment the congratulation is
-  due, its "shortest way" adds this achievement to what that change earns.
+  A journey under way is kept with the toy between launches, so that it goes on after the app is quit and opened.
+- **The Shortest Way** is earned from the record of a finished play, written at the moment the congratulation is due:
+  a play from every ring on to every ring off in 341 moves, with no undo and no move played for the person. A move
+  stands once it ends: an undo is a move that had ended taken back to its start, by Undo or by the slider, and it
+  counts once. Sending a move back before it ends costs nothing, since the ring buttons already show which rings can
+  move. A move belongs to whoever began it: one Solve began is played for the person however it is carried on, by
+  Play, by the slider or by a tap, and so are the lesson's six moves where it gives the toy back. All Nine Off and the
+  journeys refuse a move Solve began in the same way.
 
 What is earned is kept on the device and reported when a player is signed in: at once, when a player signs in later,
 or at the next launch if reporting failed. Each one is reported once, with Apple's banner. The app reads no player

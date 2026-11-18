@@ -33,6 +33,13 @@ import Puzzle
 ///   so that play, undo and Solve go on from it; Cancel gives their toy back as it was. Every change of the
 ///   arrangement is a jump, silent, and says nothing: the ring's own button says its new value. Starting says how to
 ///   set them; Done and Cancel say what the toy now is. The lesson stays closed meanwhile.
+/// - The play in progress follows the person's toy, as the congratulation does (see ``Play``): every move, undo and
+///   move made by Solve on it counts, and so do the lesson's moves made on it where it is given back. Reset, and
+///   setting the rings to every ring on, begin a new play. The change that congratulates finishes the play, and
+///   ``finished`` holds its record for that change.
+/// - What is kept between launches is the person's own toy, as closing the lesson or cancelling the rings being set
+///   would give it back, with the play in progress and the journeys toward achievements under way (``snapshot``).
+///   Brought back, it goes on as it would have without the relaunch.
 public struct PlayState: Sendable, Equatable {
     /// The person's own toy. While the lesson is open it waits, and the lesson's toy is shown instead.
     public private(set) var own: PuzzleSession
@@ -50,6 +57,10 @@ public struct PlayState: Sendable, Equatable {
     public private(set) var earned: Set<Achievement> = []
     /// What the last change says aloud.
     public private(set) var narration = Narration()
+    /// The play in progress: while the congratulation is armed.
+    public private(set) var play: Play?
+    /// The play the last change finished, at the moment it congratulated; nil after any other change.
+    public private(set) var finished: PlayRecord?
     /// How many times the toy shown has jumped: been set at once where some of its parts are somewhere else. The screen
     /// shows a jump as the parts that change place fading across, where every other change moves them.
     public private(set) var jumps = 0
@@ -60,11 +71,35 @@ public struct PlayState: Sendable, Equatable {
     private var heard: PuzzleSession
     private var framed: PuzzleSession
 
+    /// The puzzle with the person's toy as `toy`, at the beginning of a play.
     public init(_ toy: PuzzleSession = PuzzleSession()) {
         own = toy
         judged = toy
         heard = toy
         framed = toy
+        play = Play(startedAt: .now, startRings: toy.state, earlierMoves: toy.moveCount)
+    }
+
+    /// The puzzle as `snapshot` kept it, or nil when the snapshot's moves break the rule. The congratulation is armed
+    /// when a play was in progress.
+    public init?(_ snapshot: ToySnapshot) {
+        guard let toy = snapshot.toy else { return nil }
+        self.init(toy)
+        play = snapshot.play
+        congratulation = Congratulation(isArmed: snapshot.play != nil)
+        achievementRule = AchievementRule(underWay: snapshot.journeys)
+    }
+
+    /// What is kept between launches: the person's own toy, as the lesson or the rings being set would give it back,
+    /// the play in progress, and the journeys under way.
+    public var snapshot: ToySnapshot {
+        ToySnapshot(toy: lesson?.closingToy ?? own, play: play, journeys: achievementRule.underWay)
+    }
+
+    /// Adds `seconds` with the app in front to the play in progress.
+    public mutating func spend(_ seconds: Double) {
+        guard seconds > 0 else { return }
+        play?.secondsSpent += seconds
     }
 
     /// The toy as it is shown: resting in the arrangement being set, the lesson's while the lesson is open, or the
@@ -153,7 +188,7 @@ public struct PlayState: Sendable, Equatable {
     public mutating func reset() {
         if isSettingRings { return setRings(to: .allOn) }
         if lesson != nil { lesson?.reset() } else { own.reset() }
-        settle(jump: true, sayingWhereItRests: true)
+        settle(jump: true, sayingWhereItRests: true, beginsPlay: true)
     }
 
     /// The toy set where `move` begins, playing it, with the lesson closed.
@@ -162,14 +197,14 @@ public struct PlayState: Sendable, Equatable {
         settingRings = nil
         own = PuzzleSession(at: move)
         own.togglePlay()
-        settle(jump: true, rebase: true)
+        settle(jump: true, rebase: true, beginsPlay: true)
     }
 
     /// Opens the lesson at step `index`, counted from 0, keeping the toy as it is to give back on closing.
     public mutating func openLesson(at index: Int = 0) {
         guard lesson == nil, !isSettingRings else { return nothingChanged() }
         lesson = LessonRun(opening: own, at: index)
-        settle(jump: true, rebase: true)
+        settle(jump: true, rebase: true, lessonMoves: lessonMovesGiven(wasGivenBack: false))
     }
 
     /// Closes the lesson: the toy is as it was before, or, on the step that gave it back, as the person has it there.
@@ -183,8 +218,9 @@ public struct PlayState: Sendable, Equatable {
     /// Goes to step `index` of the lesson and plays it from its start.
     public mutating func goToLessonStep(_ index: Int) {
         guard lesson != nil else { return nothingChanged() }
+        let wasGivenBack = lesson?.givesToyBack ?? false
         lesson?.go(to: index)
-        settle(jump: true, rebase: true)
+        settle(jump: true, rebase: true, lessonMoves: lessonMovesGiven(wasGivenBack: wasGivenBack))
     }
 
     // MARK: - Setting the rings
@@ -214,7 +250,7 @@ public struct PlayState: Sendable, Equatable {
         self.settingRings = nil
         congratulation.set(settingRings)
         achievementRule.set(settingRings)
-        settle(jump: true, rebase: true, sayingWhereItRests: true)
+        settle(jump: true, rebase: true, sayingWhereItRests: true, beginsPlay: true)
     }
 
     /// Stops setting the rings and gives the person's toy back as it was.
@@ -254,7 +290,15 @@ public struct PlayState: Sendable, Equatable {
         hearing = Hearing()
         narration = Narration()
         congratulates = false
+        finished = nil
         earned = []
+    }
+
+    /// How many moves the lesson has just made on the person's toy, giving it back: none unless it gives the toy back
+    /// now and did not before.
+    private func lessonMovesGiven(wasGivenBack: Bool) -> Int {
+        guard let lesson, lesson.givesToyBack, !wasGivenBack else { return 0 }
+        return lesson.movesPlayedForThePerson.count
     }
 
     /// A change to the toy shown, as a ring tap, undo, Solve or a drag makes it: on the lesson's steps but the last,
@@ -264,11 +308,14 @@ public struct PlayState: Sendable, Equatable {
         if lesson != nil { lesson?.useToy(change) } else { change(&own) }
     }
 
-    /// After a change: what is heard, what the congratulation makes of it, and what is said. A jump is heard as nothing,
-    /// and says where the toy rests only when `sayingWhereItRests`. A change that `rebase`s is not a move of the person's
-    /// toy: the congratulation hides and takes the toy as it now is. A `quiet` change says nothing.
+    /// After a change: what is heard, what the congratulation makes of it, what the play counts, and what is said. A jump
+    /// is heard as nothing, and says where the toy rests only when `sayingWhereItRests`. A change that `rebase`s is not a
+    /// move of the person's toy: the congratulation hides and takes the toy as it now is, and the play counts only the
+    /// `lessonMoves` the lesson made on it. A change that `beginsPlay` begins a new play when the congratulation is armed.
+    /// A `quiet` change says nothing.
     private mutating func settle(
-        tapped: Int? = nil, jump: Bool = false, rebase: Bool = false, sayingWhereItRests: Bool = false, quiet: Bool = false
+        tapped: Int? = nil, jump: Bool = false, rebase: Bool = false, sayingWhereItRests: Bool = false, quiet: Bool = false,
+        beginsPlay: Bool = false, lessonMoves: Int = 0
     ) {
         let toy = toy
         let before = heard
@@ -279,6 +326,7 @@ public struct PlayState: Sendable, Equatable {
             if !toy.pose.isClose(to: before.pose) { jumps += 1 }
         }
         let wasShowing = congratulation.isShowing
+        let judgedBefore = judged
         earned = []
         if let persons {
             if rebase {
@@ -293,7 +341,38 @@ public struct PlayState: Sendable, Equatable {
             congratulation.dismiss()
         }
         congratulates = congratulation.isShowing && !wasShowing
+        keepPlay(from: judgedBefore, to: persons, counting: !rebase, lessonMoves: lessonMoves, begins: beginsPlay)
+        // The record of a finished play tells the shortest way, from every ring on to every ring off.
+        if let finished, finished.isShortestWay, finished.startRings == .allOn, finished.endRings == .allOff {
+            earned.insert(.shortestWay)
+        }
         narration = narrate(from: before, to: toy, jump: jump, sayingWhereItRests: sayingWhereItRests, quiet: quiet)
+    }
+
+    /// Counts the change from `before` to `persons`, the person's toy, into the play in progress, and finishes, ends or
+    /// begins a play as the congratulation now stands.
+    private mutating func keepPlay(from before: PuzzleSession, to persons: PuzzleSession?, counting: Bool, lessonMoves: Int, begins: Bool) {
+        finished = nil
+        guard let persons else { return }
+        if var play {
+            if counting {
+                play.countMoves(from: before.moveCount, to: persons.moveCount)
+                play.undos += persons.unmadeCount - before.unmadeCount
+                play.movesPlayedForThePerson += persons.madeBySolveCount - before.madeBySolveCount
+            }
+            play.moves += lessonMoves
+            play.movesPlayedForThePerson += lessonMoves
+            play.earlierMoves = min(play.earlierMoves, persons.moveCount)
+            self.play = play
+        }
+        if congratulates, let play {
+            finished = play.finished(in: persons.state, at: .now)
+            self.play = nil
+        } else if !congratulation.isArmed {
+            play = nil
+        } else if begins || play == nil || (before.state != .allOn && persons.state == .allOn) {
+            play = Play(startedAt: .now, startRings: persons.state, earlierMoves: persons.moveCount)
+        }
     }
 
     private func narrate(from before: PuzzleSession, to toy: PuzzleSession, jump: Bool, sayingWhereItRests: Bool, quiet: Bool) -> Narration {

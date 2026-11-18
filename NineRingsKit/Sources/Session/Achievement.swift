@@ -8,9 +8,8 @@ import Puzzle
 public enum Achievement: String, CaseIterable, Sendable, Codable {
     /// Every ring taken off: the moment the congratulation is due (see ``Congratulation``).
     case allNineOff = "all_nine_off"
-    /// From every ring on to every ring off in 341 moves, with no Undo and no move played for the person. The count of
-    /// undos and of moves played for the person comes with the record of a finished play, which is not built yet;
-    /// until then nothing earns this one (see ``AchievementRule``).
+    /// From every ring on to every ring off in 341 moves, with no Undo and no move played for the person: the record of
+    /// a finished play that went the shortest way (``PlayRecord/isShortestWay``), earned by ``PlayState``.
     case shortestWay = "shortest_way"
     /// From every ring off, every ring put back on.
     case allNineBackOn = "all_nine_back_on"
@@ -32,19 +31,36 @@ extension PuzzleState {
 /// - The other two are journeys along the one path, made by the person's own moves: from every ring off to every ring
 ///   on (All Nine Back On), and from every ring on or every ring off to only ring 9 on (The Far End). A journey counts
 ///   once the toy has been at its start, and it is earned by a move made forward that leaves the toy resting at its
-///   end, as the congratulation is. An undo arriving there does not count, and neither does a move that Solve played.
+///   end, as the congratulation is. An undo arriving there does not count, and neither does a move that Solve began,
+///   however it was carried on.
 /// - Resting at a journey's end in any other way, such as by Reset or by an undo, means the journey must start again.
 ///   The toy passing through it, with another ring waiting, changes nothing.
 /// - Rings set by hand start a journey only from its start: setting the rings next to the far end and moving one ring
 ///   is not the journey there.
-/// - The Shortest Way is not earned here yet: it needs the count of undos and of moves played for the person, which
-///   the record of a finished play will hold. Where that record is written, at the moment the congratulation is due,
-///   its "shortest way" adds ``Achievement/shortestWay`` to what that change earns.
+/// - A journey under way is kept with the toy between launches (``underWay``), so that it goes on after a relaunch.
+/// - The Shortest Way is not earned here: it needs the count of undos and of moves played for the person, which the
+///   record of a finished play holds. ``PlayState``, which writes that record at the moment the congratulation is due,
+///   adds ``Achievement/shortestWay`` to what that change earns when the play went the shortest way.
 public struct AchievementRule: Sendable, Equatable {
     private var backOn = Journey(from: [.allOff], to: .allOn)
     private var farEnd = Journey(from: [.allOn, .allOff], to: .farEnd)
 
     public init() {}
+
+    /// The rule with the journeys toward `underWay` under way, as a kept toy brings them back. Achievements that are not
+    /// journeys are ignored.
+    public init(underWay: Set<Achievement>) {
+        backOn.isUnderWay = underWay.contains(.allNineBackOn)
+        farEnd.isUnderWay = underWay.contains(.farEnd)
+    }
+
+    /// The journeys under way, by the achievement each earns: what a kept toy keeps of the rule.
+    public var underWay: Set<Achievement> {
+        var underWay: Set<Achievement> = []
+        if backOn.isUnderWay { underWay.insert(.allNineBackOn) }
+        if farEnd.isUnderWay { underWay.insert(.farEnd) }
+        return underWay
+    }
 
     /// Takes in one change to the person's toy, `finished` when this change is the moment the congratulation is due.
     /// Returns what this change earns.
@@ -81,7 +97,9 @@ public struct AchievementRule: Sendable, Equatable {
             if starts.contains(before.state) || starts.contains(after.state) { isUnderWay = true }
             guard after.state == end, !after.isBusy else { return false }
             defer { isUnderWay = false }
+            // A move Solve began is Solve's however it is carried on (``PuzzleSession/madeBySolveCount``).
             return isUnderWay && after.moveCount > before.moveCount && !before.isSolving
+                && after.madeBySolveCount == before.madeBySolveCount
         }
 
         mutating func set(_ state: PuzzleState) {

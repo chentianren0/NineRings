@@ -65,6 +65,9 @@
           "product-name": "Puzzle",
           "build-phase": { "build-phase": "frameworks" },
         }, {
+          "product-name": "Records",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
           "product-name": "Session",
           "build-phase": { "build-phase": "frameworks" },
         }, {
