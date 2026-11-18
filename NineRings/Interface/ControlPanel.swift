@@ -28,6 +28,8 @@ struct ControlPanel: View {
     @Bindable var player: Player
     let style: Style
     @State private var width: CGFloat = 0
+    @AppStorage(ScreenKey.movesLeft) private var showsMovesLeft = true
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.reducesMotion) private var reducesMotion
 
     /// The largest text size the panel follows. Larger text would make the panel cover the toy on the smallest screens,
@@ -124,6 +126,19 @@ struct ControlPanel: View {
     /// Floating, it goes on saying what it said while a refusal shows in the bubble above; beside the toy, it says the
     /// refusal itself.
     private func caption(lines: Int) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            status(lines: lines)
+            if showsMovesLeft {
+                MovesLeft(state: player.shownState, isCompact: !isOneRow && dynamicTypeSize >= .xLarge)
+                    .transition(.opacity)
+            }
+        }
+        .font(style == .beside ? .body : .subheadline)
+        .animation(ScreenMotion.small, value: showsMovesLeft)
+    }
+
+    /// The status line itself, holding the place of `lines` lines.
+    private func status(lines: Int) -> some View {
         ZStack(alignment: .topLeading) {
             Text(verbatim: String(repeating: "\n", count: lines - 1) + " ").hidden().accessibilityHidden(true)
             if style == .beside, let refusal {
@@ -137,7 +152,6 @@ struct ControlPanel: View {
                     .transition(.opacity)
             }
         }
-        .font(style == .beside ? .body : .subheadline)
         .frame(maxWidth: .infinity, alignment: .leading)
         .animation(ScreenMotion.small, value: refusal == nil)
         .accessibilityElement(children: .combine)
@@ -394,5 +408,52 @@ struct RefusalBubble: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .glassEffect(.regular, in: .rect(cornerRadius: 20))
             .accessibilityElement(children: .combine)
+    }
+}
+
+/// How many moves the toy is from every ring off: its place on the one line of moves, 341 from every ring on and up to
+/// 511 the other way. It counts the rings the buttons show, so that the two agree while a move is in hand.
+///
+/// It reads "341 moves left". Where the status line beside it has two lines to fill in a narrow panel, at the larger
+/// text sizes, it is compact, a finishing flag and the number, so that the status keeps its room; it is still said in
+/// full. Its form follows the panel and the text size alone, never the status, so that it does not change while moves
+/// play. It holds the width of its widest form, so that the status line keeps its width, and so its line breaks, as
+/// the number changes.
+private struct MovesLeft: View {
+    let state: PuzzleState
+    let isCompact: Bool
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            label(888).hidden().accessibilityHidden(true)
+            label(state.rank)
+                .contentTransition(.numericText(value: Double(state.rank)))
+        }
+        .animation(ScreenMotion.small, value: state.rank)
+        .monospacedDigit()
+        .supportingTextStyle()
+        .lineLimit(1)
+        .fixedSize()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Self.text(state.rank))
+        .accessibilityAddTraits(.isStaticText)
+    }
+
+    @ViewBuilder
+    private func label(_ count: Int) -> some View {
+        if isCompact {
+            Label {
+                Text(count, format: .number)
+            } icon: {
+                Image(systemName: "flag.pattern.checkered")
+            }
+            .labelStyle(.titleAndIcon)
+        } else {
+            Self.text(count)
+        }
+    }
+
+    private static func text(_ count: Int) -> Text {
+        Text("\(count) moves left", tableName: "Localizable", comment: "In the control panel, how many moves the toy is from every ring off, such as 341 moves left with every ring on.")
     }
 }
