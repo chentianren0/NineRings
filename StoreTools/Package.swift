@@ -19,6 +19,8 @@ let package = Package(
         ),
         .target(name: "StoreComposer"),
         .executableTarget(name: "store-compose", dependencies: ["StoreComposer"]),
+        // The Game Center achievements' pictures (AchievementPictures/).
+        .executableTarget(name: "achievement-pictures", dependencies: ["StoreComposer"]),
         .testTarget(name: "StoreComposerTests", dependencies: ["StoreComposer"]),
         .testTarget(
             name: "StoreLaunchTests",
