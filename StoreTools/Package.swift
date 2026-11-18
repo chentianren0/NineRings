@@ -7,8 +7,7 @@ let package = Package(
     name: "StoreTools",
     platforms: [.macOS(.v15)],
     dependencies: [
-        // Only for the tests, which check that each moment of the series is a state the rules allow, and that each
-        // achievement picture is named by one of the app's achievements.
+        // Only for the tests, which check that each moment of the series is a state the rules allow.
         .package(path: "../NineRingsKit"),
     ],
     targets: [
@@ -33,10 +32,6 @@ let package = Package(
                 .product(name: "Motion", package: "NineRingsKit"),
                 .product(name: "Session", package: "NineRingsKit"),
             ]
-        ),
-        .testTarget(
-            name: "AchievementPicturesTests",
-            dependencies: ["AchievementPictures", .product(name: "Session", package: "NineRingsKit")]
         ),
     ]
 )

@@ -26,8 +26,8 @@ UI tests on each simulator (`--devices iphone-6.3,ipad-13,…`); see `StoreShots
 | Achievement pictures | `Sources/AchievementPictures`, `Sources/achievement-pictures`, `AchievementPictures/` | Draws the four Game Center achievement pictures: `swift run --package-path StoreTools achievement-pictures` |
 
 Nothing here is part of the app: the Xcode project does not refer to this package. The tests check the composer, the
-app's own reading of the launch arguments (its files are linked into `Sources/StoreLaunch`), that every moment is a
-state the rules allow, and that the achievement pictures are what App Store Connect asks for and what the code draws:
+app's own reading of the launch arguments (its files are linked into `Sources/StoreLaunch`), and that every moment is a
+state the rules allow:
 
 ```bash
 swift test --package-path StoreTools
