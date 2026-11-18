@@ -1,9 +1,16 @@
 import SwiftUI
 
-/// The welcome page, in the form of the system's own: the title, three points each with a symbol, and one button.
-/// It is shown once, on first launch; after Continue it does not come back.
+/// The welcome page, in the form of the system's own: the title, three points each with a symbol, and two ways in.
+/// The lesson is the suggested one, the first button and the default; the second starts playing, so nobody has to
+/// watch it. It is shown once, on first launch; after either button it does not come back.
 struct WelcomeSheet: View {
-    let onContinue: () -> Void
+    /// What the person chose.
+    enum Choice {
+        case lesson
+        case play
+    }
+
+    let onChoice: (Choice) -> Void
 
     @ScaledMetric(relativeTo: .title) private var symbolWidth = 44
     #if os(iOS)
@@ -26,22 +33,57 @@ struct WelcomeSheet: View {
                 // Where the points do not all fit, as with larger text, show at once that there is more.
                 .scrollIndicatorsFlash(onAppear: true)
             #endif
-            Button(action: onContinue) {
-                Text("welcome.continue", tableName: "Screens")
-                    .frame(maxWidth: Self.buttonWidth)
-            }
-            .buttonStyle(.glassProminent)
-            .controlSize(.extraLarge)
-            .keyboardShortcut(.defaultAction)
-            .padding(.horizontal, 40)
-            .padding(.bottom, isShort ? 8 : 24)
-            .padding(.top, 8)
+            buttons
+                .controlSize(.extraLarge)
+                .padding(.horizontal, 40)
+                .padding(.bottom, isShort ? 8 : 24)
+                .padding(.top, 8)
         }
         .interactiveDismissDisabled()
         #if os(macOS)
         .frame(width: 520)
         .fixedSize(horizontal: false, vertical: true)
         #endif
+    }
+
+    /// The two ways in. On iPhone and iPad they stand one above the other, the lesson first, as the system's welcome
+    /// pages do; on the Mac they sit side by side at the trailing end of the row, the default last, as in a Mac sheet.
+    @ViewBuilder
+    private var buttons: some View {
+        #if os(macOS)
+        HStack(spacing: 12) {
+            playButton
+            lessonButton
+        }
+        .fixedSize()
+        #else
+        VStack(spacing: isShort ? 4 : 8) {
+            lessonButton
+            playButton
+        }
+        #endif
+    }
+
+    private var lessonButton: some View {
+        Button {
+            onChoice(.lesson)
+        } label: {
+            Text("welcome.startLesson", tableName: "Screens")
+                .frame(maxWidth: Self.buttonWidth)
+        }
+        .buttonStyle(.glassProminent)
+        .keyboardShortcut(.defaultAction)
+    }
+
+    private var playButton: some View {
+        Button {
+            onChoice(.play)
+        } label: {
+            Text("welcome.startPlaying", tableName: "Screens")
+                .frame(maxWidth: Self.buttonWidth)
+        }
+        .buttonStyle(.glass)
+        .keyboardShortcut(.cancelAction)
     }
 
     private var content: some View {
@@ -120,11 +162,11 @@ struct WelcomeSheet: View {
         #endif
     }
 
-    /// The button fills the sheet's width on iPhone and iPad, as the system's welcome pages do; on the Mac it is a
-    /// wide button, not a bar.
+    /// The buttons fill the sheet's width on iPhone and iPad, as the system's welcome pages do; on the Mac they are two
+    /// wide buttons of one width, not bars.
     private static var buttonWidth: CGFloat {
         #if os(macOS)
-        240
+        180
         #else
         .infinity
         #endif
@@ -133,7 +175,7 @@ struct WelcomeSheet: View {
 
 /// Where the screens around the toy are kept as settings.
 enum ScreenKey {
-    /// Whether the welcome page has been closed with Continue.
+    /// Whether the welcome page has been closed, by either of its buttons.
     static let welcomeSeen = "welcome.seen"
     /// Whether the app makes sounds. The sound code reads this key.
     static let sounds = "settings.sounds"
@@ -142,23 +184,37 @@ enum ScreenKey {
 }
 
 extension View {
-    /// Shows the welcome page over this view on first launch, until it is closed with Continue. In a debug build on
-    /// the Mac, it also applies the launch options for screenshots (see ``ScreenLaunchOptions``).
-    func welcomeOnFirstLaunch() -> some View {
-        modifier(WelcomeOnFirstLaunch())
+    /// Shows the welcome page over this view on first launch, until one of its buttons closes it. Where the person
+    /// chose the lesson, `openLesson` is called once the page has gone, so that on a phone, where the lesson is a sheet
+    /// too, it can be presented. In a debug build on the Mac, it also applies the launch options for screenshots (see
+    /// ``ScreenLaunchOptions``).
+    func welcomeOnFirstLaunch(openLesson: @escaping () -> Void) -> some View {
+        modifier(WelcomeOnFirstLaunch(openLesson: openLesson))
     }
 }
 
 private struct WelcomeOnFirstLaunch: ViewModifier {
+    let openLesson: () -> Void
     @AppStorage(ScreenKey.welcomeSeen) private var welcomeSeen = false
+    /// The person's choice, kept until the page has gone.
+    @State private var choice: WelcomeSheet.Choice?
+    /// Whether the page has been closed in this run. The setting says so too, but a launch argument such as
+    /// `-welcome.seen NO`, used to see the page again, outranks what is stored, and the page would never go.
+    @State private var closed = false
     #if DEBUG && os(macOS)
     @Environment(\.openSettings) private var openSettings
     #endif
 
     func body(content: Content) -> some View {
         content
-            .sheet(isPresented: Binding(get: { !welcomeSeen }, set: { if !$0 { welcomeSeen = true } })) {
-                WelcomeSheet { welcomeSeen = true }
+            .sheet(isPresented: Binding(get: { !welcomeSeen && !closed }, set: { if !$0 { close() } }), onDismiss: {
+                if choice == .lesson { openLesson() }
+                choice = nil
+            }) {
+                WelcomeSheet { chosen in
+                    choice = chosen
+                    close()
+                }
             }
             #if DEBUG && os(macOS)
             .task {
@@ -166,5 +222,10 @@ private struct WelcomeOnFirstLaunch: ViewModifier {
                 if ScreenLaunchOptions.opensSettings { openSettings() }
             }
             #endif
+    }
+
+    private func close() {
+        closed = true
+        welcomeSeen = true
     }
 }

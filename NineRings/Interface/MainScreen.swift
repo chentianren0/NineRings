@@ -30,7 +30,7 @@ struct MainScreen: View {
 
     var body: some View {
         PuzzleScreen(modes: modes)
-            .welcomeOnFirstLaunch()
+            .welcomeOnFirstLaunch(openLesson: modes.openLesson)
             .accessibilityLaunchTaps(player)
             .accessibilitySettings()
             .onChange(of: tallView, initial: true) { _, tallView in
