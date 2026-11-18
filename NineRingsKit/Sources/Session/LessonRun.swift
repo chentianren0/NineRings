@@ -256,17 +256,3 @@ extension LessonStep {
         }
     }
 }
-
-extension ToyPose {
-    /// Whether every part is where it is in `other`, to within a hundredth of a millimetre and a hundredth of a degree:
-    /// a difference no one can see.
-    func isClose(to other: ToyPose) -> Bool {
-        let parts = zip(rings + rods + [bar], other.rings + other.rods + [other.bar])
-        return abs(swordSlide - other.swordSlide) < 0.01
-            && abs(swordHeight - other.swordHeight) < 0.01
-            && parts.allSatisfy { a, b in
-                simd_distance(a.position, b.position) < 0.01
-                    && abs(simd_dot(a.orientation.vector, b.orientation.vector)) > 1 - 1e-8
-            }
-    }
-}

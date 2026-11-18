@@ -28,7 +28,9 @@ struct CameraAngles: Equatable {
 /// Until a gesture or a preset moves it, the camera shows the default view, which may depend on the shape of the
 /// view (a tall one may be seen from higher up than a wide one): while it does, a change of size frames the toy
 /// afresh from the default angles for the new shape, flying there when the angles change. Once moved, a change of
-/// size only keeps the toy the same size.
+/// size only keeps the toy the same size. Where the space changes by a step, as when the lesson's panel arrives, the
+/// framing eases into the new space with the screen's change (`ScreenMotion.framing`); a window resized by hand is
+/// followed frame by frame.
 ///
 /// With `followsMove` on, the camera drawn from is not always `camera` itself: while a move slides the sword, the
 /// picture widens to keep the sword in view, wherever it has gone (see `camera(for:)`). Gestures, presets and flights
@@ -45,8 +47,9 @@ final class CameraRig {
     var defaultAngles: (Viewport) -> CameraAngles
     /// Whether the camera shows the default view, unmoved by a gesture or a preset.
     private(set) var showsDefault = true
-    /// A flight in progress, toward the given angles, or toward the default view for the present shape when nil.
-    private var flight: (from: OrbitCamera, to: CameraAngles?, elapsed: Double)?
+    /// A flight in progress, toward the given angles, or toward the default view for the present shape when nil, over
+    /// `duration` seconds.
+    private var flight: (from: OrbitCamera, to: CameraAngles?, elapsed: Double, duration: Double)?
     private var hasBeenFramed = false
     /// A flight toward this camera rather than toward angles: back to one kept by `remember()`.
     private var flightCamera: OrbitCamera?
@@ -93,26 +96,46 @@ final class CameraRig {
         let old = viewport
         viewport = newViewport
         guard !newViewport.isEmpty else { return }
+        let wasFlying = flight != nil
+        // A space that changes by a step eases the framing into it, where the change would otherwise be seen as a jump.
+        let eases = !old.isEmpty && newViewport.differsByAStep(from: old)
+        let easing = ScreenMotion.framing(reducesMotion: reducesMotion)
         if !hasBeenFramed {
             // The first size: nothing has been seen yet, so there is nothing to fly from.
             flight = nil
             camera = framing(showsDefault ? defaultAngles(newViewport) : CameraAngles(.side), in: newViewport)
-        } else if flight == nil {
+        } else if !wasFlying {
             if showsDefault {
                 let angles = defaultAngles(newViewport)
                 if !old.isEmpty, angles != defaultAngles(old) {
                     // The space has changed shape enough to want another view, as when a phone turns or a Duo
                     // opens: fly there rather than jump.
                     fly(to: nil)
+                } else if eases {
+                    fly(to: nil, duration: easing)
                 } else {
                     camera = framing(angles, in: newViewport)
                 }
             } else {
-                camera.refit(box, from: old, to: newViewport)
+                var refitted = camera
+                refitted.refit(box, from: old, to: newViewport)
+                if eases {
+                    flight = (camera, nil, 0, easing)
+                    flightCamera = refitted
+                } else {
+                    camera = refitted
+                }
             }
         }
-        // During a flight, its destination follows the new size; a camera flown back to is kept the same size too.
-        if flight != nil, !old.isEmpty, !newViewport.isEmpty { flightCamera?.refit(box, from: old, to: newViewport) }
+        // During a flight, its destination follows the new size; a camera flown back to is kept the same size too. Where
+        // the size changes by a step, the flight starts again from where the camera is, so that the destination's step
+        // is eased rather than seen.
+        if wasFlying, !old.isEmpty {
+            flightCamera?.refit(box, from: old, to: newViewport)
+            if eases, let current = flight {
+                flight = (camera, current.to, 0, max(easing, current.duration - current.elapsed))
+            }
+        }
         hasBeenFramed = true
         revision += 1
     }
@@ -184,7 +207,7 @@ final class CameraRig {
 
     func advance(by seconds: Double) {
         guard var current = flight else { return }
-        let duration = reducesMotion ? 0 : Self.flightDuration
+        let duration = reducesMotion ? 0 : current.duration
         current.elapsed = min(current.elapsed + seconds, duration)
         let linear = duration > 0 ? Float(current.elapsed / duration) : 1
         let destination = flightCamera ?? framing(current.to ?? defaultAngles(viewport), in: viewport)
@@ -194,8 +217,8 @@ final class CameraRig {
         revision += 1
     }
 
-    private func fly(to angles: CameraAngles?) {
-        flight = (camera, angles, 0)
+    private func fly(to angles: CameraAngles?, duration: Double = flightDuration) {
+        flight = (camera, angles, 0, duration)
         flightCamera = nil
     }
 
@@ -217,7 +240,7 @@ final class CameraRig {
         if !remembered.viewport.isEmpty, !viewport.isEmpty {
             destination.refit(box, from: remembered.viewport, to: viewport)
         }
-        flight = (camera, nil, 0)
+        flight = (camera, nil, 0, Self.flightDuration)
         flightCamera = destination
         showsDefault = false
     }

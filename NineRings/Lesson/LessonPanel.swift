@@ -28,7 +28,8 @@ struct LessonPanel: View {
             if let page = player.lessonPage {
                 content(page)
             } else {
-                // Only for the moment the toy is covered while the lesson opens.
+                // The lesson opens with its panel, in the same change; this is only for a panel the system shows on its
+                // own, as when it restores one, until the screen closes it.
                 Color.clear
             }
         }

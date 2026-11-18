@@ -237,6 +237,7 @@ private final class CanvasDriver {
     private var drawn: Player.PoseKey?
     private var drawnPose: ToyPose?
     private var drawnCamera = -1
+    private var drawnJumps = 0
     private var frames = 0
 
     init(player: Player, rig: CameraRig, scene: ToyScene, camera: Entity) {
@@ -262,10 +263,16 @@ private final class CanvasDriver {
         if key != drawn {
             let pose = player.pose
             scene.apply(pose)
+            // A jump since the last frame: the parts that changed place fade across rather than snap.
+            if player.jumps != drawnJumps, let drawnPose {
+                scene.crossFade(from: drawnPose, to: pose, duration: ScreenMotion.crossFade(reducesMotion: rig.reducesMotion))
+            }
             drawn = key
             drawnPose = pose
             posed = true
         }
+        drawnJumps = player.jumps
+        scene.advanceFade(by: seconds)
         // Following the move, the camera depends on the pose too.
         if rig.revision != drawnCamera || (posed && rig.followsMove), let pose = drawnPose {
             camera.transform = rig.camera(for: pose).transform

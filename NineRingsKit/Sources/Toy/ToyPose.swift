@@ -61,3 +61,43 @@ public struct ToyPose: Sendable, Equatable {
     public func ring(_ number: Int) -> PartPose { rings[number - 1] }
     public func rod(_ number: Int) -> PartPose { rods[number - 1] }
 }
+
+/// Some of the toy's parts, by name: which rings and which rods, by ring number, and whether the bar and the sword.
+public struct ToyParts: Sendable, Equatable {
+    public var rings: Set<Int> = []
+    public var rods: Set<Int> = []
+    public var bar = false
+    public var sword = false
+
+    public init(rings: Set<Int> = [], rods: Set<Int> = [], bar: Bool = false, sword: Bool = false) {
+        self.rings = rings
+        self.rods = rods
+        self.bar = bar
+        self.sword = sword
+    }
+
+    public var isEmpty: Bool { rings.isEmpty && rods.isEmpty && !bar && !sword }
+}
+
+extension ToyPose {
+    /// The parts that are somewhere else in `other`: moved by more than a hundredth of a millimetre or turned by more
+    /// than about a hundredth of a degree, a difference no one can see.
+    public func parts(movedFrom other: ToyPose) -> ToyParts {
+        func moved(_ a: PartPose, _ b: PartPose) -> Bool {
+            simd_distance(a.position, b.position) >= 0.01 || abs(simd_dot(a.orientation.vector, b.orientation.vector)) <= 1 - 1e-8
+        }
+        var parts = ToyParts()
+        for number in 1...9 {
+            if moved(ring(number), other.ring(number)) { parts.rings.insert(number) }
+            if moved(rod(number), other.rod(number)) { parts.rods.insert(number) }
+        }
+        parts.bar = moved(bar, other.bar)
+        parts.sword = abs(swordSlide - other.swordSlide) >= 0.01 || abs(swordHeight - other.swordHeight) >= 0.01
+        return parts
+    }
+
+    /// Whether every part is where it is in `other`, to within a difference no one can see.
+    public func isClose(to other: ToyPose) -> Bool {
+        parts(movedFrom: other).isEmpty
+    }
+}
