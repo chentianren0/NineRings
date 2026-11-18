@@ -10,14 +10,18 @@ import SwiftUI
 /// use. Where none leaves it room, as with the largest text beside the toy on a half-folded iPhone Duo, the count steps
 /// aside and the status has the whole line: what the status says comes first. The panel says what the longest thing
 /// is; the form follows the panel and the text size alone, never what the status says now, so that it does not change
-/// while moves play. VoiceOver says the count in full whatever its form. Each form holds the width of its widest
-/// number, so that the status keeps its line breaks as the number changes.
+/// while moves play. VoiceOver says the count in full whatever its form; where it steps aside, the status says it
+/// for it (see `stepsAside`). Each form holds the width of its widest number, so that the status keeps its line breaks
+/// as the number changes.
 struct MovesLeft<LongestStatus: View>: View {
     let state: PuzzleState
     /// The width the status line and the count share.
     let lineWidth: CGFloat
     /// How many lines the status line holds.
     let lines: Int
+    /// Set while the count steps aside, so that the status can give VoiceOver the count in its place: the count is still
+    /// true, only out of sight.
+    @Binding var stepsAside: Bool
     /// The longest thing the status line says, as it shows it.
     @ViewBuilder let longestStatus: LongestStatus
 
@@ -59,9 +63,10 @@ struct MovesLeft<LongestStatus: View>: View {
         .supportingTextStyle()
         .fixedSize()
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Self.fullText(state.rank))
+        .accessibilityLabel(Text(movesLeft: state.rank))
         .accessibilityAddTraits(.isStaticText)
         .accessibilityHidden(form == nil)
+        .onChange(of: form == nil, initial: true) { _, aside in stepsAside = aside }
     }
 
     /// What the form is chosen from, measured out of sight: each form's width, the longest status laid out beside each,
@@ -96,7 +101,7 @@ struct MovesLeft<LongestStatus: View>: View {
         Group {
             switch form {
             case .full:
-                fullText(count)
+                Text(movesLeft: count)
             case .short:
                 Text("\(count) left", comment: "In the control panel, where there is little room: how many moves the toy is from every ring off, such as 341 left with every ring on. In full it reads 341 moves left.")
             case .number:
@@ -106,8 +111,12 @@ struct MovesLeft<LongestStatus: View>: View {
         .monospacedDigit()
         .lineLimit(1)
     }
+}
 
-    private static func fullText(_ count: Int) -> Text {
-        Text("\(count) moves left", comment: "In the control panel, how many moves the toy is from every ring off, such as 341 moves left with every ring on. VoiceOver reads it so too.")
+extension Text {
+    /// The count of moves left in full, such as "341 moves left", as the panel shows it where there is room and as
+    /// VoiceOver says it.
+    init(movesLeft count: Int) {
+        self.init("\(count) moves left", comment: "In the control panel, how many moves the toy is from every ring off, such as 341 moves left with every ring on. VoiceOver reads it so too.")
     }
 }

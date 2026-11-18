@@ -29,6 +29,8 @@ struct ControlPanel: View {
     let style: Style
     @State private var width: CGFloat = 0
     @AppStorage(MovesLeftSetting.key) private var showsMovesLeft = true
+    /// Whether the count of moves left has stepped aside, leaving the status the whole line.
+    @State private var countStepsAside = false
     @Environment(\.reducesMotion) private var reducesMotion
 
     /// The largest text size the panel follows. Larger text would make the panel cover the toy on the smallest screens,
@@ -127,8 +129,10 @@ struct ControlPanel: View {
     private func caption(lines: Int) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
             status(lines: lines)
+                // Where the count has stepped aside, VoiceOver still hears it, after what the status says.
+                .accessibilityValue(Text(movesLeft: player.shownState.rank), isEnabled: showsMovesLeft && countStepsAside)
             if showsMovesLeft {
-                MovesLeft(state: player.shownState, lineWidth: width - 2 * Self.padding, lines: lines) {
+                MovesLeft(state: player.shownState, lineWidth: width - 2 * Self.padding, lines: lines, stepsAside: $countStepsAside) {
                     longestStatus
                 }
                 .transition(.opacity)
