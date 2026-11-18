@@ -10,10 +10,11 @@ import Puzzle
 ///   play is in progress exactly while it is armed. It gets a new id then, and its counts start from zero.
 /// - It is finished at the moment the congratulation is due, and becomes a ``PlayRecord``. A play the congratulation
 ///   gives up, as when Solve takes the last ring off or the rings are set to another arrangement, ends unrecorded.
-/// - `moves` are the moves that stand: one more for each move made, one fewer for each move taken back, never below
-///   zero (a move taken back past the play's beginning was made before it). `undos` are the moves taken back, by undo
-///   or by dragging the slider back. `movesPlayedForThePerson` are the moves Solve made and the moves the lesson made
-///   on the person's toy. `secondsSpent` is the time with the app in front.
+/// - `moves` are the steps the play has taken: one more for each move made, one fewer for each of the play's own moves
+///   taken back. A move taken back that was made before the play began is a step of this play too, one more, so that a
+///   finished play never has fewer moves than the distance it went. `undos` are the moves taken back, by Undo or by
+///   dragging the slider back (see ``PuzzleSession/unmadeCount``). `movesPlayedForThePerson` are the moves Solve made
+///   and the moves the lesson made on the person's toy. `secondsSpent` is the time with the app in front.
 public struct Play: Sendable, Equatable, Codable {
     public var id: UUID
     public var startedAt: Date
@@ -22,11 +23,23 @@ public struct Play: Sendable, Equatable, Codable {
     public var undos = 0
     public var movesPlayedForThePerson = 0
     public var secondsSpent = 0.0
+    /// Of the moves made on the toy, how many were made before the play began and still stand: taking one of them back
+    /// is a step of this play.
+    public var earlierMoves: Int
 
-    public init(id: UUID = UUID(), startedAt: Date, startRings: PuzzleState) {
+    public init(id: UUID = UUID(), startedAt: Date, startRings: PuzzleState, earlierMoves: Int = 0) {
         self.id = id
         self.startedAt = startedAt
         self.startRings = startRings
+        self.earlierMoves = earlierMoves
+    }
+
+    /// Counts the toy going from `before` moves made to `after`: the play's own moves made and taken back, and the moves
+    /// made before it taken back.
+    mutating func countMoves(from before: Int, to after: Int) {
+        let earlier = min(earlierMoves, before)
+        moves += max(after, earlier) - before + max(earlier - after, 0)
+        earlierMoves = min(earlier, after)
     }
 
     /// The play, finished in `endRings` at `finishedAt`.
@@ -38,7 +51,7 @@ public struct Play: Sendable, Equatable, Codable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, startedAt, startRings, moves, undos, movesPlayedForThePerson, secondsSpent
+        case id, startedAt, startRings, moves, undos, movesPlayedForThePerson, secondsSpent, earlierMoves
     }
 
     public init(from decoder: any Decoder) throws {
@@ -50,6 +63,7 @@ public struct Play: Sendable, Equatable, Codable {
         undos = try container.decode(Int.self, forKey: .undos)
         movesPlayedForThePerson = try container.decode(Int.self, forKey: .movesPlayedForThePerson)
         secondsSpent = try container.decode(Double.self, forKey: .secondsSpent)
+        earlierMoves = try container.decode(Int.self, forKey: .earlierMoves)
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -61,6 +75,7 @@ public struct Play: Sendable, Equatable, Codable {
         try container.encode(undos, forKey: .undos)
         try container.encode(movesPlayedForThePerson, forKey: .movesPlayedForThePerson)
         try container.encode(secondsSpent, forKey: .secondsSpent)
+        try container.encode(earlierMoves, forKey: .earlierMoves)
     }
 }
 

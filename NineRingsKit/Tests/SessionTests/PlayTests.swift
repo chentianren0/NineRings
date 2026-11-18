@@ -33,6 +33,27 @@ import Testing
         }
     }
 
+    /// Taps each ring of `rings` and plays it out. Returns what was earned on the way.
+    private func earn(_ rings: [Int], on state: inout PlayState) -> Set<Achievement> {
+        var earned: Set<Achievement> = []
+        for ring in rings {
+            state.tap(ring)
+            earned.formUnion(state.earned)
+            while state.toy.isPlaying {
+                state.advance(by: 10)
+                earned.formUnion(state.earned)
+            }
+        }
+        return earned
+    }
+
+    /// `state` as the next launch brings it back: kept as the app keeps it, through JSON.
+    private func relaunch(_ state: PlayState) throws -> PlayState {
+        let data = try state.snapshot.encoded()
+        let snapshot = try #require(ToySnapshot(data: data, format: ToySnapshot.format))
+        return try #require(PlayState(snapshot))
+    }
+
     // MARK: Counting
 
     @Test func aFreshToyBeginsAPlayWithNothingCounted() throws {
@@ -58,6 +79,54 @@ import Testing
         state.scrub(to: 0)
         #expect(state.play?.moves == 1)
         #expect(state.play?.undos == 2)
+    }
+
+    /// An Undo that takes back a move made before the play began is a step of this play: a move, and an undo.
+    @Test func undoingAMoveMadeBeforeThePlayCountsAsAMoveAndAnUndo() throws {
+        var state = PlayState()
+        play([1, 1], on: &state)
+        let id = try #require(state.play?.id)
+        #expect(state.play?.moves == 0, "every ring on again: a new play")
+        state.undo()
+        playOut(&state)
+        #expect(state.play?.id == id)
+        #expect(state.play?.moves == 1 && state.play?.undos == 1)
+        let record = try #require(play(state.toy.state.moves(to: .allOff), on: &state).first)
+        #expect(record.moves == 341 && record.undos == 1, "never fewer moves than the distance")
+    }
+
+    @Test func undoingPastThePlaysBeginningAndBackCountsEveryStep() throws {
+        var state = PlayState()
+        play([1, 3, 1, 1, 3, 1], on: &state)  // out to two rings and back: every ring on, a new play
+        #expect(state.play?.moves == 0)
+        for _ in 0..<3 {
+            state.undo()
+            playOut(&state)
+        }
+        play([1], on: &state)  // and one move more
+        #expect(state.play?.moves == 4 && state.play?.undos == 3)
+    }
+
+    /// Pressing Undo counts as an undo, also during a move that has not ended.
+    @Test func undoDuringAMoveThatHasNotEndedCounts() {
+        var state = PlayState()
+        state.tap(2)
+        state.advance(by: 0.3 * aMove)
+        state.undo()
+        playOut(&state)
+        #expect(state.toy.state == .allOn)
+        #expect(state.play?.undos == 1)
+        #expect(state.play?.moves == 0)
+    }
+
+    @Test func aWrongRingTakenBackDuringItsMoveKeepsTheShortestWayFromBeingEarned() throws {
+        var state = PlayState()
+        state.tap(2)
+        state.advance(by: 0.3 * aMove)
+        state.undo()
+        playOut(&state)
+        let earned = earn(PuzzleState.allOn.moves(to: .allOff), on: &state)
+        #expect(earned == [.allNineOff])
     }
 
     @Test func aMoveStoppedPartWayIsNotCountedUntilItEnds() {
@@ -231,6 +300,81 @@ import Testing
             }
         }
         #expect(earned == [.allNineOff])
+    }
+
+    // MARK: Kept between launches
+
+    /// A journey toward an achievement is kept with the toy: the far end is earned across a relaunch.
+    @Test func aJourneyUnderWayIsKeptAcrossALaunch() throws {
+        var state = PlayState()
+        let way = PuzzleState.allOn.moves(to: .farEnd)
+        play(Array(way.prefix(80)), on: &state)
+        var restored = try relaunch(state)
+        #expect(earn(Array(way.dropFirst(80)), on: &restored) == [.farEnd])
+    }
+
+    @Test func theWayBackOnIsKeptAcrossALaunch() throws {
+        var state = PlayState()
+        state.startSettingRings()
+        state.setRings(to: .allOff)
+        state.finishSettingRings()
+        let way = PuzzleState.allOff.moves(to: .allOn)
+        play(Array(way.prefix(100)), on: &state)
+        var restored = try relaunch(state)
+        #expect(earn(Array(way.dropFirst(100)), on: &restored) == [.allNineBackOn])
+    }
+
+    /// Solve stopped by leaving the app during its last move: finishing that move after the relaunch is still Solve's
+    /// way, and congratulates no more than it would have.
+    @Test func solvesLastMoveFinishedAfterALaunchDoesNotCongratulate() throws {
+        var state = PlayState()
+        play(Array(PuzzleState.allOn.moves(to: twoOn)), on: &state)
+        state.solve()
+        state.advance(by: 10)
+        state.advance(by: 0.4 * aMove)
+        #expect(state.toy.isPlaying && state.toy.queue.isEmpty && state.toy.isSolving)
+        var restored = try relaunch(state)
+        #expect(!restored.toy.isPlaying)
+        restored.togglePlay()
+        var earned: Set<Achievement> = []
+        var finished: [PlayRecord] = []
+        while restored.toy.isPlaying {
+            restored.advance(by: 10)
+            earned.formUnion(restored.earned)
+            if let record = restored.finished { finished.append(record) }
+        }
+        #expect(restored.toy.state == .allOff)
+        #expect(!restored.isCongratulating)
+        #expect(earned.isEmpty)
+        #expect(finished.isEmpty)
+        #expect(restored.play == nil)
+    }
+
+    /// The toy comes back as it was, only paused: the rest of a Solve plays on after the relaunch.
+    @Test func theRestOfASolveIsKeptAcrossALaunch() throws {
+        var state = PlayState()
+        state.solve()
+        state.advance(by: 10)
+        state.advance(by: 0.5 * aMove)
+        var restored = try relaunch(state)
+        #expect(restored.toy.isSolving)
+        restored.togglePlay()
+        #expect(playOut(&restored).isEmpty)
+        #expect(restored.toy.state == .allOff)
+    }
+
+    @Test func undosKeepCountingOnceAcrossALaunch() throws {
+        var state = PlayState()
+        play([1, 3], on: &state)
+        state.undo()
+        state.advance(by: 0.3 * aMove)
+        state.pause()
+        state.scrub(to: 0.4)
+        #expect(state.play?.undos == 1)
+        var restored = try relaunch(state)
+        restored.scrub(to: 0)
+        #expect(restored.toy.moveCount == 1)
+        #expect(restored.play?.undos == 1, "dragging on to the start finishes the same undo")
     }
 
     // MARK: The rule

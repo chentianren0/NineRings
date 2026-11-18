@@ -90,6 +90,49 @@ import Testing
         expectSame(try roundTrip(session), session)
     }
 
+    /// The toy comes back as it was, only paused: the rings waiting their turn wait still.
+    @Test func ringsWaitingComeBackWaiting() throws {
+        var session = PuzzleSession()
+        session.tap(1)
+        session.advance(by: 0.5 * aMove)
+        session.tap(3)
+        var restored = try roundTrip(session)
+        session.pause()
+        expectSame(restored, session)
+        #expect(restored.queue == [3])
+        restored.togglePlay()
+        playOut(&restored)
+        #expect(restored.state == PuzzleState.allOn.moving(1).moving(3))
+    }
+
+    @Test func aSolveComesBackSolving() throws {
+        var session = PuzzleSession()
+        session.solve()
+        session.advance(by: 10)
+        session.advance(by: 0.5 * aMove)
+        var restored = try roundTrip(session)
+        session.pause()
+        expectSame(restored, session)
+        #expect(restored.isSolving && restored.queue == session.queue)
+        restored.togglePlay()
+        playOut(&restored)
+        #expect(restored.state == .allOff)
+        // Counted since the relaunch: every move but the first, made before it, and the one on the slider, which Play
+        // carried on and so is the person's.
+        #expect(restored.madeBySolveCount == 339)
+    }
+
+    /// A move Solve began stays Solve's: a tap that takes over carries it on as Solve's.
+    @Test func aMoveSolveBeganComesBackAsSolves() throws {
+        var session = PuzzleSession()
+        session.solve()
+        session.advance(by: 0.5 * aMove)
+        var restored = try roundTrip(session)
+        restored.tap(5)
+        restored.advance(by: 10)
+        #expect(restored.madeBySolveCount == 1)
+    }
+
     @Test func aSessionBegunAtAChosenMoveComesBack() throws {
         let session = PuzzleSession(at: MoveMotion.written[4], progress: 0.6)
         expectSame(try roundTrip(session), session)
@@ -101,6 +144,7 @@ import Testing
         play.undos = 3
         play.movesPlayedForThePerson = 6
         play.secondsSpent = 81.25
+        play.earlierMoves = 4
         let data = try ToySnapshot(toy: PuzzleSession(), play: play).encoded()
         #expect(ToySnapshot(data: data, format: 1)?.play == play)
     }
@@ -113,16 +157,30 @@ import Testing
             session.tap(1)
             playOut(&session)
         }
-        let snapshot = ToySnapshot(toy: session, play: nil)
+        let snapshot = ToySnapshot(toy: session, play: Play(startedAt: .now, startRings: .allOn, earlierMoves: 5))
         #expect(snapshot.moves.count == ToySnapshot.movesKept)
         let restored = try #require(snapshot.toy)
         #expect(restored.state == session.state)
         #expect(restored.moveCount == ToySnapshot.movesKept)
         #expect(restored.start == session.made[2].to)
+        #expect(snapshot.play?.earlierMoves == 2, "three of the five moves before the play are folded away")
+    }
+
+    @Test func journeysComeBackAndTheTimeSpentDoesNotChangeTheToy() throws {
+        var play = Play(startedAt: Date(timeIntervalSince1970: 1_000_000), startRings: .allOn)
+        let snapshot = ToySnapshot(toy: PuzzleSession(), play: play, journeys: [.farEnd, .allNineBackOn])
+        let data = try snapshot.encoded()
+        #expect(ToySnapshot(data: data, format: 1)?.journeys == [.farEnd, .allNineBackOn])
+        play.secondsSpent = 30
+        let later = ToySnapshot(toy: PuzzleSession(), play: play, journeys: [.farEnd, .allNineBackOn])
+        #expect(later != snapshot && later.isSameToy(as: snapshot))
+        play.undos = 1
+        #expect(!ToySnapshot(toy: PuzzleSession(), play: play, journeys: [.farEnd, .allNineBackOn]).isSameToy(as: snapshot))
+        #expect(!ToySnapshot(toy: PuzzleSession(), play: play, journeys: [.farEnd]).isSameToy(as: later))
     }
 
     @Test func aSnapshotThatBreaksTheRuleBringsNothingBack() throws {
-        let json = #"{"start":"111111111","moves":[1,5]}"#
+        let json = #"{"start":"111111111","moves":[1,5],"queue":[],"isSolving":false,"journeys":[]}"#
         let snapshot = try #require(ToySnapshot(data: Data(json.utf8), format: 1))
         #expect(snapshot.toy == nil)
         #expect(PlayState(snapshot) == nil)
@@ -137,15 +195,19 @@ import Testing
     /// Format 1 as it is written, so that a later build still reads what this one kept.
     @Test func formatOneReadsAsWritten() throws {
         let json = """
-            {"moves":[1,3],"play":{"id":"8F5C7A55-5D7B-4C55-9C35-0E2B4B5D7E11","moves":2,"movesPlayedForThePerson":0,\
-            "secondsSpent":12.5,"startRings":"111111111","startedAt":1000000,"undos":0},\
-            "slider":{"isMade":false,"isUndoing":false,"progress":0.25,"ring":1},"start":"111111111"}
+            {"isSolving":false,"journeys":["far_end"],"moves":[1,3],"play":{"earlierMoves":0,\
+            "id":"8F5C7A55-5D7B-4C55-9C35-0E2B4B5D7E11","moves":2,"movesPlayedForThePerson":0,"secondsSpent":12.5,\
+            "startRings":"111111111","startedAt":1000000,"undos":0},"queue":[2],\
+            "slider":{"isMade":false,"isSolves":false,"isTakenBack":false,"isUndoing":false,"progress":0.25,"ring":1},\
+            "start":"111111111"}
             """
         let snapshot = try #require(ToySnapshot(data: Data(json.utf8), format: 1))
         let toy = try #require(snapshot.toy)
         #expect(toy.made.map(\.ring) == [1, 3])
         #expect(toy.current == Move(ring: 1, from: PuzzleState.allOn.moving(1).moving(3)))
         #expect(toy.progress == 0.25)
+        #expect(toy.queue == [2] && !toy.isSolving)
+        #expect(snapshot.journeys == [.farEnd])
         #expect(snapshot.play?.secondsSpent == 12.5)
         #expect(snapshot.play?.startedAt == Date(timeIntervalSinceReferenceDate: 1_000_000))
         #expect(try snapshot.encoded() == Data(json.replacingOccurrences(of: "\n", with: "").utf8))

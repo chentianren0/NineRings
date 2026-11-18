@@ -38,7 +38,8 @@ import Puzzle
 ///   setting the rings to every ring on, begin a new play. The change that congratulates finishes the play, and
 ///   ``finished`` holds its record for that change.
 /// - What is kept between launches is the person's own toy, as closing the lesson or cancelling the rings being set
-///   would give it back, with the play in progress (``snapshot``).
+///   would give it back, with the play in progress and the journeys toward achievements under way (``snapshot``).
+///   Brought back, it goes on as it would have without the relaunch.
 public struct PlayState: Sendable, Equatable {
     /// The person's own toy. While the lesson is open it waits, and the lesson's toy is shown instead.
     public private(set) var own: PuzzleSession
@@ -76,7 +77,7 @@ public struct PlayState: Sendable, Equatable {
         judged = toy
         heard = toy
         framed = toy
-        play = Play(startedAt: .now, startRings: toy.state)
+        play = Play(startedAt: .now, startRings: toy.state, earlierMoves: toy.moveCount)
     }
 
     /// The puzzle as `snapshot` kept it, or nil when the snapshot's moves break the rule. The congratulation is armed
@@ -86,12 +87,13 @@ public struct PlayState: Sendable, Equatable {
         self.init(toy)
         play = snapshot.play
         congratulation = Congratulation(isArmed: snapshot.play != nil)
+        achievementRule = AchievementRule(underWay: snapshot.journeys)
     }
 
     /// What is kept between launches: the person's own toy, as the lesson or the rings being set would give it back,
-    /// and the play in progress.
+    /// the play in progress, and the journeys under way.
     public var snapshot: ToySnapshot {
-        ToySnapshot(toy: lesson?.closingToy ?? own, play: play)
+        ToySnapshot(toy: lesson?.closingToy ?? own, play: play, journeys: achievementRule.underWay)
     }
 
     /// Adds `seconds` with the app in front to the play in progress.
@@ -354,12 +356,13 @@ public struct PlayState: Sendable, Equatable {
         guard let persons else { return }
         if var play {
             if counting {
-                play.moves = max(0, play.moves + persons.moveCount - before.moveCount)
+                play.countMoves(from: before.moveCount, to: persons.moveCount)
                 play.undos += persons.unmadeCount - before.unmadeCount
                 play.movesPlayedForThePerson += persons.madeBySolveCount - before.madeBySolveCount
             }
             play.moves += lessonMoves
             play.movesPlayedForThePerson += lessonMoves
+            play.earlierMoves = min(play.earlierMoves, persons.moveCount)
             self.play = play
         }
         if congratulates, let play {
@@ -368,7 +371,7 @@ public struct PlayState: Sendable, Equatable {
         } else if !congratulation.isArmed {
             play = nil
         } else if begins || play == nil || (before.state != .allOn && persons.state == .allOn) {
-            play = Play(startedAt: .now, startRings: persons.state)
+            play = Play(startedAt: .now, startRings: persons.state, earlierMoves: persons.moveCount)
         }
     }
 

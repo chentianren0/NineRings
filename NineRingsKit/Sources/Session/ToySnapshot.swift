@@ -7,9 +7,11 @@ import Puzzle
 /// It is written as JSON inside one stored field, so that it can change with the app without touching the stored
 /// schema; a change to what it holds raises ``format``. The rules it keeps:
 /// - It holds the arrangement the moves start from, the rings moved since then in order, the move on the slider when
-///   it is anywhere but at the end of the last move made, and the play in progress with its id and counts.
-/// - A move playing is kept as stopped where it is: the toy comes back paused there. Rings waiting their turn and the
-///   rest of a Solve are not kept.
+///   it is anywhere but at the end of the last move made, the rings waiting their turn and whether Solve is under way,
+///   the play in progress with its id and counts, and the journeys toward achievements under way.
+/// - The toy comes back as it was, only paused: a move playing is kept as stopped where it is, and play carries on
+///   from there, with the rings waiting and the rest of a Solve. What the record counts of the move on the slider is
+///   kept with it: whether Solve began it, and whether it is being taken back.
 /// - At most ``movesKept`` moves are kept: the oldest are folded into the start, so that undo goes back that far and
 ///   no further. The play's counts are kept whole.
 /// - Brought back, the moves are checked one by one against the rule; a snapshot that breaks it brings nothing back.
@@ -29,6 +31,10 @@ public struct ToySnapshot: Sendable, Equatable, Codable {
         var isMade: Bool
         /// Whether it was going back, toward its start, when it stopped.
         var isUndoing: Bool
+        /// Whether Solve began it, and nothing the person did has carried it on since.
+        var isSolves: Bool
+        /// Whether it is being taken back, and counted as an undo already.
+        var isTakenBack: Bool
     }
 
     /// The arrangement the moves start from.
@@ -36,30 +42,63 @@ public struct ToySnapshot: Sendable, Equatable, Codable {
     /// The rings moved since `start`, in order.
     var moves: [Int]
     var slider: Slider?
+    /// The rings waiting their turn, in order.
+    var queue: [Int]
+    /// Whether the rings waiting are Solve's way to every ring off.
+    var isSolving: Bool
     /// The play in progress, or nil when none is: after a play is finished, until every ring is on again.
     public var play: Play?
+    /// The journeys toward achievements under way, by the achievement each earns (``AchievementRule/underWay``), in the
+    /// order of their identifiers.
+    private var underWay: [Achievement]
 
-    /// The person's `toy` as it is now, with the play in progress.
-    public init(toy: PuzzleSession, play: Play?) {
+    /// The person's `toy` as it is now, with the play in progress and the journeys under way.
+    public init(toy: PuzzleSession, play: Play?, journeys: Set<Achievement> = []) {
         var start = toy.start
         var made = toy.made
+        var play = play
         if made.count > Self.movesKept {
             let folded = made.count - Self.movesKept
             start = made[folded - 1].to
             made.removeFirst(folded)
+            if let earlier = play?.earlierMoves { play?.earlierMoves = max(0, earlier - folded) }
         }
         self.start = Rings(start)
         moves = made.map(\.ring)
+        queue = toy.queue
+        isSolving = toy.isSolving
         self.play = play
+        underWay = journeys.sorted { $0.rawValue < $1.rawValue }
         if let current = toy.current, !(toy.isCurrentMade && toy.progress >= 1) {
-            let isMade = toy.isCurrentMade
             // A move taken back all the way, or never begun, rests where it starts: the slider keeps it there.
-            slider = Slider(ring: current.ring, progress: toy.progress, isMade: isMade, isUndoing: toy.direction == .backward)
+            slider = Slider(
+                ring: current.ring, progress: toy.progress, isMade: toy.isCurrentMade, isUndoing: toy.direction == .backward,
+                isSolves: toy.currentIsSolves, isTakenBack: toy.currentIsTakenBack
+            )
         }
+    }
+
+    /// The journeys toward achievements under way.
+    public var journeys: Set<Achievement> { Set(underWay) }
+
+    /// Whether `other` keeps the same toy, play and journeys, whatever time each says was spent on the play: the time
+    /// spent looking at a toy does not change it.
+    public func isSameToy(as other: ToySnapshot) -> Bool {
+        var mine = self
+        var theirs = other
+        mine.play?.secondsSpent = 0
+        theirs.play?.secondsSpent = 0
+        return mine == theirs
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case start, moves, slider, queue, isSolving, play
+        case underWay = "journeys"
     }
 
     /// The toy it keeps, at rest or stopped part way, or nil when its moves break the rule.
     public var toy: PuzzleSession? {
+        guard queue.allSatisfy(PuzzleState.rings.contains) else { return nil }
         var state = start.state
         var made: [Move] = []
         for ring in moves {
@@ -70,7 +109,7 @@ public struct ToySnapshot: Sendable, Equatable, Codable {
         guard let slider else {
             return PuzzleSession(
                 start: start.state, made: made, current: made.last, progress: made.isEmpty ? 0 : 1, currentIsMade: !made.isEmpty,
-                direction: .forward
+                direction: .forward, queue: queue, isSolving: isSolving
             )
         }
         guard (0...1).contains(slider.progress), PuzzleState.rings.contains(slider.ring) else { return nil }
@@ -84,7 +123,8 @@ public struct ToySnapshot: Sendable, Equatable, Codable {
         }
         return PuzzleSession(
             start: start.state, made: made, current: current, progress: slider.progress, currentIsMade: slider.isMade,
-            direction: slider.isUndoing ? .backward : .forward
+            direction: slider.isUndoing ? .backward : .forward, currentIsSolves: slider.isSolves,
+            currentIsTakenBack: slider.isTakenBack, queue: queue, isSolving: isSolving
         )
     }
 

@@ -6,10 +6,13 @@ import SwiftData
 ///
 /// It takes a container and never makes its own, so that the app decides where the records live (the device's store
 /// now; with iCloud, the store that syncs). The rules it keeps:
-/// - Each installation keeps one `SavedToy`, changed in place, and only when the toy kept has changed.
+/// - Each installation keeps one `SavedToy`, changed in place, and only when what it keeps has changed. Its `changedAt`
+///   is when the toy last changed: time spent on the play is kept too, but does not make the toy newer, so that with
+///   iCloud the toy that changed last is the one played last, not the one looked at last.
 /// - A finished play is written once: a play whose id is already recorded is not written again.
-/// - The history is every `FinishedPlay`, newest first. Two with the same id are one play: the earlier stays and the
-///   other is deleted.
+/// - The history is every `FinishedPlay`, newest first, each play once. Two with the same id are one play, as sync can
+///   bring together: the earlier shows, and nothing is deleted, so that two devices cleaning up at once can never
+///   delete both.
 @MainActor
 public final class RecordStore {
     /// The models it keeps.
@@ -52,8 +55,8 @@ public final class RecordStore {
         try savedToy(installation: installation)?.toy
     }
 
-    /// Keeps `snapshot` as `installation`'s toy, changed at `date`. Returns whether anything was written: nothing is when
-    /// the toy kept is the same.
+    /// Keeps `snapshot` as `installation`'s toy, at `date`. Returns whether anything was written: nothing is when the
+    /// snapshot kept is the same. `changedAt` becomes `date` only when the toy changed, not when only the time spent did.
     @discardableResult
     public func keep(_ snapshot: ToySnapshot, installation: String, appVersion: String, at date: Date = .now) throws -> Bool {
         let data = try snapshot.encoded()
@@ -61,11 +64,12 @@ public final class RecordStore {
         if let existing = try savedToy(installation: installation) {
             guard existing.snapshot != data || existing.format != ToySnapshot.format else { return false }
             saved = existing
+            if !(existing.toy?.isSameToy(as: snapshot) ?? false) { saved.changedAt = date }
         } else {
             saved = SavedToy(installation: installation)
+            saved.changedAt = date
             context.insert(saved)
         }
-        saved.changedAt = date
         saved.format = ToySnapshot.format
         saved.snapshot = data
         saved.appVersion = appVersion
@@ -94,20 +98,14 @@ public final class RecordStore {
         try context.save()
     }
 
-    /// Every finished play, newest first, each play once: of two with the same id, the earlier stays and the other is
-    /// deleted.
+    /// Every finished play, newest first, each play once: of two with the same id the earlier shows, and nothing is
+    /// deleted. Copies finished at the same moment are told apart by where and by which version they were made, so that
+    /// every device shows the same one.
     public func history() throws -> [FinishedPlay] {
-        let all = try context.fetch(FetchDescriptor<FinishedPlay>(sortBy: [SortDescriptor(\.finishedAt, order: .forward)]))
+        let all = try context.fetch(FetchDescriptor<FinishedPlay>(sortBy: [
+            SortDescriptor(\.finishedAt, order: .forward), SortDescriptor(\.madeOn), SortDescriptor(\.appVersion),
+        ]))
         var seen = Set<UUID>()
-        var kept: [FinishedPlay] = []
-        for play in all {
-            if seen.insert(play.playID).inserted {
-                kept.append(play)
-            } else {
-                context.delete(play)
-            }
-        }
-        if context.hasChanges { try context.save() }
-        return kept.reversed()
+        return all.filter { seen.insert($0.playID).inserted }.reversed()
     }
 }

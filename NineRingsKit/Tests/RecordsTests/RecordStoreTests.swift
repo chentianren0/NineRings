@@ -59,6 +59,25 @@ import Testing
         #expect(try context.fetch(FetchDescriptor<SavedToy>()).first?.changedAt == first, "the toy has not changed since")
     }
 
+    /// Only the toy changing moves `changedAt`: time spent looking at it is kept, but does not make it newer.
+    @Test func timeSpentIsKeptWithoutChangingTheToy() throws {
+        let first = Date(timeIntervalSince1970: 1_000)
+        var state = PlayState()
+        state.tap(1)
+        state.advance(by: 10)
+        try store.keep(state.snapshot, installation: "A", appVersion: "1.4", at: first)
+        state.spend(5)
+        #expect(try store.keep(state.snapshot, installation: "A", appVersion: "1.4", at: first.addingTimeInterval(60)))
+        #expect(try store.keptToy(installation: "A")?.play?.secondsSpent == 5)
+        #expect(try context.fetch(FetchDescriptor<SavedToy>()).first?.changedAt == first)
+
+        let moved = first.addingTimeInterval(120)
+        state.tap(3)
+        state.advance(by: 10)
+        try store.keep(state.snapshot, installation: "A", appVersion: "1.4", at: moved)
+        #expect(try context.fetch(FetchDescriptor<SavedToy>()).first?.changedAt == moved)
+    }
+
     @Test func aToyInAnotherFormatIsSkipped() throws {
         let saved = SavedToy(installation: "A")
         saved.format = 2
@@ -94,8 +113,9 @@ import Testing
         #expect(try store.history().map(\.isShortestWay) == [false, true])
     }
 
-    /// Two devices may each record the same play, as sync brings them together: the earlier stays.
-    @Test func aPlayRecordedTwiceKeepsTheEarlier() throws {
+    /// Two devices may each record the same play, as sync brings them together: it shows once, the earlier, and
+    /// nothing is deleted.
+    @Test func aPlayRecordedTwiceShowsOnceAsTheEarlier() throws {
         let id = UUID()
         let earlier = FinishedPlay(record(id: id, finishedAt: Date(timeIntervalSince1970: 1_000)), madeOn: .iPhone, appVersion: "1.4")
         let later = FinishedPlay(record(id: id, finishedAt: Date(timeIntervalSince1970: 2_000)), madeOn: .Mac, appVersion: "1.4")
@@ -105,7 +125,18 @@ import Testing
         let history = try store.history()
         #expect(history.count == 1)
         #expect(history.first?.madeOn == "iPhone")
-        #expect(try context.fetchCount(FetchDescriptor<FinishedPlay>()) == 1)
+        #expect(try context.fetchCount(FetchDescriptor<FinishedPlay>()) == 2)
+    }
+
+    /// Two copies alike in every field: one shows, and both stay, so that no device's clean-up can delete both.
+    @Test func twoCopiesAlikeShowOnceAndBothStay() throws {
+        let play = record(finishedAt: Date(timeIntervalSince1970: 1_000))
+        context.insert(FinishedPlay(play, madeOn: .iPhone, appVersion: "1.4"))
+        context.insert(FinishedPlay(play, madeOn: .iPhone, appVersion: "1.4"))
+        try context.save()
+        #expect(try store.history().map(\.playID) == [play.playID])
+        #expect(try context.fetchCount(FetchDescriptor<FinishedPlay>()) == 2)
+        #expect(!context.hasChanges)
     }
 
     @Test func aRecordWithRulesThisBuildDoesNotKnowIsNotRead() throws {
@@ -120,12 +151,26 @@ import Testing
     /// The record types and fields, as CloudKit will have them: a change here is a change to a schema that can only
     /// grow.
     @Test func theModelsAreAsTheSchemaFixesThem() {
-        let entities = Dictionary(uniqueKeysWithValues: RecordStore.schema.entities.map { ($0.name, Set($0.attributes.map(\.name))) })
-        #expect(entities["FinishedPlay"] == [
-            "playID", "finishedAt", "startedAt", "startRings", "endRings", "moves", "undos", "movesPlayedForThePerson",
-            "secondsSpent", "madeOn", "appVersion", "rules",
-        ])
-        #expect(entities["SavedToy"] == ["installation", "changedAt", "format", "snapshot", "appVersion"])
+        let fixed: [String: [String: Any.Type]] = [
+            "FinishedPlay": [
+                "playID": UUID.self, "finishedAt": Date.self, "startedAt": Date.self, "startRings": String.self,
+                "endRings": String.self, "moves": Int.self, "undos": Int.self, "movesPlayedForThePerson": Int.self,
+                "secondsSpent": Double.self, "madeOn": String.self, "appVersion": String.self, "rules": Int.self,
+            ],
+            "SavedToy": [
+                "installation": String.self, "changedAt": Date.self, "format": Int.self, "snapshot": Data.self,
+                "appVersion": String.self,
+            ],
+        ]
+        #expect(Set(RecordStore.schema.entities.map(\.name)) == Set(fixed.keys))
+        for entity in RecordStore.schema.entities {
+            let fields = fixed[entity.name] ?? [:]
+            #expect(Set(entity.attributes.map(\.name)) == Set(fields.keys), "\(entity.name)")
+            for attribute in entity.attributes {
+                let isFixedType = attribute.valueType == fields[attribute.name]
+                #expect(isFixedType, "\(entity.name).\(attribute.name) is \(attribute.valueType)")
+            }
+        }
         for entity in RecordStore.schema.entities {
             #expect(entity.relationships.isEmpty, "\(entity.name)")
             for attribute in entity.attributes {
@@ -134,9 +179,13 @@ import Testing
         }
     }
 
-    @Test func theDevicesStoreIsNamedApart() {
-        let configuration = RecordStore.deviceConfiguration(inMemory: true)
+    /// The device's store is named apart, and set never to sync. `CloudKitDatabase` is not Equatable, so it is told by
+    /// how SwiftData describes it, which tells `.none` from `.automatic`.
+    @Test(arguments: [true, false]) func theDevicesStoreNeverSyncs(inMemory: Bool) {
+        let configuration = RecordStore.deviceConfiguration(inMemory: inMemory)
         #expect(configuration.name == "Device")
-        #expect(configuration.cloudKitContainerIdentifier == nil)
+        let described = String(reflecting: configuration.cloudKitDatabase)
+        #expect(described == String(reflecting: ModelConfiguration.CloudKitDatabase.none))
+        #expect(described != String(reflecting: ModelConfiguration.CloudKitDatabase.automatic))
     }
 }

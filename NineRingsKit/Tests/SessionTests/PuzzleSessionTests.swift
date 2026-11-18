@@ -611,6 +611,69 @@ import simd
         #expect(session.unmadeCount == 2)
     }
 
+    /// Pressing Undo takes a move back, also one that has not ended.
+    @Test func undoDuringAMoveThatHasNotEndedCounts() {
+        var session = PuzzleSession()
+        session.tap(2)
+        session.advance(by: 0.3 * aMove)
+        session.undo()
+        playOut(&session)
+        #expect(session.state == .allOn && session.moveCount == 0)
+        #expect(session.unmadeCount == 1)
+    }
+
+    @Test func undoAtTheVeryBeginningOfAMoveCounts() {
+        var session = PuzzleSession()
+        session.tap(2)
+        session.undo()
+        #expect(!session.isPlaying && session.progress == 0)
+        #expect(session.unmadeCount == 1)
+    }
+
+    /// Dragging the slider back to the start of a move in hand takes it back, as Undo does.
+    @Test func aMoveInHandDraggedBackToItsStartCounts() {
+        var session = PuzzleSession()
+        session.tap(2)
+        session.advance(by: 0.3 * aMove)
+        session.scrub(to: 0)
+        #expect(session.unmadeCount == 1)
+        session.scrub(to: 0.2)
+        session.scrub(to: 0)
+        #expect(session.unmadeCount == 2, "carried forward and dragged back again: a second time")
+    }
+
+    /// One move taken back counts once: Undo resumed after a pause, or the slider dragged on to the start, finishes it.
+    @Test func aMoveTakenBackCountsOnce() {
+        var session = PuzzleSession()
+        session.tap(1)
+        playOut(&session)
+        session.undo()
+        session.advance(by: 0.2 * aMove)
+        session.pause()
+        session.undo()
+        session.advance(by: 0.2 * aMove)
+        session.pause()
+        #expect(session.unmadeCount == 1)
+        session.scrub(to: session.progress / 2)
+        session.scrub(to: 0)
+        #expect(session.unmadeCount == 1)
+        #expect(session.moveCount == 0)
+    }
+
+    /// Undo, then Play carrying the move forward again, then Undo: taken back twice.
+    @Test func aMoveCarriedForwardAndTakenBackAgainCountsTwice() {
+        var session = PuzzleSession()
+        session.tap(1)
+        playOut(&session)
+        session.undo()
+        session.advance(by: 0.2 * aMove)
+        session.togglePlay()
+        session.togglePlay()
+        session.undo()
+        playOut(&session)
+        #expect(session.unmadeCount == 2)
+    }
+
 
 
     @Test func aSessionCanBeginAtAWrittenMove() throws {

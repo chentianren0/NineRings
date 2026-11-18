@@ -36,6 +36,7 @@ extension PuzzleState {
 ///   The toy passing through it, with another ring waiting, changes nothing.
 /// - Rings set by hand start a journey only from its start: setting the rings next to the far end and moving one ring
 ///   is not the journey there.
+/// - A journey under way is kept with the toy between launches (``underWay``), so that it goes on after a relaunch.
 /// - The Shortest Way is not earned here: it needs the count of undos and of moves played for the person, which the
 ///   record of a finished play holds. ``PlayState``, which writes that record at the moment the congratulation is due,
 ///   adds ``Achievement/shortestWay`` to what that change earns when the play went the shortest way.
@@ -44,6 +45,21 @@ public struct AchievementRule: Sendable, Equatable {
     private var farEnd = Journey(from: [.allOn, .allOff], to: .farEnd)
 
     public init() {}
+
+    /// The rule with the journeys toward `underWay` under way, as a kept toy brings them back. Achievements that are not
+    /// journeys are ignored.
+    public init(underWay: Set<Achievement>) {
+        backOn.isUnderWay = underWay.contains(.allNineBackOn)
+        farEnd.isUnderWay = underWay.contains(.farEnd)
+    }
+
+    /// The journeys under way, by the achievement each earns: what a kept toy keeps of the rule.
+    public var underWay: Set<Achievement> {
+        var underWay: Set<Achievement> = []
+        if backOn.isUnderWay { underWay.insert(.allNineBackOn) }
+        if farEnd.isUnderWay { underWay.insert(.farEnd) }
+        return underWay
+    }
 
     /// Takes in one change to the person's toy, `finished` when this change is the moment the congratulation is due.
     /// Returns what this change earns.
