@@ -14,6 +14,9 @@ import Session
 /// - On the Mac it needs the App Sandbox's incoming and outgoing network connections, as Apple's "Initializing and
 ///   configuring Game Center" asks: the project's build settings `ENABLE_INCOMING_NETWORK_CONNECTIONS` and
 ///   `ENABLE_OUTGOING_NETWORK_CONNECTIONS`, beside the entitlement.
+/// - What Game Center shows of the achievements, their points, names, descriptions and pictures in each language, is in
+///   `NineRings.gamekit` beside the project, which Xcode's GameKit editor pulls from App Store Connect and pushes back.
+///   The app never reads it: it is outside the app's folder and in no target, so nothing of it is copied into the app.
 @MainActor
 @Observable
 final class GameCenter {

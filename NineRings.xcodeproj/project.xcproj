@@ -45,6 +45,7 @@
         { "path": "<PRODUCTS>/StoreShots.xctest", "id": "CE8E6D0030AC6ACF00DF694E", "type": "wrapper.cfbundle", "index": false },
       ],
     },
+    { "path": "NineRings.gamekit" },
   ],
   "targets": [
     {
