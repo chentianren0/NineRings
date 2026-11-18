@@ -87,9 +87,23 @@ Xcode's editor, not by hand.
       Click **Save**, then **Save** again.
 
    Once an achievement is live, it can't be deleted and its points can't be changed.
-4. **The pictures.** Four, one for each achievement, each a different picture: 1024 × 1024 pixels, `.png` or `.jpeg`,
-   RGB, at least 72 ppi. Game Center shows them inside a circle, so keep what matters in the middle. They are not in the
-   repository yet: the art is being chosen.
+4. **The pictures** are in `StoreTools/AchievementPictures/`, one for each achievement, named by its identifier:
+   `all_nine_off.png`, `shortest_way.png`, `all_nine_back_on.png` and `far_end.png`. Upload each as its achievement's
+   **Image**. They are what App Store Connect asks for: 1024 × 1024 pixels, PNG, RGB, 72 ppi, with no transparency.
+   They are in the Bauhaus style: paper, black, red, yellow and blue, flat shapes, the sword rising at 30 degrees,
+   and one great form of colour that sets each picture apart.
+   - *All Nine Off*: a red disc, the sword empty across it, the nine rings fallen flat on a line beneath.
+   - *The Shortest Way*: nine rings in a row, each as wide as the number of moves its ring makes on the shortest way
+     (171, 85, 43, 21, 11, 5, 3, 1 and 1: 341 in all), in a yellow wedge; a red line, the way, runs from the sword to
+     the wedge's point, which ends on a blue square.
+   - *All Nine Back On*: a blue disc in a thin ruled circle whose nine marks share the turn out by those same counts,
+     a red mark where it begins and ends; the nine rings back on the sword as yellow bars.
+   - *The Far End*: a yellow disc, and ring 9 alone on the sword as a red bar.
+
+   They are drawn by `swift run --package-path StoreTools achievement-pictures`, so a change is made in the drawing
+   and they are drawn again. All Nine Off and The Far End are drawn in
+   `StoreTools/Sources/AchievementPictures/Bauhaus.swift`, The Shortest Way and All Nine Back On in
+   `ShortestWayAndBackOn.swift` beside it.
 5. **Turn Game Center on for the version.** In **Apps**, choose Nine Rings, then the version that will ship this, in
    the sidebar. Scroll down, tick **Game Center**, and add the four achievements to the version. They are reviewed
    with it, and players see them only once they are approved.
