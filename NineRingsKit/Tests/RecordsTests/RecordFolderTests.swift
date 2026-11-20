@@ -36,6 +36,11 @@ import Testing
         return state.snapshot
     }
 
+    /// The file's number on its volume: a write that replaces the file changes it.
+    private func fileNumber(_ url: URL) throws -> Int? {
+        try FileManager.default.attributesOfItem(atPath: url.path(percentEncoded: false))[.systemFileNumber] as? Int
+    }
+
     private func json(_ url: URL) throws -> [String: Any] {
         try #require(try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
     }
@@ -58,8 +63,10 @@ import Testing
         let snapshot = toyInPlay
         #expect(try folder.keep(snapshot))
         let written = try Data(contentsOf: folder.toyFile)
+        let number = try #require(try fileNumber(folder.toyFile))
         #expect(try !folder.keep(snapshot))
         #expect(try Data(contentsOf: folder.toyFile) == written)
+        #expect(try fileNumber(folder.toyFile) == number, "the file was not replaced")
 
         let other = ToySnapshot(toy: PuzzleSession(), play: nil)
         #expect(try folder.keep(other))
@@ -101,8 +108,10 @@ import Testing
         let play = record(finishedAt: finishedAt)
         #expect(try folder.record(play))
         let written = try Data(contentsOf: folder.historyFile)
+        let number = try #require(try fileNumber(folder.historyFile))
         #expect(try !folder.record(play))
         #expect(try Data(contentsOf: folder.historyFile) == written)
+        #expect(try fileNumber(folder.historyFile) == number, "the file was not replaced")
         #expect(try folder.history() == PlayHistory(plays: [play]))
         #expect(try RecordFolder(url: folder.url).history().plays.first?.finishedAt == finishedAt, "dates come back exactly")
     }
@@ -153,22 +162,22 @@ import Testing
         #expect(try folder.history() == PlayHistory(plays: [newest, first]))
     }
 
-    /// A play written with rules this build does not know is counted, and stays in the file as it was when a play is
-    /// recorded.
+    /// A play written with rules this build does not know is counted, and stays in the file with the same values when
+    /// a play is recorded: written with its keys sorted, it comes back as exactly the same text, `true` as `true` and
+    /// `2` as `2`.
     @Test func aPlayThisBuildCannotReadIsCountedAndKept() throws {
         let known = record(finishedAt: Date(timeIntervalSinceReferenceDate: 1_000))
         let knownJSON = try String(decoding: JSONEncoder().encode(known), as: UTF8.self)
-        let newer = #"{"rules":2,"playID":"5E1A0B4C-0000-4000-8000-000000000001","laps":[1.5,2],"note":null,"won":true}"#
+        let newer = #"{"laps":[1.5,2],"note":null,"playID":"5E1A0B4C-0000-4000-8000-000000000001","rules":2,"won":true}"#
         try Data(#"{"plays":[\#(newer),\#(knownJSON)]}"#.utf8).write(to: folder.historyFile)
         #expect(try folder.history() == PlayHistory(plays: [known], unreadable: 1))
 
         let new = record(finishedAt: Date(timeIntervalSinceReferenceDate: 9_000))
         #expect(try folder.record(new))
         #expect(try folder.history() == PlayHistory(plays: [new, known], unreadable: 1))
-        let plays = try #require(try json(folder.historyFile)["plays"] as? [NSDictionary])
-        let kept = try #require(try JSONSerialization.jsonObject(with: Data(newer.utf8)) as? NSDictionary)
-        #expect(plays.count == 3)
-        #expect(plays.contains(kept))
+        let file = try String(decoding: Data(contentsOf: folder.historyFile), as: UTF8.self)
+        #expect(try (json(folder.historyFile)["plays"] as? [Any])?.count == 3)
+        #expect(file.contains(newer))
     }
 
     @Test func clearingDeletesEveryPlayTheUnreadableToo() throws {

@@ -10,7 +10,8 @@ import Session
 ///   replaces it.
 /// - The history is `History.json`: `{"plays":[…]}`, each play a ``PlayRecord`` with its ``PlayRecord/rules``, newest
 ///   first. No file is an empty history. A play this build cannot read is counted in ``PlayHistory/unreadable``, and
-///   written back as it was read whenever this build writes the file, so that it is not lost.
+///   kept as the same JSON values whenever this build writes the file, after the plays it can read, so that it is not
+///   lost.
 /// - A history file that is there but cannot be read as a history, as when it is not JSON, is left as it is: reading
 ///   the history and recording a play throw, and only clearing the history replaces it.
 /// - Each file is written whole and atomically, with its keys sorted and its dates as seconds since Foundation's
@@ -70,7 +71,7 @@ public struct RecordFolder: Sendable {
         try write(HistoryFile(plays: []))
     }
 
-    /// The plays kept, and those this build cannot read as they were read.
+    /// The plays kept, and the JSON values of those this build cannot read.
     private func readHistory() throws -> (history: PlayHistory, unread: [JSONValue]) {
         let data: Data
         do {
@@ -104,7 +105,7 @@ public struct RecordFolder: Sendable {
 
     /// What `History.json` holds.
     private struct HistoryFile: Codable {
-        /// A play as the file keeps it: one this build can read, or one it cannot, kept as it was read.
+        /// A play as the file keeps it: one this build can read, or one it cannot, kept as its JSON values.
         enum Entry: Codable {
             case play(PlayRecord)
             case unread(JSONValue)
@@ -144,7 +145,8 @@ public struct RecordFolder: Sendable {
     }
 }
 
-/// Any JSON value, read and written back as it was: how a play this build cannot read stays in the history file.
+/// Any JSON value, read and written back as the same value: how a play this build cannot read stays in the history
+/// file.
 enum JSONValue: Codable {
     case null
     case bool(Bool)
