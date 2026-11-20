@@ -93,6 +93,7 @@ extension ICloudSync {
             guard !existing.isEmpty || !deleted.isEmpty else { return }
             let notes = try store.syncNotes()
             var side = try store.toySide()
+            run.zonesNamedExisting.formUnion(existing.map(\.name))
             notes.highestNumber = max(notes.highestNumber, (existing.map(\.number) + deleted.map(\.zone.number)).max() ?? 0)
             try zonesDeleted(deleted, notes: notes, side: &side, into: &result)
             if let used = usedZone(notes) {

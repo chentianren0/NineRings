@@ -27,6 +27,9 @@ struct RunNotes: Equatable {
     /// Whether the engine's state is saved as it comes: false after a failed write of fetched changes, or after the app
     /// discarded the state.
     var savesEngineState = true
+    /// The zones that a report has named as existing in this run: a start from nothing leaves the zone note alone when
+    /// it holds one of them.
+    var zonesNamedExisting: Set<String> = []
 
     /// When the device began to use its zone: the launch, for the zone the store then noted as existing, or the join.
     var zoneUseBegan = 0
@@ -228,8 +231,8 @@ extension ICloudSync {
 
     /// Leaves every zone but `kept`, or every zone (section 9, "Leaving a zone"): what is queued for them is withdrawn,
     /// the toy's base and a held toy's system fields of those zones are emptied (the toy marked when its base was of
-    /// one, unless it is untouched), and so are the plays' system fields of those zones, each play in iCloud going back
-    /// to sent. Afterwards the store holds nothing that belongs to them.
+    /// one, unless it is untouched), the plays' system fields of those zones are emptied, and every play in iCloud that
+    /// has no system fields of `kept` goes back to sent. Afterwards the store holds nothing that belongs to them.
     func leaveZones(keeping kept: String?, side: inout ToySide, into result: inout SyncResult) throws {
         var withdrawal = EngineRequests()
         if let kept { withdrawal.withdrawsEverythingOutside = kept } else { withdrawal.withdrawsEverything = true }
@@ -238,7 +241,9 @@ extension ICloudSync {
         for entry in try store.plays(withSystemFieldsOutside: kept) {
             entry.systemFields = nil
             entry.systemFieldsZone = nil
-            if entry.sync == .inICloud { entry.sync = .sent }
+        }
+        for entry in try store.plays(in: .inICloud) where kept == nil || entry.systemFieldsZone != kept {
+            entry.sync = .sent
         }
     }
 
@@ -309,15 +314,15 @@ extension ICloudSync {
 
     // MARK: The account (section 8)
 
-    /// A start from nothing begins, before any report is handled: every play in iCloud goes back to sent, keeping its
-    /// system fields; a zone note that marks its zone existing now marks it not known to exist; and the engine's stored
-    /// state is emptied, so that a quit before the account's part makes the next launch a start from nothing again. The
-    /// account is not confirmed until the engine or CloudKit names it.
+    /// A start from nothing begins: every play in iCloud goes back to sent, keeping its system fields; a zone note that
+    /// marks its zone existing now marks it not known to exist, unless a report has named that zone as existing in this
+    /// run; and the engine's stored state is emptied, so that a quit before the account's part makes the next launch a
+    /// start from nothing again. The account is not confirmed until the engine or CloudKit names it.
     func beginStartFromNothing(notes: SyncNotes, into result: inout SyncResult) throws {
         for entry in try store.plays(in: .inICloud) {
             if case .state(let state) = PlayRules.step(.startFromNothing, from: entry.sync).change { entry.sync = state }
         }
-        if let note = zoneNote(notes), note.knowledge == .existing {
+        if let note = zoneNote(notes), note.knowledge == .existing, !run.zonesNamedExisting.contains(note.zone.name) {
             notes.zoneKnowledge = ZoneKnowledge.notKnownToExist.rawValue
             run.notKnownSince = run.moment
             result.engine.fetches = true

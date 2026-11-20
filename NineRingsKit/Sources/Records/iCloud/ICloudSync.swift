@@ -57,7 +57,7 @@ import SwiftData
 /// | A play is finished | ``finished(_:)`` |
 /// | The person clears the history | ``clearHistory()`` |
 /// | A calm moment, while ``heldToy()`` waits to be taken up | ``takeUpHeldToy()`` |
-/// | The person answers the offer | ``playThatOne()`` or ``keepThisOne()`` |
+/// | The person answers the offer, a sending moment | ``playThatOne()`` or ``keepThisOne()`` |
 /// | The app comes to the front | ``cameToFront()`` |
 /// | The app leaves the front | ``leftFront()``, inside a background task, kept while the result says so |
 /// | A push arrives | nothing: the engine fetches by itself |
@@ -170,14 +170,15 @@ public final class ICloudSync {
         }
     }
 
-    /// Play That One (step 6): the held toy replaces the toy here. The result's ``SyncResult/replacedToy`` is the toy to
-    /// show; nil when no toy is offered.
+    /// Play That One (step 6): the held toy replaces the toy here, and the gate is asked at once. The result's
+    /// ``SyncResult/replacedToy`` is the toy to show; nil when no toy is offered.
     public func playThatOne() throws -> SyncResult {
         try call { result in
             var side = try store.toySide()
             guard let taken = side.playThatOne() else { return }
             try store.write(side)
             result.replacedToy = taken
+            try askGate(sendingMoment: true, into: &result)
         }
     }
 

@@ -404,6 +404,20 @@ import Testing
         #expect(side.base == nil && side.isChanged)
     }
 
+    /// Leaving a zone sends back every play in iCloud that has no system fields of the zone the device now uses: also a
+    /// play that became in iCloud through a refusal without the record, and has none.
+    @Test func leavingTakesAlongAPlayInICloudWithoutSystemFields() throws {
+        try joined()
+        let finished = play()
+        _ = try sync.finished(finished)
+        _ = try sync.batch(for: [.save(playID(finished))])
+        _ = try sync.sent(SentChanges(failedSaves: [FailedSave(type: CloudRecord.finishedPlayType, id: playID(finished), reason: .refused(serverRecord: nil))]))
+        #expect(try state(of: finished) == .inICloud)
+        try fetch(DatabaseChanges(existing: [zone2.name]))
+        #expect(try state(of: finished) == .sent)
+        #expect(try fetch().engine.saves.contains(playID(finished, in: zone2)))
+    }
+
     // MARK: The errors that say a zone is gone (section 9)
 
     @Test(arguments: [ZoneGone.missing, .encryptedDataReset, .userDeletedZone])
@@ -506,6 +520,33 @@ import Testing
         try fetch(DatabaseChanges(existing: [zone1.name]))
         _ = try sync.accountChanged(.signIn("person"))
         #expect(try zoneNote?.knowledge == .existing)
+    }
+
+    /// A sign-in that the engine reports after a report that named the device's zone as existing, in the same run, leaves
+    /// the zone note as it is: the order of the engine's reports does not matter.
+    @Test mutating func aSignInReportedAfterAReportOfTheZone() throws {
+        try joined()
+        _ = try sync.accountChanged(.signOut("person"))
+        _ = try relaunch()
+        try fetch(DatabaseChanges(existing: [zone1.name]))
+        #expect(try zoneNote == ZoneNote(zone: zone1, knowledge: .existing))
+        _ = try sync.accountChanged(.signIn("person"))
+        #expect(try zoneNote == ZoneNote(zone: zone1, knowledge: .existing))
+        #expect(try fetch().engine.withdrawsEverything == false)
+        #expect(try zoneNote?.knowledge == .existing, "the zone is not given up")
+    }
+
+    /// Both answers to the offer are sending moments: Play That One on a held toy without system fields marks the toy, and
+    /// the gate lets it go at once.
+    @Test func playThatOneIsASendingMoment() throws {
+        try joined()
+        try sync.keep(toy([1]))
+        _ = try sync.fetched(FetchedChanges(records: [try toyRecord(toy([3]), tag: "9")]))
+        try fetch(DatabaseChanges(existing: [zone2.name], deleted: [ZoneDeletion(zone: zone1.name, reason: .encryptedDataReset)]))
+        try fetch()
+        #expect(try sync.heldToy()?.kind == .offered)
+        let played = try sync.playThatOne()
+        #expect(played.replacedToy != nil && played.engine.saves == [.toy(in: zone2.name)])
     }
 
     // MARK: Leaving the front (section 11)
