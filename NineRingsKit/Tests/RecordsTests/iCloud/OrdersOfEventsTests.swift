@@ -1,5 +1,7 @@
 import Foundation
 @testable import Records
+import Session
+import SwiftData
 import Testing
 
 /// The checks of docs/icloud.md section 14, over many orders of events that a seeded generator chooses:
@@ -18,7 +20,9 @@ import Testing
 ///
 /// The orders include purges, resets of encrypted data, zones found missing, expired reports of deletions, two
 /// creations of a zone at the same time, starts from nothing, relaunches and crashes in the middle of a send, changes
-/// of account while the app runs and while it does not, a full storage, and lost and late answers. A failure names its
+/// of account while the app runs and while it does not, a full storage, lost and late answers, saves refused as
+/// unknown after a clearing elsewhere, failed writes of fetched changes, backups brought back, and apps deleted and
+/// installed fresh, from nothing or from another device's backup. A failure names its
 /// seed, which replays the same order. The ways where Apple documents nothing come from the seed: the three that matter
 /// most from its lowest bits, so that the seeds go through every combination (old deletions from nothing, a device's own
 /// save fetched before its answer, a lost answer whose save landed), and the rest drawn from it.
@@ -84,6 +88,12 @@ import Testing
         let settled = order.finish()
         lines.append("settled \(settled); \(order.choices)")
         lines.append("problems \(order.world.watcher.problems + order.world.playsLostOrBack(clearingsHold: order.calm) + order.world.disagreements())")
+        for device in order.world.devices {
+            lines.append("\(device.name) shows \(device.history.plays.map { $0.playID.uuidString.prefix(8) }.sorted())")
+        }
+        if let zone = order.world.personsZone {
+            lines.append("iCloud holds \(order.world.cloud.records(zone: zone, account: World.person).compactMap { $0.playID?.uuidString.prefix(8) }.sorted())")
+        }
         for (what, count) in order.world.watcher.tally.counts.sorted(by: { $0.key < $1.key }) { lines.append("\(what): \(count)") }
         let file = URL.temporaryDirectory.appending(path: "orders-\(seed).txt")
         try lines.joined(separator: "\n").write(to: file, atomically: true, encoding: .utf8)
@@ -97,8 +107,13 @@ final class RandomOrder {
     let seed: UInt64
     let world: World
     let random: SharedRandom
-    /// Whether the order is calm: no lost answers, crashes in a send, zone events, changes of account or restores.
+    /// Whether the order is calm: no lost answers, crashes in a send, zone events, changes of account, restores or apps
+    /// deleted.
     let calm: Bool
+    /// Copies of devices' stores, as device backups keep them, with the device each was taken of.
+    private var backups: [(device: String, store: ModelContainer)] = []
+    /// How many devices were installed.
+    private var installs = 0
     /// Whether accounts sign out, in again, and change, and whether the storage fills.
     let accountsChange: Bool
     let storageFills: Bool
@@ -140,12 +155,21 @@ final class RandomOrder {
         }
         world = World(seed: seed, cloud: cloud, engine: engine)
         random = world.random
-        let kinds: [MadeOn] = [.iPhone, .iPad, .Mac]
-        for index in 0..<(draw.chance(0.5) ? 3 : 2) {
-            let device = try world.device("device \(index + 1)", kind: kinds[index])
+        choices = "\(calm ? "calm; " : "")\(cloud); \(engine); accounts change: \(accountsChange), storage fills: \(storageFills), zones go: \(zonesGo)"
+        for _ in 0..<(draw.chance(0.5) ? 3 : 2) {
+            let device = try install()
             device.accountQuestionFails = draw.chance(0.2) ? 0.3 : 0
         }
-        choices = "\(calm ? "calm; " : "")\(cloud); \(engine); accounts change: \(accountsChange), storage fills: \(storageFills), zones go: \(zonesGo)"
+    }
+
+    /// A new device, signed in to the person's account, from nothing or from `backup`.
+    @discardableResult
+    private func install(from backup: ModelContainer? = nil) throws -> SimulatedDevice {
+        installs += 1
+        let kinds: [MadeOn] = [.iPhone, .iPad, .Mac]
+        let device = try world.device("device \(installs)", kind: kinds[(installs - 1) % 3], from: backup)
+        device.trace = trace
+        return device
     }
 
     /// `steps` things that happen, on any device, in an order the seed chooses.
@@ -205,6 +229,38 @@ final class RandomOrder {
             case 3: world.cloud.expireDeletionReports(account: World.person)
             default: break
             }
+        case 101, 106:
+            // Another device clears, and this one starts from nothing: it sends the plays it held in iCloud again, on
+            // their system fields, and those whose records went are refused as unknown (section 7).
+            let others = world.devices.filter { $0 !== device }
+            if !others.isEmpty {
+                let other = random.pick(others)
+                other.clearHistory()
+                other.syncFully()
+            }
+            device.discardEngineState()
+            device.syncFully()
+        case 102:
+            device.failsNextWriteOfFetchedChanges = true
+        case 103:
+            if let backup = try? device.backUp() {
+                backups.append((device.name, backup))
+                if backups.count > 4 { backups.removeFirst() }
+            }
+        case 104:
+            guard !calm, let backup = backups.last(where: { $0.device == device.name }) else { break }
+            world.watcher.tally.count("a device restored from its backup")
+            try? device.restore(from: backup.store)
+        case 105:
+            // An app is deleted from a device, and installed on another: from nothing, or from a backup of another device.
+            if !calm, world.devices.count == 3 || (world.devices.count == 2 && random.chance(0.3)) {
+                world.watcher.tally.count("an app deleted")
+                world.remove(device)
+            }
+            guard world.devices.count < 3 else { break }
+            let backup = calm || backups.isEmpty || random.chance(0.6) ? nil : random.pick(backups).store
+            world.watcher.tally.count(backup == nil ? "a device installed fresh" : "a device installed from another's backup")
+            _ = try? install(from: backup)
         default:
             // The rules asked for something, which the app does a moment later.
             device.doWhatWasAsked()
@@ -216,6 +272,12 @@ final class RandomOrder {
     func finish() -> Bool {
         world.cloud.database(World.person).isFull = false
         for device in world.devices {
+            device.failsNextWriteOfFetchedChanges = false
+            if device.sync.run.writeFailed {
+                // A failed write of fetched changes holds the device back until its next launch (section 10).
+                world.watcher.tally.count("relaunched after a failed write of fetched changes")
+                device.relaunch()
+            }
             var good = device.engineChoices
             good.answerLost = 0
             good.zoneAnswerLost = 0

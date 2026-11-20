@@ -42,8 +42,10 @@ final class World {
         return device
     }
 
-    /// Takes `device` out of the world: it is no longer settled or checked, as an app that was deleted.
+    /// Takes `device` out of the world: it is no longer settled or checked, as an app that was deleted. The plays it held
+    /// that had not reached iCloud are lost with it.
     func remove(_ device: SimulatedDevice) {
+        watcher.lost(plays: device.unsentPlays)
         devices.removeAll { $0 === device }
     }
 

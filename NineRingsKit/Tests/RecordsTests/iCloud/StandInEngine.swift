@@ -346,15 +346,17 @@ final class StandInEngine {
         delegate?.engine(self, handle: .willFetch(manual: manual))
         var failedZones: [String: ZoneFetchError] = [:]
         let report = cloud.databaseChanges(account: account, since: state.databaseToken, device: device)
+        // The token moves on with the zones it names still to fetch, so that a state handed over at any moment from
+        // here holds both.
         state.databaseToken = report.token
-        if !report.existing.isEmpty || !report.deleted.isEmpty {
-            delegate?.engine(self, handle: .databaseChanged(DatabaseChanges(existing: report.existing, deleted: report.deleted)))
-        }
         for deletion in report.deleted {
             state.zoneTokens[deletion.zone] = nil
             state.zonesToFetch.removeAll { $0 == deletion.zone }
         }
         state.zonesToFetch.appendNew(report.existing)
+        if !report.existing.isEmpty || !report.deleted.isEmpty {
+            delegate?.engine(self, handle: .databaseChanged(DatabaseChanges(existing: report.existing, deleted: report.deleted)))
+        }
         if !choices.accountReportComesFirst { reportAccountChange() }
         for zone in state.zonesToFetch {
             guard state.account == account else { break }

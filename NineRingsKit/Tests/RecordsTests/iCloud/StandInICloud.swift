@@ -319,6 +319,16 @@ final class StandInICloud {
         zone.changes[index].answered = true
     }
 
+    /// The device's engine goes back to a state from a backup, which knows none of the answers it handled since: from
+    /// then on its own saves come back to it, as any save whose answer it never handled.
+    func forgetAnswers(device: String) {
+        for database in databases.values {
+            for zone in database.zones.values {
+                for index in zone.changes.indices where zone.changes[index].by == device { zone.changes[index].answered = false }
+            }
+        }
+    }
+
     /// What a deletion came to.
     enum DeletionOutcome: Equatable {
         case deleted

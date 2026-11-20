@@ -151,6 +151,11 @@ final class Watcher {
         purged[device]?.plays.remove(name)
     }
 
+    /// The device was restored from a backup: what it knows of purges is the backup's.
+    func restored(device: String) {
+        purged[device] = nil
+    }
+
     func received(toy: ToySnapshot, on device: String) {
         purged[device]?.toys.remove(Self.version(toy))
     }
@@ -276,6 +281,8 @@ final class SimulatedDevice: StandInEngineDelegate {
     private var noteWhenFetchBegan: ZoneNote?
     /// Where a trace of every call goes, for a test that looks into one order of events.
     var trace: ((String) -> Void)?
+    /// Whether the next write of fetched records fails, as a full disk would make it fail (section 10).
+    var failsNextWriteOfFetchedChanges = false
     /// Whether the engine is to be offline.
     var isOnline = true {
         didSet { engine.isOnline = isOnline }
@@ -304,6 +311,8 @@ final class SimulatedDevice: StandInEngineDelegate {
         engine.delegate = nil
         lookAtShownPlays()
         watcher.lost(plays: unsentPlays)
+        watcher.restored(device: name)
+        cloud.forgetAnswers(device: name)
         try Backup.copy(from: backup, into: container)
         let outer = leaving
         leaving = .any
@@ -506,8 +515,10 @@ final class SimulatedDevice: StandInEngineDelegate {
     func finishPlay() {
         guard let current = play.play else { return }
         let finished = current.finished(in: play.own.state, at: clock.tick())
+        // A play is recorded once on a device: a store that holds its id already keeps what it holds.
+        let isNew = (must { try sync.store.plays([finished.playID]) } ?? [:]).isEmpty
         apply(must { try sync.finished(finished) })
-        watcher.finished(play: finished.playID.uuidString)
+        if isNew { watcher.finished(play: finished.playID.uuidString) }
         trace?("\(name) finished the play \(finished.playID.uuidString.prefix(8)), noted \(notedAccount ?? "none")")
         noteOwnership()
         let before = play.snapshot
@@ -650,6 +661,12 @@ final class SimulatedDevice: StandInEngineDelegate {
                 if zone != used || entries[id]?.sync == .cleared { recordsNotApplied.insert(RecordID(zone: zone, name: record.name)) }
             }
             if changes.records.contains(where: \.isToy) { toyRefusedWithoutRecord = false }
+            if failsNextWriteOfFetchedChanges, !sync.run.writeFailed {
+                failsNextWriteOfFetchedChanges = false
+                sync.store.failsNextSyncSave = true
+                expectsAFailedWrite = true
+                watcher.tally.count("a write of fetched changes failed")
+            }
             allowingLeaving(.these(Set(changes.deletions.compactMap(\.id.playID)))) { apply(must { try sync.fetched(changes) }) }
             tallyToy(before, toySide, arrived: changes.records.contains(where: \.isToy))
             watcher.tally.count("play arrived", changes.records.count { $0.type == CloudRecord.finishedPlayType })
@@ -854,7 +871,7 @@ final class SimulatedDevice: StandInEngineDelegate {
     }
 
     /// The plays not yet received by iCloud.
-    private var unsentPlays: Set<String> {
+    var unsentPlays: Set<String> {
         Set((must { try sync.store.allPlays() } ?? []).filter { $0.sync == .unsent || $0.sync == .sent }.map(\.playID.uuidString))
     }
 
