@@ -7,10 +7,10 @@ Each point keeps three things apart: what the probe **did**, what **came back**,
 ## Where and when
 
 - macOS 27.3 (26C5047e), Xcode 27.3 (27C5035i), `cktool` 1.0.23001.
-- 19 November 2026, between 17:00 and 17:30 Pacific time.
+- 19 November 2026, between 17:00 and 17:35 Pacific time.
 - The development environment of the app's container, its private database, and the iCloud account this Mac is signed in to.
 - Every engine ran in one app process, on one Mac. To CloudKit they are most likely one device. Several points below say what that leaves open.
-- Five runs: questions 1 to 3 as a first try, and questions 1 to 14 with the app started by running its executable; then, through LaunchServices, questions 15, 4, 11 and 14, question 15 again with two saves added, and a final run of all fifteen questions. The results below are the final run's, and every earlier run that asked the same question gave the same result, except where a point says otherwise.
+- Eight runs: questions 1 to 3 as a first try, and questions 1 to 14 with the app started by running its executable; then, through LaunchServices, questions 15, 4, 11 and 14, question 15 again with two saves added, a run of questions 1 to 15, a run of questions 15 and 16 after question 15 had grown, and questions 17 and 18, one launch each. The results below are the latest run's for each question, and every earlier run that asked the same question gave the same result, except where a point says otherwise.
 
 ## How it runs
 
@@ -24,7 +24,7 @@ xcodebuild -project NineRings.xcodeproj -scheme NineRings -destination 'platform
 open -n --stdout /tmp/probe.txt --stderr /tmp/probe.err /tmp/probe-build/Build/Products/Debug/NineRings.app --args -ApplePersistenceIgnoreState YES -cloudkit-probe all
 ```
 
-- `-cloudkit-probe all` asks every question; `-cloudkit-probe 1,2,15` asks those. Like every launch switch of the app, it takes a value, and only a debug build reads it.
+- `-cloudkit-probe all` asks questions 1 to 16; `-cloudkit-probe 1,2,15` asks those. Questions 17 and 18 take a launch each, in that order: `-cloudkit-probe 17`, then `-cloudkit-probe 18`. Like every launch switch of the app, it takes a value, and only a debug build reads it.
 - The report goes to standard output, one line per event, and to the log under the category `CloudProbe`. The app writes no file of its own, and it quits when the probe is done. To stop it earlier, quit it by its process id: other copies of the app may be running.
 - While the probe runs, the app keeps its records in memory, so nothing else in it talks to CloudKit.
 - The probe stops before reaching CloudKit if the build lacks the iCloud entitlement, if it would talk to production, or if no account is available.
@@ -45,12 +45,14 @@ open -n --stdout /tmp/probe.txt --stderr /tmp/probe.err /tmp/probe-build/Build/P
 | 7 | Saving into a missing zone | `zoneNotFound`; the engine drops the save. With the zone queued, zones go first | Agrees |
 | 8 | Fetch from nothing after deletions | Both deletions delivered | Cannot separate devices on one Mac |
 | 9 | A zone deleted | `deleted` to every engine. **A new engine is told of earlier zone deletions too** | **Differs** |
-| 10 | Account event of a new engine | `signIn` with the account's own user record id; none from a saved state | Agrees |
+| 10 | Account event of a new engine | `signIn` with the account's own user record id; none from a saved state | Agrees; answers open point 14 |
 | 11 | Automatic syncing | The engine registers for pushes by itself; it sent by itself within 3 s; the other engine never fetched | Push delivery not testable on one Mac |
 | 12 | Two engines from one saved state | Behave as two devices; the copied tokens work | Agrees |
 | 13 | Field types | `ENCRYPTED INT64` and `ENCRYPTED BYTES` | Agrees |
 | 14 | Fetch on coming to the front | The engine fetches when it hears the app become active; a real return to the front was not produced | Answers open point 7 in part |
-| 15 | A zone deleted and made again | **No deletion is reported; tags start again, and a save on a base from the old zone is accepted when the tags coincide** | **Differs** |
+| 15 | A zone deleted and made again | **Nothing of the deletion reaches an engine that knew the old zone: it keeps the old zone's records. Tags start again, and a save on a base from the old zone is accepted when the tags coincide** | **Differs**; answers open point 13 |
+| 16 | A save and a deletion queued for one record | The later replaces the earlier; only it is sent | Agrees |
+| 17, 18 | A save whose answer is never stored | The saved state still lists the save; sent again, it is refused with the device's own save attached | Agrees |
 
 ## Point by point
 
@@ -67,7 +69,7 @@ open -n --stdout /tmp/probe.txt --stderr /tmp/probe.err /tmp/probe-build/Build/P
 
 `sendChanges()` threw `partialFailure`. Afterwards B's list of pending changes was empty: **the engine does not keep a refused save.** B then saved the toy again on the system fields of the returned `serverRecord`, and that save was accepted.
 
-**Against the design.** This is what section 6 expects ("refused in the same way, with iCloud's record attached") and what rule 3 of section 7 expects for a finished play, so open point 1 is answered. The refusal without a record that a 2019 report describes, for a record that other records point to, did not occur; the app's records point to nothing. Two details for the delegate: the ancestor of such a refusal carries nothing, and a refused save leaves the engine's list, so the app queues again whatever it still wants sent. Section 6 already says so for Keep This One.
+**Against the design.** This is what section 6 expects ("refused in the same way, with iCloud's record attached") and what rule 4 of section 7 expects for a finished play, so open point 1 is answered. The refusal without a record that a 2019 report describes, for a record that other records point to, did not occur; the app's records point to nothing. Two details for the delegate: the ancestor of such a refusal carries nothing, and a refused save leaves the engine's list, so the app queues again whatever it still wants sent. Section 6 already says so for Keep This One.
 
 ### 2. A save with stale system fields
 
@@ -97,7 +99,7 @@ open -n --stdout /tmp/probe.txt --stderr /tmp/probe.err /tmp/probe-build/Build/P
 
 **Came back.** A's fetch after its own save delivered its own record, with the tag it had just been given. In the eight rounds the engine ran the send and the fetch side by side: in some rounds the zone's fetch began before the save was confirmed. But **the fetched change never arrived before the confirmation**. In seven rounds the confirmation came first and the change was fetched after it; in one, the fetch was over before the save landed. Two earlier runs, of three and eight rounds, gave the same.
 
-**Against the design.** A device's own save does come back to it, as the design expects (source 17). Section 6 handles that with its first case: the record arriving is the base, with the same tag. That the change can come back *before* its confirmation was not seen in nineteen rounds, and it is not ruled out either. The stamp of choice 12 is there also for a lost confirmation, which the probe did not produce.
+**Against the design.** A device's own save does come back to it, as the design expects (source 17). Section 6 handles that with its first case: the record arriving is the base, with the same tag. That the change can come back *before* its confirmation was not seen in nineteen rounds, and it is not ruled out either. The stamps of choice 12 are there also for an answer that never arrives, which points 17 and 18 show.
 
 ### 5. A record deleted, then saved again under the same name
 
@@ -119,7 +121,7 @@ open -n --stdout /tmp/probe.txt --stderr /tmp/probe.err /tmp/probe-build/Build/P
 
 **Came back.** Both deletions were reported in `deletedRecordIDs`, as successful, with no error.
 
-**Against the design.** Section 7, rule 6 removes an entry when iCloud confirms its deletion "or reports that the record is already gone". The engine does not tell the two apart: both are a confirmed deletion. That agrees with the rule, and it needs no error case.
+**Against the design.** Section 7, rule 7 removes an entry when iCloud confirms its deletion "or reports that the record is already gone". The engine does not tell the two apart: both are a confirmed deletion. That agrees with the rule, and it needs no error case.
 
 ### 7. Saving into a zone that does not exist
 
@@ -135,7 +137,7 @@ open -n --stdout /tmp/probe.txt --stderr /tmp/probe.err /tmp/probe-build/Build/P
 
 **Came back.** C received the three plays still there, and **both deletions**: the play A had made and deleted, and the play B had made and A had deleted.
 
-**Against the design.** Apple's engineer says a fetch from nothing delivers a deletion when the record was created by the fetching *device* (source 50). Here every engine ran on one Mac, so to CloudKit every record was most likely created by the fetching device, and this agrees with that rule as well as with the developer who saw many deletions. **What a second device would receive is not known from this.** The design does not depend on these deletions (open point 5).
+**Against the design.** Apple's engineer says a fetch from nothing delivers a deletion when the record was created by the fetching *device* (source 50). Here every engine ran on one Mac, so to CloudKit every record was most likely created by the fetching device, and this agrees with that rule as well as with the developer who saw many deletions. **What a second device would receive is not known from this.** Since its revision, the design removes the entries whose deletions arrive when a device joins (section 8), and accepts that some may not arrive (section 16).
 
 ### 9. A zone that one engine deletes
 
@@ -160,7 +162,7 @@ open -n --stdout /tmp/probe.txt --stderr /tmp/probe.err /tmp/probe-build/Build/P
 - The user record id in it was **the account's own** (33 characters, beginning with an underscore), the same as `CKContainer.userRecordID()`. It was not `__defaultOwner__`.
 - An engine made from a saved state delivered no account event.
 
-**Against the design.** As section 8 expects: an engine that starts from nothing reports a sign-in, and the store notes the account from it. Comparing that id with the stored one works, because it is the account's real id.
+**Against the design.** As section 8 expects: an engine that starts from nothing reports a sign-in, and the store notes the account from it. Comparing that id with the stored one works, because it is the account's real id. Over all the runs, each of the 89 engines that started from nothing reported the sign-in, and none of the 7 made from a saved state did. That answers open point 14 on this Mac.
 
 ### 11. Automatic syncing
 
@@ -206,17 +208,25 @@ open -n --stdout /tmp/probe.txt --stderr /tmp/probe.err /tmp/probe-build/Build/P
 
 ### 15. A zone deleted and made again under the same name
 
-**Did.** A made a zone with a toy, and B fetched it. A deleted the zone, made it again under the same name, and saved a new toy in it. Then B, which had not fetched since, saved on the system fields of the toy it held from the first zone; then B fetched, and C, a new engine with no state, fetched. In a second zone the same was done with one difference: the new toy was saved twice, so that its tag differed from the one held.
+**Did.** A made a zone with the toy, then a play in it. B and B2 fetched both. A deleted the zone, made it again under the same name, and saved a new toy and another play in it. The play of the first zone was not saved again. Then:
+
+- B, which still held state for the first zone, fetched, and fetched once more;
+- B2, which had not fetched since, saved on the system fields of the toy it held from the first zone;
+- C, a new engine with no state, fetched.
+
+In a second zone, E's save was repeated with one difference: the new toy was saved twice, so that its tag differed from the one E held.
 
 **Came back.**
 
-- **The tags started again.** The toy in the first zone and the new toy both had the tag `3`.
-- **B's save on the first zone's toy was accepted.** It replaced the new toy, which B had never seen.
+- **B was told nothing of the deletion.** Its fetch reported the zone as modified, then the two records now in it: no zone deletion, no record deletion, no error about its change tokens. Its next fetch reported nothing.
+- **B still holds the play of the first zone,** which is no longer in iCloud, beside the new toy and the new play.
+- C, new, was told the same as B: the zone as modified, and the records in it.
+- **The tags started again.** The toy in the first zone and the new toy both had the tag `3`. The two plays both had `4`.
+- **B2's save on the first zone's toy was accepted.** It replaced the new toy, which B2 had never seen.
 - In the second zone, where the new toy had the tag `4` and E's base `3`, the same save was refused with `serverRecordChanged` and the new toy attached.
-- **B was never told of the deletion.** Its fetch reported the zone as modified, then the record now in it, with no zone deletion, no record deletion, and no error. C, new, was told the same.
-- The final run and the run before it gave the same. A run before those, without B's save, gave the same report to B and C.
+- Three runs gave the same; the two before the latest had no play in the zones.
 
-**Against the design. This differs.** Principle 2 says a device replaces the toy only if it has seen the one that is there, and section 6 rests this on CloudKit's change tag. Across a zone that is deleted and made again, that does not hold:
+**Against the design. This differs, and it answers open point 13.** Of the three outcomes that point names, the engine gives the last: nothing at all. A device that held state for the old zone keeps the old zone's records for good, unless the app finds out otherwise, and the devices disagree. In the same case the toy is not protected either. Principle 2 says a device replaces the toy only if it has seen the one that is there, and section 6 rests this on CloudKit's change tag. Across a zone that is deleted and made again, that does not hold:
 
 - a device that missed the deletion is never told of it, once the zone exists again;
 - its base can carry the same tag as the new record, because tags are counters that start again with the zone;
@@ -224,13 +234,39 @@ open -n --stdout /tmp/probe.txt --stderr /tmp/probe.err /tmp/probe-build/Build/P
 
 A zone is deleted and made again after a purge or an encryption reset, as soon as a device joins and saves the zone (sections 8 and 9). How likely it is that the tags coincide depends on how many saves each zone saw. Whether production's tags are counters too is not known.
 
+### 16. A save and a deletion queued for one record
+
+**Did.** A saved two plays. Before any send, it queued for one of them a save and then a deletion, and for the other a deletion and then a save. It did the same for a play never sent: a save, then a deletion. After each send, the probe read the record directly from the database.
+
+**Came back.**
+
+- A save and then a deletion of a record that exists left only the deletion pending. The engine sent the deletion, and the record was gone.
+- A save and then a deletion of a record never sent left only the deletion pending. The engine sent it and reported it as a deletion, without error; there was never a record.
+- A deletion and then a save of a record that exists left only the save pending. The save was accepted, and the record was there.
+
+**Against the design.** For one record, the later of the two replaces the earlier in the engine's list, in both orders, as Apple's documentation says for a deletion followed by a save (source 3). A device that clears its history while the save of a play is still waiting therefore sends only the deletion.
+
+### 17 and 18. A save whose answer the app never stores
+
+**Did.** In one launch (question 17), A saved the toy, then queued a change to it and a new play. Like the app, it kept the engine's state and its records at every state update. It asked for a send, and **ended the process the moment the confirmation arrived**, before storing it or any later state. The saves had landed: the toy now had the tag `4` and the play `5`. In the next launch (question 18), a new engine started from the state kept, with the records kept. Like the app at launch, the probe queued again what was not yet received, then sent and fetched.
+
+**Came back.**
+
+- **The kept state still listed both saves as pending.** It was the state of the last update before the confirmation, while the saves were under way.
+- Queuing them again changed nothing; the engine drops duplicates.
+- Sent again, the play was refused with "record to insert already exists", with the play that had landed attached.
+- The toy, sent again on its old base (tag `3`), was refused with "client oplock error updating record", with the toy that had landed attached: the device's own save.
+- The fetch then delivered both records as they had landed.
+
+**Against the design.** As sections 6, 7 and 10 expect for an answer that is lost. The toy comes back as a refusal carrying the device's own save, and its stamp is how the device can tell (section 6, step 5, second case). The play comes back as an "already exists" refusal, which rule 4 of section 7 settles. This is an app ended between the send and storing its answer, not an answer lost on the network. The state at the next start is the same in both cases, but the engine's own handling of `serverResponseLost` was not seen.
+
 ## What the probe could not find out
 
 - **Anything that needs a second device:** whether a push reaches the Mac or wakes an iPhone, and whether the other device then fetches by itself; whether a fetch from nothing on a second device is told of deletions of records it did not create.
 - **A purge and an encryption reset.** No interface makes either. The reasons `purged` and `encryptedDataReset` were never seen.
 - **The person's side:** the app's switch in Settings, signing out, another account.
 - **Production:** whether change tags are counters there too, and anything else about production.
-- **A lost confirmation** (`serverResponseLost`), and a send cut short when the app is suspended.
+- **An answer lost on the network** (`serverResponseLost`), and a send cut short when the app is suspended. Points 17 and 18 show the same state at the next start, by ending the process instead.
 - **A long absence:** expired change tokens, and how long deletions are kept.
 - **A real return to the front.** The probe only posted the notification (point 14).
 
@@ -245,9 +281,13 @@ A zone is deleted and made again after a purge or an encryption reset, as soon a
 | 5. A device away for a long time | In part: on one Mac, a fetch from nothing delivered deletions (point 8). New engines are told of old zone deletions (point 9). Expiry was not tried. |
 | 6. Pushes | In part: the engine registers for pushes by itself when automatic syncing is on (point 11). Delivery needs a second device. |
 | 7. Sending on leaving the front, fetching on coming to it | In part: the engine fetches by itself when it hears the app become active (point 14). A real return to the front, and sending on leaving it, were not tried. |
+| 13. A zone created again before a device fetched | **Answered: nothing at all.** The device is told of no deletion and no token problem, and keeps the old zone's records (point 15). Its base can also pass the tag check. |
+| 14. The sign-in at a first launch | Answered on this Mac: every engine that started from nothing reported a sign-in with the account's own id, at its first operation or at once (point 10). |
 
 Not in section 15, but found here for the delegate:
 
 - A refused save, a save into a missing zone, and a save on a record that is gone all leave the engine's list (points 1, 5, 7). The app queues again what it still wants sent, as the design already does in each case.
 - A refusal's ancestor record is empty for a first save, and holds only system fields for a stale one (points 1, 2).
 - Deleting a record that is already gone is reported as a plain deletion (point 6).
+- For one record, a save and a deletion queued before sending: the later one is the one sent (point 16).
+- The engine's saved state lists a save that is under way as pending, so a save whose answer is never stored is sent again after the next start (points 17, 18).

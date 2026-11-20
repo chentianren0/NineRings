@@ -17,7 +17,7 @@ actor ProbeDevice: CKSyncEngineDelegate {
     }
 
     /// A record to hand to the engine when it sends.
-    struct Outgoing: Sendable {
+    struct Outgoing: Sendable, Codable {
         var recordType: CKRecord.RecordType
         /// The system fields to build the record on, archived; nil for a record built without any.
         var systemFields: Data?
@@ -39,6 +39,10 @@ actor ProbeDevice: CKSyncEngineDelegate {
     private(set) var known: [CKRecord.ID: CKRecord] = [:]
     /// Every event, in order.
     private(set) var log: [Logged] = []
+    /// Where the device keeps its state and its records at every state update, as the app would; nil for none.
+    private var keptIn: URL?
+    /// Whether the device ends the process when a save's confirmation arrives, before it stores anything of it.
+    private var endsOnConfirmation = false
 
     init(name: String, database: CKDatabase, zone: CKRecordZone, report: ProbeReport) {
         self.name = name
@@ -71,6 +75,49 @@ actor ProbeDevice: CKSyncEngineDelegate {
     }
 
     var outgoingRecords: [CKRecord.ID: Outgoing] { outgoing }
+
+    /// From now on, keeps the engine's state and the device's records in `file` at every state update.
+    func keep(in file: URL) {
+        keptIn = file
+    }
+
+    /// From now on, ends the process as soon as a save's confirmation arrives: an app that crashed, or was ended,
+    /// between the send and storing its answer.
+    func endOnConfirmation() {
+        endsOnConfirmation = true
+    }
+
+    /// What the device keeps: the engine's state and its records, as ``keep(in:)`` writes them.
+    struct Kept: Codable {
+        var zoneName: String
+        var state: CKSyncEngine.State.Serialization?
+        /// The records the device knows, archived whole, by record name.
+        var known: [String: Data]
+        var outgoing: [String: Outgoing]
+    }
+
+    /// Takes on the records of `kept`.
+    func restore(_ kept: Kept) async {
+        known = kept.known.reduce(into: [:]) { known, entry in
+            let record = try? NSKeyedUnarchiver.unarchivedObject(ofClass: CKRecord.self, from: entry.value)
+            known[CKRecord.ID(recordName: entry.key, zoneID: zone.zoneID)] = record
+        }
+        outgoing = kept.outgoing.reduce(into: [:]) { $0[CKRecord.ID(recordName: $1.key, zoneID: zone.zoneID)] = $1.value }
+        await report.say(name, "store restored: \(known.count) records known, \(outgoing.count) to send")
+    }
+
+    private func writeKept() {
+        guard let keptIn else { return }
+        let kept = Kept(
+            zoneName: zone.zoneID.zoneName,
+            state: serialization,
+            known: known.reduce(into: [:]) { known, entry in
+                known[entry.key.recordName] = try? NSKeyedArchiver.archivedData(withRootObject: entry.value, requiringSecureCoding: true)
+            },
+            outgoing: outgoing.reduce(into: [:]) { $0[$1.key.recordName] = $1.value }
+        )
+        try? JSONEncoder().encode(kept).write(to: keptIn, options: .atomic)
+    }
 
     // MARK: What the probe asks of it
 
@@ -148,9 +195,14 @@ actor ProbeDevice: CKSyncEngineDelegate {
         let now = ContinuousClock.now
         log.append(Logged(at: now, event: event))
         await report.say(name, ProbeText.event(event), at: now)
+        if endsOnConfirmation, case .sentRecordZoneChanges(let sent) = event, !sent.savedRecords.isEmpty {
+            await report.say(name, "ENDS THE PROCESS NOW, before storing this answer or any later state")
+            exit(0)
+        }
         switch event {
         case .stateUpdate(let update):
             serialization = update.stateSerialization
+            writeKept()
         case .sentRecordZoneChanges(let sent):
             for record in sent.savedRecords { known[record.recordID] = record }
             for id in sent.deletedRecordIDs { known[id] = nil }

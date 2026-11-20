@@ -9,7 +9,9 @@ import Security
 /// A probe of what `CKSyncEngine` does where Apple does not document it, run against CloudKit's development
 /// environment by a debug build that a launch asks for it. `docs/icloud-probe.md` says what it showed, and how to run it.
 ///
-/// - `-cloudkit-probe all` asks every question; `-cloudkit-probe 1,2,12` asks those (``ProbeRun/questions``).
+/// - `-cloudkit-probe all` asks questions 1 to 16; `-cloudkit-probe 1,2,12` asks those (``ProbeRun/questions``).
+/// - Questions 17 and 18 take a launch each, in that order: 17 ends the process when a save's confirmation arrives, and
+///   18 starts from what 17 kept.
 ///
 /// The report goes to standard output, line by line, and to the log. The app writes no file: whoever launches it says
 /// where standard output goes. The app quits when the probe is done. While the probe runs, the app keeps its own records
@@ -28,7 +30,7 @@ enum CloudProbe {
         let arguments = ProcessInfo.processInfo.arguments
         guard let index = arguments.firstIndex(of: "-cloudkit-probe"), index + 1 < arguments.count else { return nil }
         let value = arguments[index + 1]
-        if value == "all" { return ProbeRun.questions.keys.sorted() }
+        if value == "all" { return ProbeRun.askedByAll }
         let numbers = value.split(separator: ",").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
         return numbers.isEmpty ? nil : numbers
     }()
