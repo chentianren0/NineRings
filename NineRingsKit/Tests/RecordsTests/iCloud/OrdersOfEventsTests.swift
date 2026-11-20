@@ -30,6 +30,45 @@ import Testing
     }
 }
 
+/// More orders than continuous integration runs, on request: `ORDERS_SWEEP=128-2128` runs those seeds and prints the
+/// ones whose checks fail; `ORDERS_TRACE=86` replays one seed and writes every step, call and change in iCloud to a file
+/// in the temporary folder, with what the orders reach. Neither runs unless asked for.
+@MainActor
+@Suite struct OrdersOfEventsTools {
+    @Test func sweep() throws {
+        let bounds = (ProcessInfo.processInfo.environment["ORDERS_SWEEP"] ?? "").split(separator: "-").compactMap { UInt64($0) }
+        guard bounds.count == 2 else { return }
+        var failing = 0
+        for seed in bounds[0]..<bounds[1] {
+            let order = try RandomOrder(seed: seed)
+            order.run(steps: 160)
+            let settled = order.finish()
+            let problems = order.world.watcher.problems + order.world.disagreements()
+            guard !settled || !problems.isEmpty else { continue }
+            failing += 1
+            print("seed \(seed): settled \(settled), \(problems)")
+        }
+        print("\(failing) of \(bounds[1] - bounds[0]) seeds failed")
+    }
+
+    @Test func trace() throws {
+        guard let seed = ProcessInfo.processInfo.environment["ORDERS_TRACE"].flatMap({ UInt64($0) }) else { return }
+        var lines: [String] = []
+        let order = try RandomOrder(seed: seed)
+        order.trace = { lines.append($0) }
+        for device in order.world.devices { device.trace = { lines.append($0) } }
+        order.world.cloud.trace = { lines.append($0) }
+        order.run(steps: 160)
+        let settled = order.finish()
+        lines.append("settled \(settled); \(order.choices)")
+        lines.append("problems \(order.world.watcher.problems + order.world.disagreements())")
+        for (what, count) in order.world.watcher.tally.counts.sorted(by: { $0.key < $1.key }) { lines.append("\(what): \(count)") }
+        let file = URL.temporaryDirectory.appending(path: "orders-\(seed).txt")
+        try lines.joined(separator: "\n").write(to: file, atomically: true, encoding: .utf8)
+        print("written to \(file.path)")
+    }
+}
+
 /// One order of events, chosen by a seed.
 @MainActor
 final class RandomOrder {
@@ -88,7 +127,7 @@ final class RandomOrder {
     private func step() {
         let device = random.pick(world.devices)
         let what = random.int(0..<120)
-        trace?("STEP \(device.name) \(what)")
+        trace?("step: \(device.name), \(what)")
         switch what {
         case 0..<22: device.move()
         case 22..<24: device.undo()
@@ -140,15 +179,46 @@ final class RandomOrder {
         }
     }
 
-    /// Every device online, signed in to the person's account, with storage to spare, and synced until nothing changes;
-    /// every offer is answered with Play That One. Returns whether it settled.
+    /// Every device online, with a network that loses no answers, signed in to the person's account, with storage to
+    /// spare, and synced until nothing changes; every offer is answered with Play That One. Returns whether it settled.
     func finish() -> Bool {
         world.cloud.database(World.person).isFull = false
         for device in world.devices {
+            var good = device.engineChoices
+            good.answerLost = 0
+            good.zoneAnswerLost = 0
+            good.zoneFetchFails = 0
+            good.requestFindsFetchUnderWay = 0
+            device.engineChoices = good
+            device.engine.choices = good
+            device.accountQuestionFails = 0
             device.isOnline = true
             if device.account != World.person { device.signIn(to: World.person) }
         }
         var settled = world.settle(answeringOffers: false)
+        // Two cases the design accepts leave a device without records that iCloud holds, until its engine next starts
+        // from nothing (section 16): it joined a zone whose records its engine had fetched while it used another, or a
+        // play it had cleared came back to it and its deletion was answered only afterwards. It is given that start.
+        let lackingRecords = world.devices.filter { $0.joinedAZoneItsEngineHadFetched || $0.lacksAPlayThatCameBack }
+        if !lackingRecords.isEmpty {
+            world.watcher.tally.count("accepted: records lacking until the next start from nothing")
+            for device in lackingRecords { device.discardEngineState() }
+            settled = world.settle(answeringOffers: false)
+        }
+        // A device whose zone went without its being told, by a lost report or a zone found missing, learns of it at its
+        // next save (section 9), and brings its data along: the person makes a move on it.
+        let unaware = world.devices.filter { device in
+            guard let note = device.zoneNote, note.knowledge == .existing else { return false }
+            return !world.cloud.hasZone(note.zone.name, account: World.person)
+        }
+        if !unaware.isEmpty {
+            world.watcher.tally.count("accepted: a zone gone without a report, found at the next save")
+            for device in unaware {
+                device.move()
+                device.toyChanged()
+            }
+            settled = world.settle(answeringOffers: false)
+        }
         // A device that applied fetched changes before its account was confirmed, and removed them with another
         // account's data, lacks them until its engine next starts from nothing (section 16): it is given that start.
         let lacking = world.devices.filter(\.lostFetchedChangesWithAnotherAccount)

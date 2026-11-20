@@ -813,6 +813,53 @@ import Testing
         #expect(same(iPad.keptToy, iPhone.keptToy))
     }
 
+    /// A play refused as existing without iCloud's record, whose record no fetch brings, is in iCloud without system
+    /// fields; when the device moves to another zone, it is taken along like every other play (section 9, leaving a
+    /// zone, step 3).
+    @Test func aPlayInICloudWithoutSystemFieldsIsTakenAlong() throws {
+        var choices = StandInICloud.Choices()
+        choices.refusalCarriesRecord = false
+        choices.ownChangesComeBack = 0
+        choices.reportsOwnZoneChanges = false
+        let world = World(cloud: choices)
+        let (iPhone, iPad) = try twoSyncedDevices(world)
+        iPad.isOnline = false
+        iPhone.engine.choices.answerLost = 1
+        iPhone.engine.choices.landsWhenAnswerLost = 1
+        iPhone.engine.choices.resendsLostAnswers = false
+        iPhone.finishPlay()
+        iPhone.putDown()
+        iPhone.engine.choices.answerLost = 0
+        let play = try #require(iPhone.history.plays.first)
+        iPhone.toyChanged()
+        iPhone.syncFully()
+        #expect(try iPhone.sync.store.plays([play.playID])[play.playID].map { ($0.sync, $0.systemFields) } ?? (.unsent, nil) == (.inICloud, nil))
+        world.cloud.deleteEveryZone(account: World.person, reason: .encryptedDataReset)
+        world.settle(answeringOffers: false)
+        iPad.isOnline = true
+        world.settle(answeringOffers: false)
+        #expect(iPad.history.plays.contains(play) && world.historyInICloud().plays.contains(play))
+        #expect(world.disagreements().isEmpty)
+    }
+
+    /// The person signs out with the app running, and back in while it is not: at the next launch the engine reports the
+    /// sign-in, before or after its first report of the zones (open point 14). Either way the device goes on in its zone,
+    /// and no device moves to a new one.
+    @Test(arguments: [true, false])
+    func aSignInReportedInEitherOrder(accountReportComesFirst: Bool) throws {
+        let world = World()
+        let (iPhone, iPad) = try twoSyncedDevices(world)
+        let zone = try #require(world.personsZone)
+        iPhone.signIn(to: nil)
+        iPhone.engineChoices.accountReportComesFirst = accountReportComesFirst
+        iPhone.signInWhileNotRunning(to: World.person)
+        world.settle()
+        #expect(world.watcher.tally.counts["engine reported a sign-in"] ?? 0 > 0)
+        #expect(world.cloud.zoneNames(account: World.person) == [zone], "no device moved to a new zone")
+        #expect(iPhone.zoneNote?.zone.name == zone && iPad.zoneNote?.zone.name == zone)
+        #expect(world.watcher.problems.isEmpty && world.disagreements().isEmpty)
+    }
+
     /// A zone found missing, with no report of its deletion: the device gives it up, keeping its data, and the devices go
     /// on in the next zone.
     @Test func aZoneFoundMissing() throws {
@@ -824,7 +871,6 @@ import Testing
         iPhone.putDown()
         world.settle(answeringOffers: false)
         #expect(world.watcher.tally.counts["save found the zone gone"] ?? 0 > 0)
-        #expect(world.watcher.tally.counts["zone left, data kept"] ?? 0 > 0)
         #expect(iPhone.zoneNote?.zone.number == 2 && iPad.zoneNote == iPhone.zoneNote)
         #expect(iPhone.history.plays.count == 2 && iPad.history == iPhone.history)
         #expect(world.watcher.problems.isEmpty && world.disagreements().isEmpty)

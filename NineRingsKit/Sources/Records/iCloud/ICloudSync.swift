@@ -23,7 +23,7 @@ import SwiftData
 ///
 /// | The engine, or the app's request | The delegate calls |
 /// |---|---|
-/// | the engine was created, at launch | ``launched(engineStartsFromNothing:)``, with whether ``engineState()`` was nil |
+/// | is about to be created, at launch | ``launched(engineStartsFromNothing:)``, with whether ``engineState()`` was nil |
 /// | `stateUpdate` | ``engineStateUpdated(_:)``, with the state serialized |
 /// | `accountChange` | ``accountChanged(_:)``, with the user record ids' `recordName`s |
 /// | `fetchedDatabaseChanges` | ``databaseChanged(_:)``, with every zone it names, changed and deleted |
@@ -96,7 +96,9 @@ public final class ICloudSync {
         try store.existingSyncNotes()?.engineState
     }
 
-    /// The app launched and created the engine, with its saved state or, when `engineStartsFromNothing`, without one.
+    /// The app launched and is about to create the engine, with its saved state or, when `engineStartsFromNothing`,
+    /// without one. The app calls it before it creates the engine, so that no event of the engine comes before it, and
+    /// applies the result once the engine exists.
     ///
     /// A start from nothing begins. A held toy in a higher format that this version can now read is handled as an
     /// arriving toy. The app asks CloudKit for the account's id and the engine to fetch; nothing is sent until the

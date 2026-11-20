@@ -208,6 +208,15 @@ final class SimulatedDevice: StandInEngineDelegate {
     /// nothing (section 16).
     private(set) var lostFetchedChangesWithAnotherAccount = false
     private var appliedChangesBeforeConfirmation = false
+    /// The zones whose records this device's engine fetched while the device used another zone, since its engine last
+    /// started from nothing; and whether the device then joined one of them, the case the design accepts in which it
+    /// lacks those records until its engine next starts from nothing (section 16).
+    private var ignoredZones: Set<String> = []
+    private(set) var joinedAZoneItsEngineHadFetched = false
+    /// The plays that came back to this device while they were cleared here; and whether the answer to the device's
+    /// deletion of one came after that, the case the design accepts in which the device lacks it (section 16).
+    private var cameBackWhileCleared: Set<RecordID> = []
+    private(set) var lacksAPlayThatCameBack = false
     /// Where a trace of every call goes, for a test that looks into one order of events.
     var trace: ((String) -> Void)?
     /// Whether the engine is to be offline.
@@ -272,10 +281,11 @@ final class SimulatedDevice: StandInEngineDelegate {
         lostFetchedChangesWithAnotherAccount = false
         if saved == nil, account != nil { watcher.tally.count("start from nothing at launch") }
         trace?("\(name) launches, signed in to \(account ?? "none"), the engine's saved account \(saved.flatMap { try? JSONDecoder().decode(StandInEngine.State.self, from: $0) }.map { $0.account ?? "none" } ?? "no saved state")")
+        let launched = must { try sync.launched(engineStartsFromNothing: saved == nil) }
         engine = StandInEngine(cloud: cloud, device: name, savedState: saved, account: account, choices: engineChoices, seed: random.next())
         engine.isOnline = isOnline
         engine.delegate = self
-        apply(must { try sync.launched(engineStartsFromNothing: saved == nil) })
+        apply(launched)
     }
 
     /// The app ends without warning and starts again: what was not saved is gone.
@@ -287,6 +297,10 @@ final class SimulatedDevice: StandInEngineDelegate {
     /// The engine cannot go on from its saved state: the app discards it, and the next launch is a start from nothing.
     func discardEngineState() {
         must { try sync.discardEngineState() }
+        ignoredZones = []
+        joinedAZoneItsEngineHadFetched = false
+        cameBackWhileCleared = []
+        lacksAPlayThatCameBack = false
         relaunch()
     }
 
@@ -361,7 +375,11 @@ final class SimulatedDevice: StandInEngineDelegate {
         wantsFetch = false
         let request = sync.fetchWillBeRequested()
         let outcome = engine.fetch(manual: true)
-        watchingPurges {
+        var userDeleted: [String] = []
+        if case .zones(let errors)? = outcome.error {
+            userDeleted = errors.filter { $0.value == .zoneGone(.userDeletedZone) }.map(\.key)
+        }
+        watchingPurges(userDeleted: userDeleted) {
             apply(must {
                 try sync.fetchRequestReturned(request, error: outcome.error, pendingZoneSaves: Set(engine.state.pendingZoneSaves))
             })
@@ -533,13 +551,28 @@ final class SimulatedDevice: StandInEngineDelegate {
             sync.fetchBegan(manual: manual)
         case .databaseChanged(let changes):
             if !sync.run.accountConfirmed { appliedChangesBeforeConfirmation = true }
-            watchingPurges { apply(must { try sync.databaseChanged(changes) }) }
+            let noteBefore = zoneNote
+            watchingPurges(deleted: changes.deleted) { apply(must { try sync.databaseChanged(changes) }) }
+            if let joined = zoneNote, joined != noteBefore, joined.knowledge == .existing, ignoredZones.contains(joined.zone.name) {
+                joinedAZoneItsEngineHadFetched = true
+            }
         case .fetched(let changes):
             for record in changes.records where record.type == CloudRecord.finishedPlayType {
                 watcher.received(play: record.name, on: name)
             }
             let before = toySide
             if !sync.run.accountConfirmed { appliedChangesBeforeConfirmation = true }
+            let used = zoneNote.flatMap { $0.knowledge == .deleted ? nil : $0.zone.name }
+            for zone in Set(changes.records.compactMap(\.zone) + changes.deletions.map(\.id.zone)) where zone != used {
+                ignoredZones.insert(zone)
+            }
+            let ids = changes.records.compactMap(\.playID)
+            let entries = must { try sync.store.plays(ids) } ?? [:]
+            for record in changes.records where record.zone == used {
+                if let id = record.playID, entries[id]?.sync == .cleared, let zone = record.zone {
+                    cameBackWhileCleared.insert(RecordID(zone: zone, name: record.name))
+                }
+            }
             if changes.records.contains(where: \.isToy) { toyRefusedWithoutRecord = false }
             apply(must { try sync.fetched(changes) })
             tallyToy(before, toySide, arrived: changes.records.contains(where: \.isToy))
@@ -548,7 +581,9 @@ final class SimulatedDevice: StandInEngineDelegate {
             noteOwnership()
         case .zoneFetchEnded(let zone, let error):
             if error != nil { watcher.tally.count("zone's fetch ended with an error") }
-            watchingPurges { apply(must { try sync.zoneFetchEnded(zone: zone, error: error) }) }
+            watchingPurges(userDeleted: error == .zoneGone(.userDeletedZone) ? [zone] : []) {
+                apply(must { try sync.zoneFetchEnded(zone: zone, error: error) })
+            }
         case .didFetch(let manual):
             apply(must { try sync.fetchEnded(manual: manual) })
         case .sentZones(let changes):
@@ -556,7 +591,11 @@ final class SimulatedDevice: StandInEngineDelegate {
             apply(must { try sync.zonesSent(changes) })
         case .sent(let changes):
             let before = toySide
-            watchingPurges { apply(must { try sync.sent(changes) }) }
+            let answered = changes.deleted + changes.failedDeletions.filter { $0.reason == .alreadyGone }.map(\.id)
+            if answered.contains(where: cameBackWhileCleared.contains) { lacksAPlayThatCameBack = true }
+            let userDeleted = changes.failedSaves.filter { $0.reason == .zoneGone(.userDeletedZone) }.map(\.id.zone)
+                + changes.failedDeletions.filter { $0.reason == .zoneGone(.userDeletedZone) }.map(\.id.zone)
+            watchingPurges(userDeleted: userDeleted) { apply(must { try sync.sent(changes) }) }
             let toyRefused = changes.failedSaves.contains { failure in
                 if case .refused(let record) = failure.reason { failure.id.isToy && record != nil } else { false }
             }
@@ -642,20 +681,26 @@ final class SimulatedDevice: StandInEngineDelegate {
     // MARK: Inside
 
     /// Runs `body`, an event that may make the device handle a purge, and tells the watcher if it did.
-    /// The watcher learns of a purge from iCloud, not from the rules: the device came to mark as deleted a zone that the
-    /// person purged, or that another copy deleted.
-    private func watchingPurges(_ body: () -> Void) {
+    /// Runs `body`, an event or an answer, and tells the watcher of a purge the device was told of: a deletion with the
+    /// reason *purged* or *deleted* that counts for it by section 9's rule (a zone higher than its note's, or its note's
+    /// zone while not yet marked deleted), or `userDeletedZone` for the zone it uses. The watcher learns of it from what
+    /// the device was told, not from what the rules made of it.
+    private func watchingPurges(deleted: [ZoneDeletion] = [], userDeleted zones: [String] = [], _ body: () -> Void) {
         let plays = Set((must { try sync.store.allPlays() } ?? []).map(\.playID.uuidString))
         let toy = play.snapshot
-        let before = zoneNote
+        let note = zoneNote
+        var told = false
+        if let note {
+            told = deleted.contains { deletion in
+                guard deletion.reason != .encryptedDataReset, let zone = ZoneName(deletion.zone) else { return false }
+                return zone > note.zone || (zone == note.zone && note.knowledge != .deleted)
+            }
+            told = told || (note.knowledge != .deleted && zones.contains(note.zone.name))
+        }
         body()
-        guard let after = zoneNote, after.knowledge == .deleted, after != before, let account = engine.state.account else { return }
-        switch cloud.database(account).gone[after.zone.name] ?? nil {
-        case .purged?, .deleted?:
+        if told {
             watcher.tally.count("purge handled")
             watcher.handledPurge(on: name, plays: plays, toy: toy)
-        default:
-            watcher.tally.count("zone left, data kept")
         }
     }
 

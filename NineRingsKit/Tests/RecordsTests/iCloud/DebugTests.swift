@@ -30,7 +30,7 @@ import Testing
             print("ICLOUD \(order.world.cloud.records(zone: zone, account: World.person).map { $0.name.prefix(6) })")
         }
         print("TALLY \(order.world.watcher.tally.counts)")
-        print("DIS \(order.world.disagreements())")
+        print("DIS \(order.world.disagreements()) PROBLEMS \(order.world.watcher.problems)")
     }
 }
 

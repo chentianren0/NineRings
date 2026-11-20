@@ -82,6 +82,18 @@ import Testing
         #expect(ToyPayload(format: 1, payload: Data(#"{"stamps":[]}"#.utf8)) == nil)
     }
 
+    /// A toy record reads as readable, in a format higher than this version knows, or broken: in a format it knows, or in
+    /// none, and still unreadable (docs/icloud.md, sections 6 and 14).
+    @Test func theThreeReadingsOfAToy() throws {
+        let payload = try ToyPayload(toy: toy(), changedAt: .now, changedOn: "Mac", appVersion: "2.0", stamps: [UUID()]).encoded()
+        #expect(ToyPayload.reading(format: 1, payload: payload) == .readable(ToyPayload(format: 1, payload: payload)!))
+        #expect(ToyPayload.reading(format: 2, payload: payload) == .higherFormat)
+        #expect(ToyPayload.reading(format: 1, payload: Data("{".utf8)) == .broken)
+        #expect(ToyPayload.reading(format: 0, payload: payload) == .broken)
+        #expect(ToyPayload.reading(format: nil, payload: payload) == .broken)
+        #expect(ToyPayload.reading(format: 1, payload: nil) == .broken)
+    }
+
     /// A toy whose moves break the puzzle's rule brings nothing back, so it is not read.
     @Test func aToyWhoseMovesBreakTheRuleIsNotRead() throws {
         let payload = ToyPayload(toy: toy(), changedAt: .now, changedOn: "Mac", appVersion: "2.0", stamps: [UUID()])

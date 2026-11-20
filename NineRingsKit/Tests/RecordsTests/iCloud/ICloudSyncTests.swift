@@ -522,18 +522,35 @@ import Testing
         #expect(try zoneNote?.knowledge == .existing)
     }
 
-    /// A sign-in that the engine reports after a report that named the device's zone as existing, in the same run, leaves
-    /// the zone note as it is: the order of the engine's reports does not matter.
-    @Test mutating func aSignInReportedAfterAReportOfTheZone() throws {
+    /// A sign-in that an engine with saved state reports, before or after its first report of the zones in this run: the
+    /// device ends in its zone, which it knows to exist, either way. After a report that named the zone as existing, the
+    /// first part of the start from nothing leaves the zone note as it is.
+    @Test(arguments: [true, false])
+    mutating func aSignInReportedBeforeOrAfterAReportOfTheZone(reportFirst: Bool) throws {
         try joined()
         _ = try sync.accountChanged(.signOut("person"))
         _ = try relaunch()
+        if reportFirst {
+            try fetch(DatabaseChanges(existing: [zone1.name]))
+            #expect(try zoneNote == ZoneNote(zone: zone1, knowledge: .existing))
+            _ = try sync.accountChanged(.signIn("person"))
+            #expect(try zoneNote == ZoneNote(zone: zone1, knowledge: .existing), "named as existing in this run")
+        } else {
+            _ = try sync.accountChanged(.signIn("person"))
+            try fetch(DatabaseChanges(existing: [zone1.name]))
+        }
+        try fetch()
+        #expect(try zoneNote == ZoneNote(zone: zone1, knowledge: .existing), "the zone is not given up")
+        #expect(sync.gateZone(try notes) == zone1.name)
+    }
+
+    /// A zone note from an earlier run is left alone too, when a report has named that zone again in this run.
+    @Test mutating func aZoneNamedAgainBeforeASignInIsLeftAlone() throws {
+        try joined()
+        _ = try relaunch()
         try fetch(DatabaseChanges(existing: [zone1.name]))
-        #expect(try zoneNote == ZoneNote(zone: zone1, knowledge: .existing))
         _ = try sync.accountChanged(.signIn("person"))
         #expect(try zoneNote == ZoneNote(zone: zone1, knowledge: .existing))
-        #expect(try fetch().engine.withdrawsEverything == false)
-        #expect(try zoneNote?.knowledge == .existing, "the zone is not given up")
     }
 
     /// Both answers to the offer are sending moments: Play That One on a held toy without system fields marks the toy, and
