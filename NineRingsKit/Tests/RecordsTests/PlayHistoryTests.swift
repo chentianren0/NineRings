@@ -11,6 +11,36 @@ import Testing
         #expect(PlayHistory() == .empty)
     }
 
+    // MARK: Recording a play
+
+    private func play(id: UUID = UUID(), finishedAt seconds: Double) -> PlayRecord {
+        let finishedAt = Date(timeIntervalSinceReferenceDate: seconds)
+        return PlayRecord(
+            playID: id, startedAt: finishedAt.addingTimeInterval(-600), finishedAt: finishedAt, startRings: .allOn,
+            endRings: .allOff, moves: 341, undos: 0, movesPlayedForThePerson: 0, secondsSpent: 500
+        )
+    }
+
+    @Test func aPlayRecordedTakesItsPlaceAmongTheNewestFirst() {
+        let old = play(finishedAt: 1_000)
+        let middle = play(finishedAt: 5_000)
+        let new = play(finishedAt: 9_000)
+        let sameMoment = play(finishedAt: 5_000)
+        var history = PlayHistory()
+        let added = [middle, old, new, sameMoment].map { history.record($0) }
+        #expect(added == [true, true, true, true])
+        #expect(history.plays == [new, middle, sameMoment, old], "a play finished at the same moment goes after")
+    }
+
+    @Test func aPlayWhoseIdIsRecordedIsNotRecordedAgain() {
+        let id = UUID()
+        let first = play(id: id, finishedAt: 1_000)
+        var history = PlayHistory(plays: [first], unreadable: 2)
+        let added = history.record(play(id: id, finishedAt: 9_000))
+        #expect(!added)
+        #expect(history == PlayHistory(plays: [first], unreadable: 2))
+    }
+
     // MARK: Sample plays
 
     @Test func noSamplesForZeroOrLess() {

@@ -18,6 +18,16 @@ public struct PlayHistory: Sendable, Equatable {
 
     /// No play kept.
     public static let empty = PlayHistory()
+
+    /// Adds `play` in its place among the newest first, after any finished at the same moment, unless a play with its
+    /// id is here already. Returns whether it was added. This is how `plays` stay newest first, one for each play.
+    @discardableResult
+    public mutating func record(_ play: PlayRecord) -> Bool {
+        guard !plays.contains(where: { $0.playID == play.playID }) else { return false }
+        let index = plays.firstIndex { $0.finishedAt < play.finishedAt } ?? plays.endIndex
+        plays.insert(play, at: index)
+        return true
+    }
 }
 
 extension PlayRecord {
