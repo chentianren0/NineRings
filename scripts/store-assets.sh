@@ -3,9 +3,8 @@
 # language asked for, each at Apple's exact size and checked; and the product page header. After any change to the
 # interface, run it again.
 #
-#   scripts/store-assets.sh [--devices mac] [--languages en,fr] [--caption on|off] [--bezel FILE]
-#                           [--appearance plan|light|dark] [--header|--no-header] [--out DIR]
-#                           [--compose-only] [--skip-build]
+#   scripts/store-assets.sh --out DIR [--devices mac] [--languages en,fr] [--caption on|off] [--bezel FILE]
+#                           [--appearance plan|light|dark] [--header|--no-header] [--compose-only] [--skip-build]
 #
 #   --devices      Device ids from Shots.json, comma-separated (default mac). mac is captured from the app's own
 #                  window. The others (iphone-6.3, iphone-6.9, ipad-13, duo-outer, duo-inner) run the StoreShots UI
@@ -15,12 +14,13 @@
 #   --bezel        A bezel description (see StoreTools/README.md); default none.
 #   --appearance   plan: each moment in the appearance Shots.json gives it (default); light or dark: all in one.
 #   --header       Also render the product page header, light and dark (default, with --devices mac); --no-header not.
-#   --out          Where the pictures go (default: scratch/store/out in the main checkout).
+#   --out          Where the pictures go, and the builds under OUT/build; required. Nothing is written anywhere else.
 #   --compose-only Compose again from the captures of an earlier run, for another caption or bezel choice.
-#   --skip-build   Use the app and the composer as last built.
+#   --skip-build   Use the app and the composer as last built into OUT/build.
 #
-# Writes OUT/<language>/<device>/01.png and so on, OUT/header/header-light.png and header-dark.png, and the raw
-# captures under OUT/captures/. Exits non-zero if anything fails or a picture is refused.
+# Writes OUT/<language>/<device>/01.png and so on, OUT/header/header-light.png and header-dark.png, the raw captures
+# under OUT/captures/, and the app and the composer, with their build logs, under OUT/build/. Exits non-zero if anything
+# fails or a picture is refused.
 #
 # On the Mac it runs only its own copy of the app, launched in the background by its own path, and quits it by its
 # process id. On a simulator it installs its own build and launches that.
@@ -54,17 +54,16 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-# The folders, found from where this script is: this checkout, and the main checkout, whose scratch folder keeps the
-# pictures when this runs in a worktree.
+# The checkout, found from where this script is, and the folder the caller named for everything this writes.
+[ -n "$out" ] || { echo "store-assets: name the folder for the pictures with --out DIR (--help lists the options)" >&2; exit 2; }
 root="$(cd "$(dirname "$0")/.." && pwd)"
-main_checkout="$(git -C "$root" worktree list --porcelain | sed -n '1s/^worktree //p')"
-[ -n "$out" ] || out="$main_checkout/scratch/store/out"
 mkdir -p "$out"
 out="$(cd "$out" && pwd)"
 tools="$root/StoreTools"
 manifest="$tools/Shots.json"
 captions="$tools/Captions.xcstrings"
-build="$root/scratch/store-build"
+build="$out/build"
+mkdir -p "$build"
 [ -n "$header" ] || { case ",$devices," in *,mac,*) header=1 ;; *) header=0 ;; esac; }
 
 say() { echo "store-assets: $*"; }
@@ -76,12 +75,12 @@ if [ "$skip_build" -eq 0 ]; then
     if [ "$compose_only" -eq 0 ]; then
         say "building the Mac app"
         xcodebuild -project "$root/NineRings.xcodeproj" -scheme NineRings -configuration Debug -destination 'platform=macOS' \
-            -derivedDataPath "$build/app" CODE_SIGNING_ALLOWED=NO build > "$build-app.log" 2>&1 \
-            || { tail -30 "$build-app.log"; say "the app did not build (log: $build-app.log)"; exit 1; }
+            -derivedDataPath "$build/app" CODE_SIGNING_ALLOWED=NO build > "$build/app.log" 2>&1 \
+            || { tail -30 "$build/app.log"; say "the app did not build (log: $build/app.log)"; exit 1; }
     fi
     say "building the composer"
-    swift build --package-path "$tools" -c release --scratch-path "$build/tools" --product store-compose > "$build-tools.log" 2>&1 \
-        || { tail -30 "$build-tools.log"; say "the composer did not build"; exit 1; }
+    swift build --package-path "$tools" -c release --scratch-path "$build/tools" --product store-compose > "$build/tools.log" 2>&1 \
+        || { tail -30 "$build/tools.log"; say "the composer did not build"; exit 1; }
 fi
 compose() { "$composer_bin" "$@"; }
 
@@ -159,10 +158,10 @@ for device in "${device_list[@]}"; do
         if [ "$skip_build" -eq 0 ]; then
             say "building the app and StoreShots for $simulator"
             xcodebuild build -project "$root/NineRings.xcodeproj" -scheme NineRings -configuration Debug \
-                -destination "$destination" -derivedDataPath "$build/app" CODE_SIGNING_ALLOWED=NO > "$build-sim.log" 2>&1 \
+                -destination "$destination" -derivedDataPath "$build/app" CODE_SIGNING_ALLOWED=NO > "$build/sim.log" 2>&1 \
             && xcodebuild build-for-testing -project "$root/NineRings.xcodeproj" -scheme StoreShots -configuration Debug \
-                -destination "$destination" -derivedDataPath "$build/app" CODE_SIGNING_ALLOWED=NO >> "$build-sim.log" 2>&1 \
-            || { tail -30 "$build-sim.log"; say "the build for $simulator failed"; failures=$((failures + 1)); continue; }
+                -destination "$destination" -derivedDataPath "$build/app" CODE_SIGNING_ALLOWED=NO >> "$build/sim.log" 2>&1 \
+            || { tail -30 "$build/sim.log"; say "the build for $simulator failed"; failures=$((failures + 1)); continue; }
         fi
         # One simulator at a time: boot this one if it is not running, and shut down only what was booted here.
         if ! xcrun simctl list devices booted | grep -qF -- "    $simulator ("; then
@@ -236,7 +235,7 @@ page="$out/index.html"
     echo '<h1>Nine Rings: App Store pictures</h1><p>Each picture links to the file at full size.</p>'
     languages_found=(); for dir in "$out"/*/; do
         name="$(basename "$dir")"
-        case "$name" in captures|header|preview) ;; *) languages_found+=("$name") ;; esac
+        case "$name" in build|captures|header|preview) ;; *) languages_found+=("$name") ;; esac
     done
     if [ -d "$out/preview" ]; then
         echo '<h2>Preview videos (made by scripts/store-preview.sh)</h2><table><tr>'
