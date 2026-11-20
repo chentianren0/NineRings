@@ -13,8 +13,8 @@ import Testing
     private let cloud: RecordStore
 
     init() throws {
-        device = RecordStore(container: try RecordStore.deviceContainer(in: .memory))
-        cloud = RecordStore(container: try RecordStore.cloudContainer(in: .memory, environment: .development))
+        device = .heldBySuite(try RecordStore.deviceContainer(in: .memory))
+        cloud = .heldBySuite(try RecordStore.cloudContainer(in: .memory, environment: .development))
     }
 
     private func play(_ seconds: Double, id: UUID = UUID(), moves: Int = 341) -> PlayRecord {

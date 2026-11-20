@@ -21,8 +21,8 @@ import Testing
 /// The orders include purges, resets of encrypted data, zones found missing, expired reports of deletions, two
 /// creations of a zone at the same time, starts from nothing, relaunches and crashes in the middle of a send, changes
 /// of account while the app runs and while it does not, a full storage, lost and late answers, saves refused as
-/// unknown after a clearing elsewhere, failed writes of fetched changes, backups brought back, and apps deleted and
-/// installed fresh, from nothing or from another device's backup. A failure names its
+/// unknown after a clearing elsewhere, a clearing right after a start from nothing, failed writes of fetched changes,
+/// backups brought back, and apps deleted and installed fresh, from nothing or from another device's backup. A failure names its
 /// seed, which replays the same order. The ways where Apple documents nothing come from the seed: the three that matter
 /// most from its lowest bits, so that the seeds go through every combination (old deletions from nothing, a device's own
 /// save fetched before its answer, a lost answer whose save landed), and the rest drawn from it.
@@ -242,6 +242,12 @@ final class RandomOrder {
             device.syncFully()
         case 102:
             device.failsNextWriteOfFetchedChanges = true
+        case 107:
+            // A device starts from nothing and is cleared before it has sent again: its plays in iCloud are sent then,
+            // and the clearing reaches them too (section 7, rule 7).
+            device.discardEngineState()
+            device.clearHistory()
+            device.syncFully()
         case 103:
             if let backup = try? device.backUp() {
                 backups.append((device.name, backup))

@@ -14,7 +14,7 @@ import Testing
     private let cloud: RecordStore
 
     init() throws {
-        cloud = RecordStore(container: try RecordStore.cloudContainer(in: .memory, environment: .development))
+        cloud = .heldBySuite(try RecordStore.cloudContainer(in: .memory, environment: .development))
     }
 
     /// One installation of the app: its device's store, and its toy as the screen plays it.

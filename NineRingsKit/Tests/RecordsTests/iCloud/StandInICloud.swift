@@ -320,13 +320,15 @@ final class StandInICloud {
         zone.changes[index].answered = true
     }
 
-    /// The device's engine goes back to a state from a backup, which knows none of the answers it handled since: from
-    /// then on its own saves come back to it, as any save whose answer it never handled.
-    func forgetAnswers(device: String) {
+    /// The device's engine goes back to a state from a backup, which knows nothing it did since: from then on its
+    /// earlier saves come back to it, as any save whose answer it never handled, and its earlier changes of zones are
+    /// reported to it, as another device's.
+    func forgetOwnChanges(device: String) {
         for database in databases.values {
             for zone in database.zones.values {
                 for index in zone.changes.indices where zone.changes[index].by == device { zone.changes[index].answered = false }
             }
+            for index in database.log.indices where database.log[index].by == device { database.log[index].by = nil }
         }
     }
 
@@ -406,9 +408,13 @@ final class StandInICloud {
 
     private func cloudRecord(_ stored: Stored, zone: Zone) -> CloudRecord {
         let fields = SystemFields(zone: zone.name, name: stored.name, tag: stored.tag)
+        // Sorted keys, so that the same fields are the same bytes each time: without them, JSONEncoder now and then
+        // writes the keys in another order.
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
         return CloudRecord(
             type: stored.type, zone: zone.name, name: stored.name, changeTag: stored.tag,
-            systemFields: try? JSONEncoder().encode(fields), format: stored.format, payload: stored.payload
+            systemFields: try? encoder.encode(fields), format: stored.format, payload: stored.payload
         )
     }
 

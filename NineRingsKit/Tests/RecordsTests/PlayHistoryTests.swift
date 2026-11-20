@@ -12,7 +12,7 @@ import Testing
     private let store: RecordStore
 
     init() throws {
-        store = RecordStore(container: try RecordStore.deviceContainer(in: .memory))
+        store = .heldBySuite(try RecordStore.deviceContainer(in: .memory))
     }
 
     private var context: ModelContext { store.container.mainContext }

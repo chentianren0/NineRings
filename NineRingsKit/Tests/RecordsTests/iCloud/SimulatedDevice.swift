@@ -333,7 +333,7 @@ final class SimulatedDevice: StandInEngineDelegate {
         lookAtShownPlays()
         watcher.lost(plays: playsICloudLacks)
         watcher.restored(device: name)
-        cloud.forgetAnswers(device: name)
+        cloud.forgetOwnChanges(device: name)
         try Backup.copy(from: backup, into: container)
         let outer = leaving
         leaving = .any
