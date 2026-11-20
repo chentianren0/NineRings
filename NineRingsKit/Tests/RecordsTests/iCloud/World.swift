@@ -22,9 +22,17 @@ final class World {
 
     init(seed: UInt64 = 1, cloud choices: StandInICloud.Choices = .init(), engine: StandInEngine.Choices = .init()) {
         cloud = StandInICloud(choices: choices, seed: seed)
-        cloud.zonePurged = { [watcher] in watcher.purgedInICloud() }
         random = SharedRandom(seed: seed)
         engineChoices = engine
+        cloud.zoneWent = { [unowned self] reason in
+            switch reason {
+            case .purged?, .deleted?: watcher.purgedInICloud()
+            case .encryptedDataReset?, nil: watcher.lostInICloud(keeping: devices.reduce(into: []) { $0.formUnion($1.playsHeld) })
+            }
+        }
+        watcher.unsentElsewhere = { [unowned self] device in
+            devices.filter { $0.name != device }.reduce(into: []) { $0.formUnion($1.playsNeverSent) }
+        }
     }
 
     /// A new device, signed in to `account`, launched for the first time; or set up from `backup`, a copy of another
@@ -45,7 +53,7 @@ final class World {
     /// Takes `device` out of the world: it is no longer settled or checked, as an app that was deleted. The plays it held
     /// that had not reached iCloud are lost with it.
     func remove(_ device: SimulatedDevice) {
-        watcher.lost(plays: device.unsentPlays)
+        watcher.lost(plays: device.playsICloudLacks)
         devices.removeAll { $0 === device }
     }
 

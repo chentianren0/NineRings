@@ -56,9 +56,9 @@ final class StandInICloud {
     var choices: Choices
     /// Where a trace of every save and deletion goes, for a test that looks into one order of events.
     var trace: ((String) -> Void)?
-    /// Told of every zone deleted with the reason *purged* or *deleted*: the person, or another copy of the app, deleted
-    /// the app's data there.
-    var zonePurged: (() -> Void)?
+    /// Told of every zone that goes with its records: with the reason of its deletion, or nil for a zone that went
+    /// without a reason anyone is told.
+    var zoneWent: ((ZoneDeletionReason?) -> Void)?
     /// Every request that reached iCloud, in order, whatever it came to: a record's save or deletion, or a zone's save,
     /// with the device that sent it. A round of settling that sends anything has not settled.
     private(set) var requests: [Request] = []
@@ -188,7 +188,7 @@ final class StandInICloud {
         let database = database(account)
         guard database.zones.removeValue(forKey: name) != nil else { return }
         database.gone[name] = reason
-        if reason != .encryptedDataReset { zonePurged?() }
+        zoneWent?(reason)
         database.seq += 1
         let reported = reason == .deleted || choices.lossesReportedAsDeletions
         database.log.append(Database.Change(seq: database.seq, zone: name, by: nil, deletion: reason, reported: reported))
@@ -209,6 +209,7 @@ final class StandInICloud {
         let database = database(account)
         guard database.zones.removeValue(forKey: name) != nil else { return }
         database.gone[name] = .some(nil)
+        zoneWent?(nil)
     }
 
     /// Every report of a zone's deletion expires (open point 13).
