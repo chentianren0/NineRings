@@ -83,9 +83,9 @@ final class StandInEngine {
         var reportsChangeWhileNotRunning = true
         /// Whether the engine sends a save whose answer was lost again by itself (source 51).
         var resendsLostAnswers = true
-        /// How often the answer to a record's save is lost, from 0 to 1.
+        /// How often the answer to a record's save or deletion is lost, from 0 to 1.
         var answerLost = 0.0
-        /// How often a save whose answer is lost has landed.
+        /// How often a save or a deletion whose answer is lost has landed.
         var landsWhenAnswerLost = 0.5
         /// How often the answer to a send comes only after a later fetch (source 17).
         var answerComesLate = 0.0
@@ -296,6 +296,12 @@ final class StandInEngine {
         for id in batch.deletions {
             changesSent += 1
             sentSomething = true
+            if random.chance(choices.answerLost) {
+                if random.chance(choices.landsWhenAnswerLost) { _ = cloud.delete(id, account: account, device: device) }
+                answer.failedDeletions.append(FailedDeletion(id: id, reason: .answerLost))
+                if choices.resendsLostAnswers { kept.append(.delete(id)) }
+                continue
+            }
             switch cloud.delete(id, account: account, device: device) {
             case .deleted: answer.deleted.append(id)
             case .zoneGone(let gone): answer.failedDeletions.append(FailedDeletion(id: id, reason: .zoneGone(gone)))

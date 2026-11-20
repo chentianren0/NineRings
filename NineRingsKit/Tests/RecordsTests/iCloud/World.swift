@@ -22,6 +22,7 @@ final class World {
 
     init(seed: UInt64 = 1, cloud choices: StandInICloud.Choices = .init(), engine: StandInEngine.Choices = .init()) {
         cloud = StandInICloud(choices: choices, seed: seed)
+        cloud.zonePurged = { [watcher] in watcher.purgedInICloud() }
         random = SharedRandom(seed: seed)
         engineChoices = engine
     }
@@ -47,12 +48,13 @@ final class World {
     }
 
     /// Lets every device come to the front, sync, hear its late answers, take toys up at calm moments and have its
-    /// sending moments, round after round, until a round changes nothing. With `answeringOffers`, every offer is
-    /// answered that way: Play That One when false.
+    /// sending moments, round after round, until a round changes nothing and sends nothing to iCloud. With
+    /// `answeringOffers`, every offer is answered that way: Play That One when false.
     @discardableResult
     func settle(answeringOffers keepThisOne: Bool? = nil, rounds: Int = 40) -> Bool {
         for _ in 0..<rounds {
             let before = look()
+            let requestsBefore = cloud.requests.count
             for device in devices {
                 device.cameToFront()
                 device.syncFully()
@@ -62,7 +64,13 @@ final class World {
                 device.toyChanged()
                 device.syncFully()
             }
-            if look() == before, devices.allSatisfy(\.isSettled) { return true }
+            let sent = cloud.requests[requestsBefore...].filter { request in
+                // Accepted (section 16): a toy refused without its record, which no fetch brings, is sent again.
+                !(request.name == CloudRecord.toyName && devices.contains {
+                    $0.name == request.device && $0.toyRefusedWithoutRecord && $0.toySide.isChanged
+                })
+            }
+            if look() == before, sent.isEmpty, devices.allSatisfy(\.isSettled) { return true }
         }
         return false
     }
@@ -119,6 +127,21 @@ final class World {
     }
 
     // MARK: The checks
+
+    /// What the ledger of plays finds at the end, once the devices have settled: a play finished under the person's
+    /// account that iCloud lacks, though no clearing, purge or loss the design lets go took it since (failure 1); and,
+    /// with `clearingsHold`, for an order in which no case the design accepts can bring a cleared play back, a cleared
+    /// play that iCloud holds again (failure 3). Only when the person's devices agree on one zone.
+    func playsLostOrBack(clearingsHold: Bool) -> [String] {
+        guard let zone = personsZone, cloud.hasZone(zone, account: World.person) else { return [] }
+        let inICloud = Set(cloud.records(zone: zone, account: World.person).compactMap { $0.playID?.uuidString })
+        var problems = watcher.playsLost(account: World.person, inICloud: inICloud).map { "the play \($0.prefix(8)) was lost" }
+        if clearingsHold, cloud.zoneNames(account: World.person).count == 1 {
+            watcher.tally.count("checked that no cleared play came back")
+            problems += watcher.clearedPlaysBack(inICloud: inICloud).map { "the cleared play \($0.prefix(8)) came back" }
+        }
+        return problems
+    }
 
     /// What breaks the agreement of the person's devices once they have all synced and had their sending moments: every
     /// device signed in to the person's account uses the same zone, which exists, shows the history iCloud holds there,

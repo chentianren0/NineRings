@@ -169,6 +169,57 @@ final class Watcher {
     func note(_ problem: String) {
         problems.append(problem)
     }
+
+    // MARK: The ledger of plays (failures 1 and 3)
+
+    /// A counter that orders what the ledger notes.
+    private var ledgerMoment = 0
+    /// When each play was last finished on a device.
+    private var finishedAt: [String: Int] = [:]
+    /// When a clearing last took each play away: the clearing device showed it.
+    private var clearedAt: [String: Int] = [:]
+    /// When a device last lost each play with data the design lets go: in a purge it was told of, or, while the play
+    /// had not reached iCloud, with another account's data, a backup brought back, or an app that was deleted.
+    private var lostAt: [String: Int] = [:]
+    /// When the app's data was last deleted from iCloud.
+    private var purgedAt = 0
+
+    func finished(play name: String) {
+        ledgerMoment += 1
+        finishedAt[name] = ledgerMoment
+    }
+
+    func cleared(plays: Set<String>) {
+        ledgerMoment += 1
+        for name in plays { clearedAt[name] = ledgerMoment }
+    }
+
+    func lost(plays: Set<String>) {
+        ledgerMoment += 1
+        for name in plays { lostAt[name] = ledgerMoment }
+    }
+
+    func purgedInICloud() {
+        ledgerMoment += 1
+        purgedAt = ledgerMoment
+    }
+
+    /// The plays `account`'s iCloud lacks at the end, of those `inICloud` names: finished under that account, and since
+    /// their last finish not cleared, not lost with data the design lets go, and not deleted with the app's data.
+    func playsLost(account: String, inICloud: Set<String>) -> [String] {
+        finishedAt.compactMap { name, finished in
+            guard owner[name] == account, !inICloud.contains(name), finished > purgedAt,
+                  finished > clearedAt[name] ?? 0, finished > lostAt[name] ?? 0 else { return nil }
+            return name
+        }.sorted()
+    }
+
+    /// The plays a clearing took away, not finished again since, that `inICloud` names.
+    func clearedPlaysBack(inICloud: Set<String>) -> [String] {
+        clearedAt.compactMap { name, cleared in
+            inICloud.contains(name) && (finishedAt[name] ?? 0) < cleared ? name : nil
+        }.sorted()
+    }
 }
 
 /// One simulated device: its own store in memory, its toy as a person plays it, the rules over the store, and a stand-in
@@ -217,6 +268,12 @@ final class SimulatedDevice: StandInEngineDelegate {
     /// without such records until its engine next starts from nothing (section 16): it joins a zone whose records its
     /// engine had fetched while it used another, or a play it cleared comes back and its deletion is answered afterwards.
     private(set) var recordsNotApplied: Set<RecordID> = []
+    /// The plays the history showed at the last look, to tell which leave it, and why.
+    private var shownPlays: Set<UUID> = []
+    /// Why shown plays may leave the history during the event under way.
+    private var leaving = Leaving.none
+    /// The zone note when the latest fetch began.
+    private var noteWhenFetchBegan: ZoneNote?
     /// Where a trace of every call goes, for a test that looks into one order of events.
     var trace: ((String) -> Void)?
     /// Whether the engine is to be offline.
@@ -245,8 +302,14 @@ final class SimulatedDevice: StandInEngineDelegate {
     /// The device is restored from `backup`, a copy of a store, and the app starts again.
     func restore(from backup: ModelContainer) throws {
         engine.delegate = nil
+        lookAtShownPlays()
+        watcher.lost(plays: unsentPlays)
         try Backup.copy(from: backup, into: container)
+        let outer = leaving
+        leaving = .any
         launch()
+        lookAtShownPlays()
+        leaving = outer
     }
 
     /// A copy of the device's store, as a device backup keeps it.
@@ -259,7 +322,7 @@ final class SimulatedDevice: StandInEngineDelegate {
     // MARK: The app
 
     /// The app starts: the rules over the store, the toy from it, and an engine from the state saved last; then it asks
-    /// for the account's id and a fetch.
+    /// for the account's id and a fetch. As the app's launch row says, the toy is not kept until it next changes.
     func launch() {
         sync = ICloudSync(
             store: RecordStore(container: container), madeOn: kind, appVersion: "2.0",
@@ -271,7 +334,6 @@ final class SimulatedDevice: StandInEngineDelegate {
             play = PlayState()
         }
         seedPlayID()
-        _ = must { try sync.keep(play.snapshot, at: clock.now) }
         let saved = must { try sync.engineState() } ?? nil
         wantsAccount = false
         wantsFetch = false
@@ -362,7 +424,8 @@ final class SimulatedDevice: StandInEngineDelegate {
     func answerAccountQuestion() {
         wantsAccount = false
         let answer: AccountAnswer
-        if random.chance(accountQuestionFails) {
+        if !isOnline || random.chance(accountQuestionFails) {
+            // `userRecordID()` fails without a network.
             answer = .failed
         } else if let account {
             answer = .account(account)
@@ -370,9 +433,12 @@ final class SimulatedDevice: StandInEngineDelegate {
             answer = .noAccount
         }
         trace?("\(name) asks for the account: \(answer)")
-        let result = must { try sync.accountAnswered(answer) }
-        if result?.replacedToy != nil, appliedChangesBeforeConfirmation { lostFetchedChangesWithAnotherAccount = true }
-        apply(result)
+        let named: String? = if case .account(let account) = answer { account } else { nil }
+        namingAccount(named) {
+            let result = must { try sync.accountAnswered(answer) }
+            if result?.replacedToy != nil, appliedChangesBeforeConfirmation { lostFetchedChangesWithAnotherAccount = true }
+            apply(result)
+        }
     }
 
     /// The app asks the engine to fetch, as one request.
@@ -384,7 +450,7 @@ final class SimulatedDevice: StandInEngineDelegate {
         if case .zones(let errors)? = outcome.error {
             userDeleted = errors.filter { $0.value == .zoneGone(.userDeletedZone) }.map(\.key)
         }
-        watchingPurges(userDeleted: userDeleted) {
+        watchingPurges(userDeleted: userDeleted, inFetch: true) {
             apply(must {
                 try sync.fetchRequestReturned(request, error: outcome.error, pendingZoneSaves: Set(engine.state.pendingZoneSaves))
             })
@@ -441,6 +507,8 @@ final class SimulatedDevice: StandInEngineDelegate {
         guard let current = play.play else { return }
         let finished = current.finished(in: play.own.state, at: clock.tick())
         apply(must { try sync.finished(finished) })
+        watcher.finished(play: finished.playID.uuidString)
+        trace?("\(name) finished the play \(finished.playID.uuidString.prefix(8)), noted \(notedAccount ?? "none")")
         noteOwnership()
         let before = play.snapshot
         play.reset()
@@ -449,7 +517,9 @@ final class SimulatedDevice: StandInEngineDelegate {
     }
 
     func clearHistory() {
-        apply(must { try sync.clearHistory() })
+        watcher.cleared(plays: Set(shownPlayIDs.map(\.uuidString)))
+        trace?("\(name) clears \(shownPlayIDs.map { $0.uuidString.prefix(8) }.sorted())")
+        allowingLeaving(.any) { apply(must { try sync.clearHistory() }) }
     }
 
     /// The person picks the device up: the app comes to the front and syncs, the toy is taken up at the calm moment, and
@@ -548,11 +618,20 @@ final class SimulatedDevice: StandInEngineDelegate {
             case .signOut: watcher.tally.count("engine reported a sign-out")
             case .switchAccounts: watcher.tally.count("engine reported a switch")
             }
-            let removed = must { try sync.accountChanged(change) }
-            if removed?.replacedToy != nil, appliedChangesBeforeConfirmation { lostFetchedChangesWithAnotherAccount = true }
-            apply(removed)
+            let named: String? = switch change {
+            case .signIn(let account), .switchAccounts(_, let account): account
+            case .signOut: nil
+            }
+            namingAccount(named) {
+                let removed = must { try sync.accountChanged(change) }
+                if removed?.replacedToy != nil, appliedChangesBeforeConfirmation { lostFetchedChangesWithAnotherAccount = true }
+                apply(removed)
+            }
             noteOwnership()
         case .willFetch(let manual):
+            noteWhenFetchBegan = zoneNote
+            // A fetch from nothing brings every record again.
+            if engine.state.databaseToken == nil { recordsNotApplied = [] }
             sync.fetchBegan(manual: manual)
         case .databaseChanged(let changes):
             if !sync.run.accountConfirmed { appliedChangesBeforeConfirmation = true }
@@ -571,14 +650,14 @@ final class SimulatedDevice: StandInEngineDelegate {
                 if zone != used || entries[id]?.sync == .cleared { recordsNotApplied.insert(RecordID(zone: zone, name: record.name)) }
             }
             if changes.records.contains(where: \.isToy) { toyRefusedWithoutRecord = false }
-            apply(must { try sync.fetched(changes) })
+            allowingLeaving(.these(Set(changes.deletions.compactMap(\.id.playID)))) { apply(must { try sync.fetched(changes) }) }
             tallyToy(before, toySide, arrived: changes.records.contains(where: \.isToy))
             watcher.tally.count("play arrived", changes.records.count { $0.type == CloudRecord.finishedPlayType })
             watcher.tally.count("deletion arrived", changes.deletions.count)
             noteOwnership()
         case .zoneFetchEnded(let zone, let error):
             if error != nil { watcher.tally.count("zone's fetch ended with an error") }
-            watchingPurges(userDeleted: error == .zoneGone(.userDeletedZone) ? [zone] : []) {
+            watchingPurges(userDeleted: error == .zoneGone(.userDeletedZone) ? [zone] : [], inFetch: true) {
                 apply(must { try sync.zoneFetchEnded(zone: zone, error: error) })
             }
         case .didFetch(let manual):
@@ -590,7 +669,8 @@ final class SimulatedDevice: StandInEngineDelegate {
             let before = toySide
             let userDeleted = changes.failedSaves.filter { $0.reason == .zoneGone(.userDeletedZone) }.map(\.id.zone)
                 + changes.failedDeletions.filter { $0.reason == .zoneGone(.userDeletedZone) }.map(\.id.zone)
-            watchingPurges(userDeleted: userDeleted) { apply(must { try sync.sent(changes) }) }
+            let refusedAsUnknown = Set(changes.failedSaves.filter { $0.reason == .unknownItem }.compactMap(\.id.playID))
+            watchingPurges(userDeleted: userDeleted, alsoLeaving: refusedAsUnknown) { apply(must { try sync.sent(changes) }) }
             let toyRefused = changes.failedSaves.contains { failure in
                 if case .refused(let record) = failure.reason { failure.id.isToy && record != nil } else { false }
             }
@@ -675,12 +755,16 @@ final class SimulatedDevice: StandInEngineDelegate {
 
     // MARK: Inside
 
-    /// Runs `body`, an event that may make the device handle a purge, and tells the watcher if it did.
     /// Runs `body`, an event or an answer, and tells the watcher of a purge the device was told of: a deletion with the
     /// reason *purged* or *deleted* that counts for it by section 9's rule (a zone higher than its note's, or its note's
     /// zone while not yet marked deleted), or `userDeletedZone` for the zone it uses. The watcher learns of it from what
-    /// the device was told, not from what the rules made of it.
-    private func watchingPurges(deleted: [ZoneDeletion] = [], userDeleted zones: [String] = [], _ body: () -> Void) {
+    /// the device was told, not from what the rules made of it; and in a fetch, also from iCloud's side: an error for the
+    /// zone the device used when the fetch began tells it of that zone's purge, even after it joined another. Shown plays
+    /// may leave the history for a purge it was told of, and for a save in `alsoLeaving` refused as unknown.
+    private func watchingPurges(
+        deleted: [ZoneDeletion] = [], userDeleted zones: [String] = [], inFetch: Bool = false,
+        alsoLeaving: Set<UUID> = [], _ body: () -> Void
+    ) {
         let plays = Set((must { try sync.store.allPlays() } ?? []).map(\.playID.uuidString))
         let toy = play.snapshot
         let note = zoneNote
@@ -692,11 +776,86 @@ final class SimulatedDevice: StandInEngineDelegate {
             }
             told = told || (note.knowledge != .deleted && zones.contains(note.zone.name))
         }
-        body()
-        if told {
+        var toldByTheFetchsZone: ZoneName?
+        if !told, inFetch, let began = noteWhenFetchBegan, began.knowledge != .deleted, zones.contains(began.zone.name),
+           !(note?.zone == began.zone && note?.knowledge == .deleted) {
+            toldByTheFetchsZone = began.zone
+        }
+        allowingLeaving(told || toldByTheFetchsZone != nil ? .any : .these(alsoLeaving), body)
+        if let began = toldByTheFetchsZone, let now = zoneNote, now.knowledge == .existing, now.zone > began {
+            // Accepted (section 16, open point 15): a purge met only as an error of the zone the device used, after it
+            // joined the next zone in the same fetch. It brings the purged data back.
+            watcher.tally.count("accepted: a purge met only as an error after joining the next zone")
+        } else if told || toldByTheFetchsZone != nil {
             watcher.tally.count("purge handled")
             watcher.handledPurge(on: name, plays: plays, toy: toy)
+            // Accepted (section 16): a device played on before it heard of the purge removes those plays too.
+            watcher.lost(plays: plays)
         }
+    }
+
+    /// Runs `body`, a report of the engine's or an answer of CloudKit's that names `account`. When the store's data
+    /// belongs to another account, the account table removes it: shown plays may leave the history, and those that had
+    /// not reached iCloud are lost.
+    private func namingAccount(_ account: String?, _ body: () -> Void) {
+        guard let account, let noted = notedAccount, noted != account else {
+            body()
+            return
+        }
+        let unsent = unsentPlays
+        allowingLeaving(.any, body)
+        if notedAccount == account {
+            watcher.lost(plays: unsent)
+            trace?("\(name) lost \(unsent.map { $0.prefix(8) }.sorted()) with \(noted)'s data")
+        }
+    }
+
+    /// Why shown plays may leave the history: for no cause, for a few named ones, or for any.
+    private enum Leaving {
+        case none
+        case these(Set<UUID>)
+        case any
+    }
+
+    /// Runs `body`, during which shown plays may leave the history for `cause`, and looks at the history before and
+    /// after.
+    private func allowingLeaving(_ cause: Leaving, _ body: () -> Void) {
+        lookAtShownPlays()
+        let outer = leaving
+        leaving = switch (outer, cause) {
+        case (.any, _), (_, .any): .any
+        case (.these(let a), .these(let b)): .these(a.union(b))
+        case (.none, let cause): cause
+        case (let outer, .none): outer
+        }
+        body()
+        lookAtShownPlays()
+        leaving = outer
+    }
+
+    /// Tells the watcher of the plays that left the history since the last look without a cause the design names: a
+    /// clearing here, a purge this device was told of, a deletion that arrived, a save refused as unknown, another
+    /// account's data, or a backup brought back (failure 5, and failures 1 and 3 on one device).
+    private func lookAtShownPlays() {
+        let now = shownPlayIDs
+        let left = shownPlays.subtracting(now)
+        shownPlays = now
+        guard !left.isEmpty else { return }
+        switch leaving {
+        case .any: return
+        case .these(let allowed) where left.isSubset(of: allowed): return
+        case .these, .none: watcher.note("\(name): \(left.count) shown plays left the history with no cause the design names")
+        }
+    }
+
+    /// The plays the history shows, readable or not.
+    private var shownPlayIDs: Set<UUID> {
+        Set((must { try sync.store.allPlays() } ?? []).filter { $0.sync != .cleared }.map(\.playID))
+    }
+
+    /// The plays not yet received by iCloud.
+    private var unsentPlays: Set<String> {
+        Set((must { try sync.store.allPlays() } ?? []).filter { $0.sync == .unsent || $0.sync == .sent }.map(\.playID.uuidString))
     }
 
     /// Tells the watcher whose account the plays in the store belong to.
@@ -777,6 +936,7 @@ final class SimulatedDevice: StandInEngineDelegate {
         if result.changesHeldToy { wantsToLookAtTheHeldToy = true }
         if result.keepsBackgroundTime { keepsBackgroundTime = true }
         if result.endsBackgroundTime { keepsBackgroundTime = false }
+        lookAtShownPlays()
     }
 
     private func apply(_ requests: EngineRequests?) {

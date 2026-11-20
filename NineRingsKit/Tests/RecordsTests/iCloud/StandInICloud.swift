@@ -56,6 +56,19 @@ final class StandInICloud {
     var choices: Choices
     /// Where a trace of every save and deletion goes, for a test that looks into one order of events.
     var trace: ((String) -> Void)?
+    /// Told of every zone deleted with the reason *purged* or *deleted*: the person, or another copy of the app, deleted
+    /// the app's data there.
+    var zonePurged: (() -> Void)?
+    /// Every request that reached iCloud, in order, whatever it came to: a record's save or deletion, or a zone's save,
+    /// with the device that sent it. A round of settling that sends anything has not settled.
+    private(set) var requests: [Request] = []
+
+    struct Request: Equatable {
+        var device: String?
+        var zone: String
+        /// The record's name; nil for a zone's own save.
+        var name: String?
+    }
     /// Draws for the choices given as a share.
     var random: SeededRandom
 
@@ -158,6 +171,7 @@ final class StandInICloud {
     /// Saves the zone named `name`: makes it if it is missing, and changes nothing if it exists.
     @discardableResult
     func saveZone(_ name: String, account: String, device: String?) -> ZoneSaveOutcome {
+        requests.append(Request(device: device, zone: name, name: nil))
         let database = database(account)
         guard database.zones[name] == nil else { return .saved }
         guard !database.isFull else { return .storageFull }
@@ -174,6 +188,7 @@ final class StandInICloud {
         let database = database(account)
         guard database.zones.removeValue(forKey: name) != nil else { return }
         database.gone[name] = reason
+        if reason != .encryptedDataReset { zonePurged?() }
         database.seq += 1
         let reported = reason == .deleted || choices.lossesReportedAsDeletions
         database.log.append(Database.Change(seq: database.seq, zone: name, by: nil, deletion: reason, reported: reported))
@@ -273,6 +288,7 @@ final class StandInICloud {
     /// Saves `record` for the device `device`. The save counts as answered once the device has handled its answer
     /// (``markAnswered(_:account:device:)``).
     func save(_ record: RecordToSend, account: String, device: String?) -> SaveOutcome {
+        requests.append(Request(device: device, zone: record.zone, name: record.name))
         let database = database(account)
         guard let zone = database.zones[record.zone] else { return .zoneGone(zoneError(record.zone, in: database)) }
         guard !database.isFull else { return .storageFull }
@@ -311,6 +327,7 @@ final class StandInICloud {
 
     /// Deletes the record `id`, for the device `device`. Deleting a record that is not there succeeds (probe 6).
     func delete(_ id: RecordID, account: String, device: String?) -> DeletionOutcome {
+        requests.append(Request(device: device, zone: id.zone, name: id.name))
         let database = database(account)
         guard let zone = database.zones[id.zone] else { return .zoneGone(zoneError(id.zone, in: database)) }
         guard zone.records.removeValue(forKey: id.name) != nil else { return .deleted }

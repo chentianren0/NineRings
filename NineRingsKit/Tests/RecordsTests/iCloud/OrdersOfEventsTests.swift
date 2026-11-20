@@ -5,9 +5,16 @@ import Testing
 /// The checks of docs/icloud.md section 14, over many orders of events that a seeded generator chooses:
 /// - no toy is replaced except by taking up or by the person's choice;
 /// - all devices end with the same history and the same toy, in one zone;
+/// - no finished play is lost, unless a clearing, a purge or the loss of a device's data the design lets go took it;
+/// - no shown play leaves a device without a cause the design names: a clearing there, a purge it was told of, a
+///   deletion that arrived, a save refused as unknown, another account's data, or a backup brought back;
 /// - nothing that a purge removed is sent again;
 /// - nothing of one account reaches another account's iCloud;
-/// - nothing stays stuck: once every device has synced and had its sending moments, nothing is left marked.
+/// - nothing stays stuck: once every device has synced and had its sending moments, nothing is left marked, and a
+///   round of settling sends nothing.
+///
+/// Calm orders, without lost answers, crashes in a send, zone events, changes of account or restores, where no case the
+/// design accepts can bring a cleared play back, also check that none comes back.
 ///
 /// The orders include purges, resets of encrypted data, zones found missing, expired reports of deletions, two
 /// creations of a zone at the same time, starts from nothing, relaunches and crashes in the middle of a send, changes
@@ -19,14 +26,22 @@ import Testing
 @Suite struct OrdersOfEventsTests {
     @Test(arguments: (0..<128).map { UInt64($0) })
     func theChecksHold(seed: UInt64) throws {
-        let order = try RandomOrder(seed: seed)
+        try check(RandomOrder(seed: seed))
+    }
+
+    @Test(arguments: (0..<32).map { UInt64($0) })
+    func noClearedPlayComesBackInCalmOrders(seed: UInt64) throws {
+        try check(RandomOrder(seed: seed, calm: true))
+    }
+
+    private func check(_ order: RandomOrder) {
         order.run(steps: 160)
         let settled = order.finish()
-        let problems = order.world.watcher.problems
+        let problems = order.world.watcher.problems + order.world.playsLostOrBack(clearingsHold: order.calm)
         let disagreements = order.world.disagreements()
-        #expect(settled, "seed \(seed) did not settle: \(order.choices)")
-        #expect(problems.isEmpty, "seed \(seed): \(problems) \(order.choices)")
-        #expect(disagreements.isEmpty, "seed \(seed): \(disagreements) \(order.choices) \(order.world.watcher.tally.counts)")
+        #expect(settled, "seed \(order.seed) did not settle: \(order.choices)")
+        #expect(problems.isEmpty, "seed \(order.seed): \(problems) \(order.choices)")
+        #expect(disagreements.isEmpty, "seed \(order.seed): \(disagreements) \(order.choices) \(order.world.watcher.tally.counts)")
     }
 }
 
@@ -39,14 +54,16 @@ import Testing
     func sweep() throws {
         let bounds = (ProcessInfo.processInfo.environment["ORDERS_SWEEP"] ?? "").split(separator: "-").compactMap { UInt64($0) }
         guard bounds.count == 2 else { return }
+        let calm = ProcessInfo.processInfo.environment["ORDERS_CALM"] != nil
         var failing = 0
         var reached: [String: Int] = [:]
         for seed in bounds[0]..<bounds[1] {
-            let order = try RandomOrder(seed: seed)
+            let order = try RandomOrder(seed: seed, calm: calm)
             order.run(steps: 160)
             let settled = order.finish()
+            let problems = order.world.watcher.problems + order.world.playsLostOrBack(clearingsHold: calm)
+                + order.world.disagreements()
             for (what, count) in order.world.watcher.tally.counts { reached[what, default: 0] += count }
-            let problems = order.world.watcher.problems + order.world.disagreements()
             guard !settled || !problems.isEmpty else { continue }
             failing += 1
             print("seed \(seed): settled \(settled), \(problems)")
@@ -59,14 +76,14 @@ import Testing
     func trace() throws {
         guard let seed = ProcessInfo.processInfo.environment["ORDERS_TRACE"].flatMap({ UInt64($0) }) else { return }
         var lines: [String] = []
-        let order = try RandomOrder(seed: seed)
+        let order = try RandomOrder(seed: seed, calm: ProcessInfo.processInfo.environment["ORDERS_CALM"] != nil)
         order.trace = { lines.append($0) }
         for device in order.world.devices { device.trace = { lines.append($0) } }
         order.world.cloud.trace = { lines.append($0) }
         order.run(steps: 160)
         let settled = order.finish()
         lines.append("settled \(settled); \(order.choices)")
-        lines.append("problems \(order.world.watcher.problems + order.world.disagreements())")
+        lines.append("problems \(order.world.watcher.problems + order.world.playsLostOrBack(clearingsHold: order.calm) + order.world.disagreements())")
         for (what, count) in order.world.watcher.tally.counts.sorted(by: { $0.key < $1.key }) { lines.append("\(what): \(count)") }
         let file = URL.temporaryDirectory.appending(path: "orders-\(seed).txt")
         try lines.joined(separator: "\n").write(to: file, atomically: true, encoding: .utf8)
@@ -77,8 +94,11 @@ import Testing
 /// One order of events, chosen by a seed.
 @MainActor
 final class RandomOrder {
+    let seed: UInt64
     let world: World
     let random: SharedRandom
+    /// Whether the order is calm: no lost answers, crashes in a send, zone events, changes of account or restores.
+    let calm: Bool
     /// Whether accounts sign out, in again, and change, and whether the storage fills.
     let accountsChange: Bool
     let storageFills: Bool
@@ -86,7 +106,9 @@ final class RandomOrder {
     let zonesGo: Bool
     let choices: String
 
-    init(seed: UInt64) throws {
+    init(seed: UInt64, calm: Bool = false) throws {
+        self.seed = seed
+        self.calm = calm
         var draw = SeededRandom(seed: seed &* 0x2545_F491_4F6C_DD1D &+ 7)
         var cloud = StandInICloud.Choices()
         cloud.fetchFromNothingBringsOldDeletions = seed & 1 != 0
@@ -108,9 +130,14 @@ final class RandomOrder {
         engine.zoneFetchFails = draw.chance(0.2) ? 0.1 : 0
         engine.stateUpdateAfterChange = [0.0, 0.5, 1.0][Int.random(in: 0..<3, using: &draw)]
         engine.batchSize = [1, 3, 8][Int.random(in: 0..<3, using: &draw)]
-        accountsChange = draw.chance(0.4)
+        accountsChange = draw.chance(0.4) && !calm
         storageFills = draw.chance(0.3)
-        zonesGo = draw.chance(0.6)
+        zonesGo = draw.chance(0.6) && !calm
+        if calm {
+            engine.answerLost = 0
+            engine.landsWhenAnswerLost = 0
+            engine.zoneAnswerLost = 0
+        }
         world = World(seed: seed, cloud: cloud, engine: engine)
         random = world.random
         let kinds: [MadeOn] = [.iPhone, .iPad, .Mac]
@@ -118,7 +145,7 @@ final class RandomOrder {
             let device = try world.device("device \(index + 1)", kind: kinds[index])
             device.accountQuestionFails = draw.chance(0.2) ? 0.3 : 0
         }
-        choices = "\(cloud); \(engine); accounts change: \(accountsChange), storage fills: \(storageFills), zones go: \(zonesGo)"
+        choices = "\(calm ? "calm; " : "")\(cloud); \(engine); accounts change: \(accountsChange), storage fills: \(storageFills), zones go: \(zonesGo)"
     }
 
     /// `steps` things that happen, on any device, in an order the seed chooses.
@@ -151,7 +178,7 @@ final class RandomOrder {
         case 86..<89: device.engineFetchesByItself()
         case 89..<91: device.deliverLateAnswers()
         case 91..<93: device.relaunch()
-        case 93: device.crashDuringSend()
+        case 93: if calm { device.relaunch() } else { device.crashDuringSend() }
         case 94: device.discardEngineState()
         case 95..<97: device.isOnline.toggle()
         case 97:
