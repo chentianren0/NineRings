@@ -59,6 +59,7 @@ final class RandomOrder {
         engine.keepsZoneSaveAfterLostAnswer = draw.chance(0.5)
         engine.reportsSignInFromNothing = draw.chance(0.8)
         engine.accountReportComesFirst = draw.chance(0.5)
+        engine.reportsChangeWhileNotRunning = draw.chance(0.7)
         engine.requestFindsFetchUnderWay = draw.chance(0.3) ? 0.3 : 0
         engine.zoneFetchFails = draw.chance(0.2) ? 0.1 : 0
         engine.stateUpdateAfterChange = [0.0, 0.5, 1.0][Int.random(in: 0..<3, using: &draw)]
@@ -148,6 +149,14 @@ final class RandomOrder {
             if device.account != World.person { device.signIn(to: World.person) }
         }
         var settled = world.settle(answeringOffers: false)
+        // A device that applied fetched changes before its account was confirmed, and removed them with another
+        // account's data, lacks them until its engine next starts from nothing (section 16): it is given that start.
+        let lacking = world.devices.filter(\.lostFetchedChangesWithAnotherAccount)
+        if !lacking.isEmpty {
+            world.watcher.tally.count("accepted: fetched changes removed with another account's data")
+            for device in lacking { device.discardEngineState() }
+            settled = world.settle(answeringOffers: false)
+        }
         // A device that would give up a second zone without a report in one run keeps it as not known to exist until
         // its next launch (section 9): it is launched again, and only it.
         for _ in 0..<4 {

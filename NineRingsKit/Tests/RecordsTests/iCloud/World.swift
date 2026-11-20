@@ -62,7 +62,7 @@ final class World {
                 device.toyChanged()
                 device.syncFully()
             }
-            if look() == before, devices.allSatisfy(\.isUpToDate) { return true }
+            if look() == before, devices.allSatisfy(\.isSettled) { return true }
         }
         return false
     }
@@ -147,20 +147,18 @@ final class World {
             if sortedShown != history.plays || shown.unreadable != history.unreadable {
                 problems.append("\(device.name) shows \(shown.plays.count) plays and \(shown.unreadable) unread; iCloud holds \(history.plays.count) and \(history.unreadable)")
             }
-            if let toy, let kept = device.keptToy, !kept.isSameToy(as: toy.toy) {
-                problems.append("\(device.name) keeps another toy than iCloud's")
+            if device.toySide.isChanged, device.toyRefusedWithoutRecord {
+                // Accepted (section 16): CloudKit refused the toy's save without its record, and no fetch brings the toy,
+                // so the device tries again at most once a minute, and its toy does not reach iCloud.
+                watcher.tally.count("accepted: a toy refused without its record that no fetch brings")
+            } else {
+                if let toy, let kept = device.keptToy, !kept.isSameToy(as: toy.toy) {
+                    problems.append("\(device.name) keeps another toy than iCloud's")
+                }
+                if device.toySide.isChanged { problems.append("\(device.name) still marks the toy as changed") }
             }
             if device.toySide.held != nil { problems.append("\(device.name) still holds a toy") }
             if device.marksPlays { problems.append("\(device.name) still marks plays iCloud has not received") }
-            if device.toySide.isChanged {
-                if device.toyRefusedWithoutRecord, let toy, let kept = device.keptToy, kept.isSameToy(as: toy.toy) {
-                    // Accepted (section 16): CloudKit refused the toy's save without its record, and no fetch brings the
-                    // toy, so the device tries again at most once a minute; the toy in iCloud is already its own.
-                    watcher.tally.count("accepted: a toy refused without its record that no fetch brings")
-                } else {
-                    problems.append("\(device.name) still marks the toy as changed")
-                }
-            }
         }
         return problems
     }

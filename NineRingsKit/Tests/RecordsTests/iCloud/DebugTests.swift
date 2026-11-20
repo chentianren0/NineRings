@@ -24,7 +24,7 @@ import Testing
         }
         for device in order.world.devices {
             let entries = (try? device.sync.store.allPlays()) ?? []
-            print("PLAYS \(device.name) \(entries.map { "\($0.playID.uuidString.prefix(6)):\($0.sync)" }.sorted())")
+            print("PLAYS \(device.name) \(entries.map { "\($0.playID.uuidString.prefix(6)):\($0.sync):\($0.systemFieldsZone.map { String($0.prefix(14)) } ?? "nofields")" }.sorted())")
         }
         if let zone = order.world.personsZone {
             print("ICLOUD \(order.world.cloud.records(zone: zone, account: World.person).map { $0.name.prefix(6) })")

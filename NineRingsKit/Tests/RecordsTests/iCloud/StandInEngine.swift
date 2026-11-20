@@ -76,6 +76,11 @@ final class StandInEngine {
         /// Whether a report of the account comes before the first report of the database's zones, rather than after the
         /// first fetch's changes (open point 14).
         var accountReportComesFirst = true
+        /// Whether the engine reports a change of account made while the app was not running. Apple documents that it does
+        /// (source 4); the design does not rely on it, and confirms the account with CloudKit at each launch (section 8),
+        /// as for a state restored from a backup (open point 4). When it does not, the engine takes the current account
+        /// silently, with its state reset.
+        var reportsChangeWhileNotRunning = true
         /// Whether the engine sends a save whose answer was lost again by itself (source 51).
         var resendsLostAnswers = true
         /// How often the answer to a record's save is lost, from 0 to 1.
@@ -99,6 +104,7 @@ final class StandInEngine {
 
         var description: String {
             "sign-in from nothing: \(reportsSignInFromNothing), account first: \(accountReportComesFirst), "
+                + "reports changes while not running: \(reportsChangeWhileNotRunning), "
                 + "resends lost answers: \(resendsLostAnswers), answer lost: \(answerLost), answer late: \(answerComesLate), "
                 + "zone answer lost: \(zoneAnswerLost), request finds fetch: \(requestFindsFetchUnderWay), "
                 + "zone fetch fails: \(zoneFetchFails), batch: \(batchSize)"
@@ -138,7 +144,11 @@ final class StandInEngine {
             state.account = account
             if let account, choices.reportsSignInFromNothing { unreportedAccountChange = .signIn(account) }
         } else if state.account != account {
-            noticeChange(to: account)
+            if choices.reportsChangeWhileNotRunning {
+                noticeChange(to: account)
+            } else {
+                state = State(account: account)
+            }
         }
     }
 
@@ -372,7 +382,10 @@ final class StandInEngine {
     /// The state, as the engine hands it over.
     var serializedState: Data { (try? JSONEncoder().encode(state)) ?? Data() }
 
+    /// Hands the state to the delegate, unless a change of account is still to be reported: a state saved before that
+    /// report would lose it at the next launch.
     private func handOverState() {
+        guard unreportedAccountChange == nil else { return }
         delegate?.engine(self, handle: .stateUpdate(serializedState))
     }
 }

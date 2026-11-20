@@ -260,6 +260,29 @@ import Testing
         #expect(world.watcher.problems.isEmpty)
     }
 
+    /// The same, when the engine does not report the change, as for a state restored from a backup (open point 4): the
+    /// gate stays shut until CloudKit has named the account, even when the app fetches and the engine sends first.
+    @Test func anotherAccountUnreportedByTheEngineIsConfirmedBeforeAnythingIsSent() throws {
+        let world = World()
+        let (iPhone, _) = try twoSyncedDevices(world)
+        iPhone.move()
+        iPhone.finishPlay()
+        iPhone.engineChoices.reportsChangeWhileNotRunning = false
+        iPhone.signInWhileNotRunning(to: World.other)
+        iPhone.requestFetch()
+        iPhone.toyChanged()
+        iPhone.engineSends()
+        iPhone.requestFetch()
+        iPhone.engineSends()
+        for zone in world.cloud.zoneNames(account: World.other) {
+            #expect(world.cloud.records(zone: zone, account: World.other).isEmpty, "nothing before the account is confirmed")
+        }
+        iPhone.answerAccountQuestion()
+        #expect(iPhone.history.plays.isEmpty && iPhone.keptToy?.isUntouched == true)
+        world.settle()
+        #expect(world.watcher.problems.isEmpty)
+    }
+
     /// Two devices are set up from one backup: two devices with the same starting point, which nothing confuses.
     @Test func twoDevicesFromOneBackup() throws {
         let world = World()
@@ -627,18 +650,21 @@ import Testing
         let (iPhone, iPad) = try twoSyncedDevices(world)
         iPhone.engine.choices.answerLost = 1
         iPhone.engine.choices.landsWhenAnswerLost = 1
+        iPhone.engine.choices.resendsLostAnswers = false
         iPhone.move()
         iPhone.finishPlay()
         iPhone.putDown()
         iPhone.engine.choices.answerLost = 0
         let lost = try #require(iPhone.history.plays.first)
         #expect(try iPhone.sync.store.plays([lost.playID])[lost.playID]?.sync == .sent)
-        iPhone.engineSends()
-        #expect(!iPhone.toySide.isChanged && !iPhone.isOffered, "its own toy, recognised by its stamp")
         iPad.pickUp(moves: 0)
+        #expect(iPad.history.plays.contains(lost), "the save landed, and another device shows the play")
         iPhone.clearHistory()
         world.settle()
-        #expect(world.historyInICloud().plays.isEmpty && iPad.history.plays.isEmpty)
+        #expect(world.historyInICloud().plays.isEmpty && iPad.history.plays.isEmpty, "clearing reached the play that is sent")
+        iPhone.toyChanged()
+        iPhone.syncFully()
+        #expect(!iPhone.toySide.isChanged && !iPhone.isOffered, "its own toy, recognised by its stamp")
     }
 
     /// A save lands, its answer is lost, and the person plays on elsewhere: the first device finds its own stamp among

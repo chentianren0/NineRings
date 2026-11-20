@@ -203,6 +203,11 @@ final class SimulatedDevice: StandInEngineDelegate {
     /// Whether the last answer about the toy was a refusal without iCloud's record: the case the design accepts when no
     /// fetch brings the toy (section 16).
     private(set) var toyRefusedWithoutRecord = false
+    /// Whether, in this run, fetched changes were applied before the account was confirmed, and then removed with another
+    /// account's data: the case the design accepts, in which the device lacks them until its engine next starts from
+    /// nothing (section 16).
+    private(set) var lostFetchedChangesWithAnotherAccount = false
+    private var appliedChangesBeforeConfirmation = false
     /// Where a trace of every call goes, for a test that looks into one order of events.
     var trace: ((String) -> Void)?
     /// Whether the engine is to be offline.
@@ -263,7 +268,10 @@ final class SimulatedDevice: StandInEngineDelegate {
         wantsFetch = false
         wantsSend = false
         keepsBackgroundTime = false
+        appliedChangesBeforeConfirmation = false
+        lostFetchedChangesWithAnotherAccount = false
         if saved == nil, account != nil { watcher.tally.count("start from nothing at launch") }
+        trace?("\(name) launches, signed in to \(account ?? "none"), the engine's saved account \(saved.flatMap { try? JSONDecoder().decode(StandInEngine.State.self, from: $0) }.map { $0.account ?? "none" } ?? "no saved state")")
         engine = StandInEngine(cloud: cloud, device: name, savedState: saved, account: account, choices: engineChoices, seed: random.next())
         engine.isOnline = isOnline
         engine.delegate = self
@@ -313,22 +321,22 @@ final class SimulatedDevice: StandInEngineDelegate {
 
     /// The app answers what the rules asked, one thing: the question for the account, a fetch, or a send. Returns whether
     /// it did anything.
+    ///
+    /// It takes them in any order: CloudKit's first answer about the account may take longer than a fetch (source 58).
     @discardableResult
     func doWhatWasAsked() -> Bool {
-        if wantsAccount {
-            answerAccountQuestion()
-            return true
-        }
-        if wantsFetch {
-            requestFetch()
-            return true
-        }
+        var asked: [() -> Void] = []
+        if wantsAccount { asked.append(answerAccountQuestion) }
+        if wantsFetch { asked.append(requestFetch) }
         if wantsSend {
-            wantsSend = false
-            engineSends()
-            return true
+            asked.append { [self] in
+                wantsSend = false
+                engineSends()
+            }
         }
-        return false
+        guard !asked.isEmpty else { return false }
+        random.pick(asked)()
+        return true
     }
 
     /// The app asks CloudKit for the account's id, and hands the answer to the rules.
@@ -342,7 +350,10 @@ final class SimulatedDevice: StandInEngineDelegate {
         } else {
             answer = .noAccount
         }
-        apply(must { try sync.accountAnswered(answer) })
+        trace?("\(name) asks for the account: \(answer)")
+        let result = must { try sync.accountAnswered(answer) }
+        if result?.replacedToy != nil, appliedChangesBeforeConfirmation { lostFetchedChangesWithAnotherAccount = true }
+        apply(result)
     }
 
     /// The app asks the engine to fetch, as one request.
@@ -514,17 +525,21 @@ final class SimulatedDevice: StandInEngineDelegate {
             case .signOut: watcher.tally.count("engine reported a sign-out")
             case .switchAccounts: watcher.tally.count("engine reported a switch")
             }
-            apply(must { try sync.accountChanged(change) })
+            let removed = must { try sync.accountChanged(change) }
+            if removed?.replacedToy != nil, appliedChangesBeforeConfirmation { lostFetchedChangesWithAnotherAccount = true }
+            apply(removed)
             noteOwnership()
         case .willFetch(let manual):
             sync.fetchBegan(manual: manual)
         case .databaseChanged(let changes):
+            if !sync.run.accountConfirmed { appliedChangesBeforeConfirmation = true }
             watchingPurges { apply(must { try sync.databaseChanged(changes) }) }
         case .fetched(let changes):
             for record in changes.records where record.type == CloudRecord.finishedPlayType {
                 watcher.received(play: record.name, on: name)
             }
             let before = toySide
+            if !sync.run.accountConfirmed { appliedChangesBeforeConfirmation = true }
             if changes.records.contains(where: \.isToy) { toyRefusedWithoutRecord = false }
             apply(must { try sync.fetched(changes) })
             tallyToy(before, toySide, arrived: changes.records.contains(where: \.isToy))
@@ -609,6 +624,12 @@ final class SimulatedDevice: StandInEngineDelegate {
         return engine.state.databaseToken == cloud.database(account).seq && engine.state.zonesToFetch.isEmpty
     }
 
+    /// Whether the device has nothing more to do but wait: its engine is up to date, and its account is confirmed in this
+    /// run, unless it has none or CloudKit's answer always fails.
+    var isSettled: Bool {
+        isUpToDate && (account == nil || sync.run.accountConfirmed || accountQuestionFails >= 1)
+    }
+
     /// Whether the store marks anything as not yet received by iCloud.
     var hasMarks: Bool { marksPlays || toySide.isChanged }
 
@@ -621,16 +642,19 @@ final class SimulatedDevice: StandInEngineDelegate {
     // MARK: Inside
 
     /// Runs `body`, an event that may make the device handle a purge, and tells the watcher if it did.
+    /// The watcher learns of a purge from iCloud, not from the rules: the device came to mark as deleted a zone that the
+    /// person purged, or that another copy deleted.
     private func watchingPurges(_ body: () -> Void) {
         let plays = Set((must { try sync.store.allPlays() } ?? []).map(\.playID.uuidString))
         let toy = play.snapshot
         let before = zoneNote
         body()
-        if let after = zoneNote, after.knowledge == .deleted, after != before, (must { try sync.store.allPlays() } ?? []).isEmpty,
-           keptToy?.isUntouched ?? true {
-            watcher.tally.count(plays.isEmpty && toy.isUntouched ? "zone deleted" : "purge handled")
+        guard let after = zoneNote, after.knowledge == .deleted, after != before, let account = engine.state.account else { return }
+        switch cloud.database(account).gone[after.zone.name] ?? nil {
+        case .purged?, .deleted?:
+            watcher.tally.count("purge handled")
             watcher.handledPurge(on: name, plays: plays, toy: toy)
-        } else if let after = zoneNote, after.knowledge == .deleted, after != before {
+        default:
             watcher.tally.count("zone left, data kept")
         }
     }
