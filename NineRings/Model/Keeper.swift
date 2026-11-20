@@ -15,8 +15,8 @@ import Session
 /// - ``clearHistory()``: deleting every finished play.
 /// - ``clearingReachesOtherDevices``: whether clearing also deletes the plays on the person's other devices.
 ///
-/// Whatever changes the records sets ``history`` to what is kept, as `record(_:)` and ``clearHistory()`` do, so that the
-/// four stay true. `Player` uses the rest, `keptPlay()`, `keep(_:)` and `record(_:)`, as it always has.
+/// Whatever changes the records sets ``history`` to what is kept, as `record(_:)` and ``clearHistory()`` do, so that
+/// the four stay true. `Player` uses the rest, `keptPlay()`, `keep(_:)` and `record(_:)`, as it always has.
 ///
 /// It keeps the toy and the plays in memory, for this launch only: each launch starts with no toy kept and no plays.
 @MainActor
