@@ -36,7 +36,7 @@ let package = Package(
             dependencies: ["Puzzle", "Toy", "Motion"],
             swiftSettings: [.strictMemorySafety()]
         ),
-        // The kept toy and the records of finished plays, in SwiftData.
+        // The finished plays as values, and the sample plays for trying the app.
         .target(
             name: "Records",
             dependencies: ["Puzzle", "Session"],

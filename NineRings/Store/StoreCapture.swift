@@ -73,7 +73,7 @@ enum StoreCapture {
     }
 
     /// The player the arguments ask for, kept in `keeper`, or nil outside the mode. The launch keeps its records in
-    /// memory (`LaunchOptions.recordPlace`), so nothing the picture sets up reaches a file.
+    /// memory, so nothing the picture sets up reaches a file.
     static func player(keeper: Keeper) -> Player? {
         #if DEBUG
         guard let launch else { return nil }

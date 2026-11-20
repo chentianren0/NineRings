@@ -4,8 +4,7 @@ import Puzzle
 
 /// The person's toy as it is kept between launches: what brings it back, and the play in progress.
 ///
-/// It is written as JSON inside one stored field, so that it can change with the app without touching the stored
-/// schema; a change to what it holds raises ``format``. The rules it keeps:
+/// It is written as JSON; a change to what it holds raises ``format``. The rules it keeps:
 /// - It holds the arrangement the moves start from, the rings moved since then in order, the move on the slider when
 ///   it is anywhere but at the end of the last move made, the rings waiting their turn and whether Solve is under way,
 ///   the play in progress with its id and counts, and the journeys toward achievements under way.
