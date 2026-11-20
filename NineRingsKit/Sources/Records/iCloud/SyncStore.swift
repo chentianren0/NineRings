@@ -163,8 +163,10 @@ extension RecordStore {
         return side
     }
 
-    /// Writes `side` into the store's `KeptToy`, making it when there is none. Nothing is saved yet.
+    /// Writes `side` into the store's `KeptToy`, making it when there is none, unless the store already keeps it. Nothing
+    /// is saved yet.
     func write(_ side: ToySide) throws {
+        guard try toySide() != side else { return }
         let kept: KeptToy
         if let existing = try keptToyRecord() {
             kept = existing

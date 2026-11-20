@@ -107,7 +107,8 @@ public final class ICloudSync {
             let notes = try store.syncNotes()
             var side = try store.toySide()
             if engineStartsFromNothing {
-                try beginStartFromNothing(notes: notes, awaitsEnginesSignIn: true, into: &result)
+                try beginStartFromNothing(notes: notes, into: &result)
+                run.awaitsEnginesSignIn = true
             }
             // A held toy is of the zone the device uses, or has no system fields since its zone was left.
             let heldZone = side.held?.record.zone

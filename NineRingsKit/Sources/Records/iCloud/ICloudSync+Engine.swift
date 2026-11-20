@@ -39,17 +39,14 @@ extension ICloudSync {
         try call { result in
             let notes = try store.syncNotes()
             var side = try store.toySide()
-            let awaitedSignIn = run.startFromNothing?.awaitsEnginesSignIn ?? false
-            if var start = run.startFromNothing {
-                start.awaitsEnginesSignIn = false
-                run.startFromNothing = start
-            }
+            let awaitedSignIn = run.awaitsEnginesSignIn
+            run.awaitsEnginesSignIn = false
             switch change {
             case .signIn(let account):
-                if !awaitedSignIn { try beginStartFromNothing(notes: notes, awaitsEnginesSignIn: false, into: &result) }
+                if !awaitedSignIn { try beginStartFromNothing(notes: notes, into: &result) }
                 try accountNamed(account, notes: notes, side: &side, into: &result)
             case .switchAccounts(_, let account):
-                try beginStartFromNothing(notes: notes, awaitsEnginesSignIn: false, into: &result)
+                try beginStartFromNothing(notes: notes, into: &result)
                 try accountNamed(account, notes: notes, side: &side, into: &result)
             case .signOut(let account):
                 if notes.account == nil { notes.account = account }

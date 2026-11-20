@@ -249,7 +249,7 @@ final class SimulatedDevice: StandInEngineDelegate {
     func launch() {
         sync = ICloudSync(
             store: RecordStore(container: container), madeOn: kind, appVersion: "2.0",
-            makeID: { [random] in random.uuid() }, freshToy: { PlayState().snapshot }
+            makeID: { [random] in random.uuid() }, freshToy: { [unowned self] in seeded(PlayState()).snapshot }
         )
         if let kept = must({ try sync.toy() }) ?? nil, let restored = PlayState(kept) {
             play = restored
@@ -350,9 +350,11 @@ final class SimulatedDevice: StandInEngineDelegate {
         wantsFetch = false
         let request = sync.fetchWillBeRequested()
         let outcome = engine.fetch(manual: true)
-        apply(must {
-            try sync.fetchRequestReturned(request, error: outcome.error, pendingZoneSaves: Set(engine.state.pendingZoneSaves))
-        })
+        watchingPurges {
+            apply(must {
+                try sync.fetchRequestReturned(request, error: outcome.error, pendingZoneSaves: Set(engine.state.pendingZoneSaves))
+            })
+        }
     }
 
     /// Everything the rules asked, and every pending change sent, until nothing more is asked.
@@ -661,12 +663,17 @@ final class SimulatedDevice: StandInEngineDelegate {
     /// Gives a play that the toy began by itself, under an id from the system's generator, an id from the seeded one, so
     /// that an order of events replays from its seed.
     private func seedPlayID() {
-        guard let current = play.play, !watcher.playIDs.contains(current.id) else { return }
-        var snapshot = play.snapshot
+        play = seeded(play)
+    }
+
+    /// `state`, with a play the toy began by itself given an id from the seeded generator.
+    private func seeded(_ state: PlayState) -> PlayState {
+        guard let current = state.play, !watcher.playIDs.contains(current.id) else { return state }
+        var snapshot = state.snapshot
         let id = random.uuid()
         snapshot.play?.id = id
         watcher.playIDs.insert(id)
-        if let seeded = PlayState(snapshot) { play = seeded }
+        return PlayState(snapshot) ?? state
     }
 
     private func playToRest() {
@@ -699,8 +706,6 @@ final class SimulatedDevice: StandInEngineDelegate {
         apply(result.engine)
         if let toy = result.replacedToy {
             play = PlayState(toy) ?? PlayState()
-            seedPlayID()
-            must { try sync.keep(play.snapshot, at: clock.now) }
         }
         if result.keepsBackgroundTime { keepsBackgroundTime = true }
         if result.endsBackgroundTime { keepsBackgroundTime = false }

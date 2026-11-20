@@ -19,6 +19,9 @@ struct RunNotes: Equatable {
     var knowsNoAccount = false
     /// A start from nothing whose account's part is still to come (section 8).
     var startFromNothing: StartFromNothing?
+    /// Whether the engine was created without saved state and has not yet reported an account: its sign-in belongs to
+    /// the start from nothing that began at launch.
+    var awaitsEnginesSignIn = false
     /// The engine's latest state while a start from nothing waits for its account's part, saved with that part.
     var heldEngineState: Data?
     /// Whether the engine's state is saved as it comes: false after a failed write of fetched changes, or after the app
@@ -52,11 +55,7 @@ struct RunNotes: Equatable {
     /// Whether the app left the front while the gate waited, and keeps background time until it no longer does.
     var keepsBackgroundTime = false
 
-    struct StartFromNothing: Equatable {
-        /// Whether the engine was created without saved state and has not yet reported an account: its sign-in belongs
-        /// to this same start from nothing.
-        var awaitsEnginesSignIn: Bool
-    }
+    struct StartFromNothing: Equatable {}
 
     struct ManualFetch: Equatable {
         var began: Int
@@ -314,7 +313,7 @@ extension ICloudSync {
     /// system fields; a zone note that marks its zone existing now marks it not known to exist; and the engine's stored
     /// state is emptied, so that a quit before the account's part makes the next launch a start from nothing again. The
     /// account is not confirmed until the engine or CloudKit names it.
-    func beginStartFromNothing(notes: SyncNotes, awaitsEnginesSignIn: Bool, into result: inout SyncResult) throws {
+    func beginStartFromNothing(notes: SyncNotes, into result: inout SyncResult) throws {
         for entry in try store.plays(in: .inICloud) {
             if case .state(let state) = PlayRules.step(.startFromNothing, from: entry.sync).change { entry.sync = state }
         }
@@ -326,7 +325,7 @@ extension ICloudSync {
         notes.engineState = nil
         run.heldEngineState = nil
         run.accountConfirmed = false
-        run.startFromNothing = RunNotes.StartFromNothing(awaitsEnginesSignIn: awaitsEnginesSignIn)
+        run.startFromNothing = RunNotes.StartFromNothing()
     }
 
     /// The engine or CloudKit named `account`: the account table's row for an account, compared with the store's note.
