@@ -171,6 +171,20 @@ import Testing
         #expect(sync.storageIsFull, "the line stays until a save is accepted")
     }
 
+    /// On a new device, a toy that arrives before the first rest after the person's first move is offered, not taken up
+    /// over the move; and every result in which the held toy appears or changes its kind says so.
+    @Test func aFirstMoveOnANewDeviceIsNeverReplaced() throws {
+        _ = try sync.launched(engineStartsFromNothing: true)
+        _ = try sync.accountAnswered(.account("person"))
+        try fetch(DatabaseChanges(existing: [zone1.name]))
+        let arrived = try sync.fetched(FetchedChanges(records: [try toyRecord(toy([3]), tag: "4")]))
+        #expect(try arrived.changesHeldToy && sync.heldToy()?.kind == .toTakeUp)
+        let kept = try sync.keep(toy([1]))
+        #expect(try kept.changesHeldToy && sync.heldToy()?.kind == .offered)
+        #expect(try sync.takeUpHeldToy().replacedToy == nil)
+        #expect(try sync.toy() == toy([1]))
+    }
+
     /// The toy's moment asks the gate; keeping the toy at a rest asks nothing (section 11).
     @Test func keepingTheToyAsksNothing() throws {
         try joined()
@@ -579,6 +593,16 @@ import Testing
         #expect(try !sync.accountAnswered(.account("person")).endsBackgroundTime)
         let opened = try fetch()
         #expect(opened.endsBackgroundTime && opened.engine.sendsNow && opened.engine.saves == [.toy(in: zone1.name)])
+        #expect(try !sync.leftFront().keepsBackgroundTime)
+    }
+
+    /// With no account signed in, nothing can confirm one: leaving the front keeps no background time.
+    @Test func leavingTheFrontWithNoAccountKeepsNoTime() throws {
+        _ = try sync.launched(engineStartsFromNothing: true)
+        try sync.keep(toy([1]))
+        #expect(try sync.leftFront().keepsBackgroundTime, "the account's answer may still come")
+        _ = try sync.cameToFront()
+        _ = try sync.accountAnswered(.noAccount)
         #expect(try !sync.leftFront().keepsBackgroundTime)
     }
 

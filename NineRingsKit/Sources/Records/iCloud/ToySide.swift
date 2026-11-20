@@ -89,13 +89,14 @@ struct ToySide: Equatable {
     ///
     /// When it differs from the toy here in more than time spent, the person changed the toy: the mark is set, the toy
     /// counts as changed since its last send, and a held toy that waited to be taken up is offered instead (the last
-    /// case of step 5). Time spent alone changes none of these, nor when the toy last changed. A first toy is marked
-    /// unless it is untouched. Returns whether anything changed.
+    /// case of step 5). Time spent alone changes none of these, nor when the toy last changed. With no toy kept yet,
+    /// the toy here is the untouched one the app shows: a first toy that is not untouched is a change by the person.
+    /// Returns whether anything changed.
     @discardableResult
     mutating func keep(_ snapshot: ToySnapshot, at date: Date, on madeOn: String) -> Bool {
         guard let kept = toy else {
             toy = Kept(snapshot: snapshot, changedAt: date, changedOn: madeOn)
-            isChanged = !snapshot.isUntouched
+            if !snapshot.isUntouched { personChanged() }
             return true
         }
         guard kept.snapshot != snapshot else { return false }
@@ -103,11 +104,17 @@ struct ToySide: Equatable {
             toy?.snapshot = snapshot
         } else {
             toy = Kept(snapshot: snapshot, changedAt: date, changedOn: madeOn)
-            isChanged = true
-            lastSend?.changedSince = true
-            if held?.kind == .toTakeUp { held?.kind = .offered }
+            personChanged()
         }
         return true
+    }
+
+    /// The person changed the toy: the mark, the change since the last send, and the last case of step 5 for a held toy
+    /// that waited to be taken up.
+    private mutating func personChanged() {
+        isChanged = true
+        lastSend?.changedSince = true
+        if held?.kind == .toTakeUp { held?.kind = .offered }
     }
 
     /// Whether the toy here is untouched, or there is none yet.

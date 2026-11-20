@@ -65,6 +65,8 @@ public final class RecordStore {
 
     public let container: ModelContainer
     private var context: ModelContext { container.mainContext }
+    /// Whether the next save of the iCloud rules fails, as a full disk would make it: for the tests of a failed write.
+    var failsNextSyncSave = false
 
     public init(container: ModelContainer) {
         self.container = container

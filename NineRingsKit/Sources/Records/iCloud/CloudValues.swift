@@ -146,7 +146,8 @@ public struct DatabaseChanges: Sendable, Equatable {
     }
 }
 
-/// A zone the engine reports as deleted, with the reason it gives (`CKSyncEngine.Event.FetchedDatabaseChanges.Deletion`).
+/// A zone the engine reports as deleted, with the reason it gives (`CKDatabase.DatabaseChange.Deletion`, in the engine's
+/// `fetchedDatabaseChanges` event).
 public struct ZoneDeletion: Sendable, Equatable {
     public var zone: String
     public var reason: ZoneDeletionReason
@@ -157,7 +158,8 @@ public struct ZoneDeletion: Sendable, Equatable {
     }
 }
 
-/// Why a zone was deleted: the reason the engine gives with the zone's deletion (`CKSyncEngine.ZoneDeletionReason`).
+/// Why a zone was deleted: the reason the engine gives with the zone's deletion (`CKDatabase.DatabaseChange.Deletion.Reason`;
+/// `CKSyncEngineZoneDeletionReason` in Objective-C).
 public enum ZoneDeletionReason: Sendable, Equatable {
     /// Another copy of the app deleted the zone (`.deleted`).
     case deleted
@@ -420,6 +422,9 @@ public struct SyncResult: Sendable, Equatable {
     public var replacedToy: ToySnapshot?
     /// Whether the history may have changed, so that a screen reads it again (``ICloudSync/history()``).
     public var changesHistory = false
+    /// Whether the held toy appeared, changed its kind or went (``ICloudSync/heldToy()``): the app reads it again, takes
+    /// it up at once if it waits to be taken up and the moment is calm, and shows or hides the offer line.
+    public var changesHeldToy = false
     /// The app is leaving the front and the gate still waits for the account or for this run's fetch: the app keeps the
     /// background time the system grants until a later result ends it (``endsBackgroundTime``), or until it runs out
     /// (docs/icloud.md, section 11).
@@ -435,6 +440,7 @@ public struct SyncResult: Sendable, Equatable {
         engine.add(later.engine)
         if let toy = later.replacedToy { replacedToy = toy }
         changesHistory = changesHistory || later.changesHistory
+        changesHeldToy = changesHeldToy || later.changesHeldToy
         keepsBackgroundTime = keepsBackgroundTime || later.keepsBackgroundTime
         endsBackgroundTime = endsBackgroundTime || later.endsBackgroundTime
     }

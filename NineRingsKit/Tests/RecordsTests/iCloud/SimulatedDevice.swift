@@ -198,6 +198,10 @@ final class SimulatedDevice: StandInEngineDelegate {
     private(set) var wantsAccount = false
     private(set) var wantsFetch = false
     private(set) var wantsSend = false
+    /// The zones reports have named to this device as deleted.
+    private(set) var zonesToldDeleted: Set<String> = []
+    /// Whether a result said that the held toy changed: the app looks at it again a moment later.
+    private(set) var wantsToLookAtTheHeldToy = false
     /// Whether the app keeps background time, as it left the front while the gate waited.
     private(set) var keepsBackgroundTime = false
     /// Whether the last answer about the toy was a refusal without iCloud's record: the case the design accepts when no
@@ -267,11 +271,12 @@ final class SimulatedDevice: StandInEngineDelegate {
             play = PlayState()
         }
         seedPlayID()
-        must { try sync.keep(play.snapshot, at: clock.now) }
+        _ = must { try sync.keep(play.snapshot, at: clock.now) }
         let saved = must { try sync.engineState() } ?? nil
         wantsAccount = false
         wantsFetch = false
         wantsSend = false
+        wantsToLookAtTheHeldToy = false
         keepsBackgroundTime = false
         appliedChangesBeforeConfirmation = false
         lostFetchedChangesWithAnotherAccount = false
@@ -339,6 +344,13 @@ final class SimulatedDevice: StandInEngineDelegate {
             asked.append { [self] in
                 wantsSend = false
                 engineSends()
+            }
+        }
+        if wantsToLookAtTheHeldToy {
+            // The moment is not always calm: a move may be playing, or the lesson open.
+            asked.append { [self] in
+                wantsToLookAtTheHeldToy = false
+                if random.chance(0.7) { calmMoment() }
             }
         }
         guard !asked.isEmpty else { return false }
@@ -421,7 +433,7 @@ final class SimulatedDevice: StandInEngineDelegate {
     /// Time passes in front of the toy, which changes only the time spent.
     func spendTime() {
         play.spend(Double(random.int(1..<90)))
-        must { try sync.keep(play.snapshot, at: clock.tick()) }
+        apply(must { try sync.keep(play.snapshot, at: clock.tick()) })
     }
 
     /// The play in progress is finished, and every ring goes back on for the next.
@@ -544,6 +556,7 @@ final class SimulatedDevice: StandInEngineDelegate {
             sync.fetchBegan(manual: manual)
         case .databaseChanged(let changes):
             if !sync.run.accountConfirmed { appliedChangesBeforeConfirmation = true }
+            zonesToldDeleted.formUnion(changes.deleted.map(\.zone))
             watchingPurges(deleted: changes.deleted) { apply(must { try sync.databaseChanged(changes) }) }
         case .fetched(let changes):
             for record in changes.records where record.type == CloudRecord.finishedPlayType {
@@ -736,17 +749,20 @@ final class SimulatedDevice: StandInEngineDelegate {
         if play.isCongratulating { play.dismissCongratulation() }
     }
 
+    /// The move ended: the app keeps the toy first, and only then judges the moment, which is calm, so that a held toy
+    /// still waiting to be taken up is taken up, and one the move turned into an offer is not.
     private func personChanged(from before: ToySnapshot) {
         seedPlayID()
         watcher.personChanged(from: before, to: play.snapshot, account: notedAccount)
-        must { try sync.keep(play.snapshot, at: clock.tick()) }
+        apply(must { try sync.keep(play.snapshot, at: clock.tick()) })
+        calmMoment()
     }
 
     /// Shows `toy`, as the app does after a take-up, a choice, or a toy put back.
     private func show(_ toy: ToySnapshot) {
         if !play.takeUp(toy) { play = PlayState(toy) ?? PlayState() }
         seedPlayID()
-        must { try sync.keep(play.snapshot, at: clock.now) }
+        apply(must { try sync.keep(play.snapshot, at: clock.now) })
     }
 
     private func apply(_ result: SyncResult?) {
@@ -758,6 +774,7 @@ final class SimulatedDevice: StandInEngineDelegate {
         if let toy = result.replacedToy {
             play = PlayState(toy) ?? PlayState()
         }
+        if result.changesHeldToy { wantsToLookAtTheHeldToy = true }
         if result.keepsBackgroundTime { keepsBackgroundTime = true }
         if result.endsBackgroundTime { keepsBackgroundTime = false }
     }
@@ -770,12 +787,19 @@ final class SimulatedDevice: StandInEngineDelegate {
         if requests.sendsNow { wantsSend = true }
     }
 
+    /// Whether a call may throw because the store failed a write on purpose (``RecordStore/failsNextSyncSave``).
+    var expectsAFailedWrite = false
+
     /// Runs `body`; a throw is a test failure, and gives nil.
     @discardableResult
     private func must<T>(_ body: () throws -> T) -> T? {
         do {
             return try body()
         } catch {
+            if expectsAFailedWrite, (error as? CocoaError)?.code == .fileWriteOutOfSpace {
+                expectsAFailedWrite = false
+                return nil
+            }
             Issue.record(error, "\(name)")
             return nil
         }

@@ -52,10 +52,11 @@ import SwiftData
 /// | Moment (section 11) | The app calls |
 /// |---|---|
 /// | Launch | ``toy()`` for the toy to show (nil: an untouched toy), ``engineState()``, then the engine's part above |
-/// | The toy comes to rest | ``keep(_:at:)`` |
+/// | The toy comes to rest | ``keep(_:at:)`` first; then, if the moment is calm and ``heldToy()`` waits to be taken up, ``takeUpHeldToy()`` |
 /// | The toy changes: at most once a minute while it changes | ``toyChanged()`` |
 /// | A play is finished | ``finished(_:)`` |
 /// | The person clears the history | ``clearHistory()`` |
+/// | A result with ``SyncResult/changesHeldToy`` | if the moment is calm and ``heldToy()`` waits to be taken up, ``takeUpHeldToy()``; show or hide the offer line by ``heldToy()`` |
 /// | A calm moment, while ``heldToy()`` waits to be taken up | ``takeUpHeldToy()`` |
 /// | The person answers the offer, a sending moment | ``playThatOne()`` or ``keepThisOne()`` |
 /// | The app comes to the front | ``cameToFront()`` |
@@ -131,17 +132,16 @@ public final class ICloudSync {
     }
 
     /// Keeps `snapshot` as the toy at `date`, at a rest (step 1). The store marks the toy as changed when it differs in
-    /// more than time spent, and a first toy unless it is untouched. Returns whether anything was written. It asks the
-    /// gate nothing: ``toyChanged()`` does, at most once a minute.
+    /// more than time spent, and a first toy unless it is untouched; a held toy that waited to be taken up is then
+    /// offered instead (``SyncResult/changesHeldToy``). The app calls it at every rest, before it judges whether the
+    /// moment is calm, so that the person's move is never replaced. It asks the gate nothing: ``toyChanged()`` does, at
+    /// most once a minute.
     @discardableResult
-    public func keep(_ snapshot: ToySnapshot, at date: Date = .now) throws -> Bool {
-        var changed = false
-        _ = try call { _ in
+    public func keep(_ snapshot: ToySnapshot, at date: Date = .now) throws -> SyncResult {
+        try call { _ in
             var side = try store.toySide()
-            changed = side.keep(snapshot, at: date, on: madeOn.rawValue)
-            if changed { try store.write(side) }
+            if side.keep(snapshot, at: date, on: madeOn.rawValue) { try store.write(side) }
         }
-        return changed
     }
 
     /// The toy changes: a sending moment, at most once a minute while the person plays (section 11).
@@ -288,8 +288,10 @@ public final class ICloudSync {
         do {
             run.moment += 1
             let before = try conditions()
+            let heldBefore = try store.toySide().held
             try body(&result)
             if try conditions().lifted(since: before) { try askGate(sendingMoment: false, into: &result) }
+            if try store.toySide().held != heldBefore { result.changesHeldToy = true }
             let notes = try store.syncNotes()
             if run.keepsBackgroundTime, !gateWaitsForAccountOrFetch(notes) {
                 run.keepsBackgroundTime = false

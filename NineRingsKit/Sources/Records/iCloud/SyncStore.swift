@@ -280,6 +280,10 @@ extension RecordStore {
     func saveSync() throws {
         guard syncContext.hasChanges else { return }
         do {
+            if failsNextSyncSave {
+                failsNextSyncSave = false
+                throw CocoaError(.fileWriteOutOfSpace)
+            }
             try syncContext.save()
         } catch {
             syncContext.rollback()

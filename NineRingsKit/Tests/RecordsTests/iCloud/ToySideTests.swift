@@ -118,6 +118,18 @@ import Testing
         #expect(played.isChanged)
     }
 
+    /// A first toy with moves, kept while another device's toy waits to be taken up, is the person's change: the held toy
+    /// is offered instead, and the move is never replaced.
+    @Test func aFirstToyWithMovesTurnsATakeUpIntoTheOffer() {
+        var first = ToySide()
+        first.arrived(record(toy([3]), stamps: stamps(1), tag: "6"))
+        #expect(first.held?.kind == .toTakeUp)
+        first.keep(toy([1]), at: .now, on: "Mac")
+        #expect(first.isChanged && first.held?.kind == .offered)
+        let taken = first.takeUp()
+        #expect(taken == nil)
+    }
+
     // MARK: Step 2: the gate lets the toy go
 
     @Test func onlyAToyMarkedAndNotHeldIsBuilt() throws {

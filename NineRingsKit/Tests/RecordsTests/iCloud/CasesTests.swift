@@ -108,8 +108,11 @@ import Testing
     @Test func thePersonGoesOnOnAnotherDevice() throws {
         let world = World()
         let (iPhone, iPad) = try twoSyncedDevices(world)
-        iPhone.pickUp(moves: 3)
+        iPhone.pickUp(moves: 0)
+        for _ in 0..<3 { iPhone.move() }
+        #expect(!same(world.toyInICloud()?.toy, iPhone.keptToy), "the toy's moment has not come yet")
         iPhone.putDown()
+        #expect(same(world.toyInICloud()?.toy, iPhone.keptToy), "leaving the front sent it")
         iPad.pickUp(moves: 0)
         #expect(same(iPad.keptToy, iPhone.keptToy))
         #expect(!iPad.isOffered && world.watcher.problems.isEmpty)
@@ -226,10 +229,24 @@ import Testing
 
     /// A backup is restored on a device with another account: the engine reports a switch of account or a sign-in, and
     /// CloudKit names the account at launch. Either way the data is removed, and the device joins with nothing.
-    @Test func aBackupIsRestoredUnderAnotherAccount() throws {
+    @Test(arguments: ["a switch", "a sign-in", "nothing"])
+    func aBackupIsRestoredUnderAnotherAccount(engineReports: String) throws {
         let world = World()
         let (iPhone, _) = try twoSyncedDevices(world)
         let backup = try iPhone.backUp()
+        switch engineReports {
+        case "a sign-in":
+            // The restored engine state names no account: the engine reports the account it finds as a sign-in.
+            let notes = try #require(try backup.mainContext.fetch(FetchDescriptor<SyncNotes>()).first)
+            var state = try JSONDecoder().decode(StandInEngine.State.self, from: try #require(notes.engineState))
+            state.account = nil
+            notes.engineState = try JSONEncoder().encode(state)
+            try backup.mainContext.save()
+        case "nothing":
+            world.engineChoices.reportsChangeWhileNotRunning = false
+        default:
+            break
+        }
         let theirs = try world.device("Another person's iPhone", account: World.other, from: backup)
         world.settle()
         #expect(theirs.history.plays.isEmpty)
@@ -305,17 +322,26 @@ import Testing
     }
 
     /// The person signs out of iCloud, or turns iCloud off for the app: the data stays, and the app works from its store.
-    @Test func aSignOutKeepsTheData() throws {
+    @Test(arguments: [true, false])
+    func aSignOutKeepsTheData(reported: Bool) throws {
         let world = World()
         let (iPhone, _) = try twoSyncedDevices(world)
         let before = iPhone.history.plays.count
-        iPhone.signIn(to: nil)
+        if reported {
+            iPhone.signIn(to: nil)
+        } else {
+            // iCloud turned off for the app: the engine goes dormant without a report, and CloudKit names no account.
+            iPhone.engineChoices.reportsChangeWhileNotRunning = false
+            iPhone.signInWhileNotRunning(to: nil)
+        }
         iPhone.move()
         iPhone.finishPlay()
         world.settle()
         #expect(iPhone.history.plays.count == before + 1)
-        #expect(world.historyInICloud(zone: try #require(world.cloud.zoneNames(account: World.person).first)).plays.count == before)
-        #expect(iPhone.hasMarks && iPhone.zoneNote == nil)
+        let zone = try #require(world.cloud.zoneNames(account: World.person).first)
+        #expect(world.historyInICloud(zone: zone).plays.count == before)
+        #expect(iPhone.hasMarks)
+        #expect(reported ? iPhone.zoneNote == nil : iPhone.zoneNote?.knowledge == .existing, "a sign-out empties the zone note")
     }
 
     /// The same account returns: the device joins, the histories unite, plays cleared meanwhile are removed, and the toy's
@@ -480,6 +506,7 @@ import Testing
     @Test func aDeviceJoinsForTheFirstTimeAfterAnOldDeletion() throws {
         let world = World()
         _ = try twoSyncedDevices(world)
+        let old = try #require(world.personsZone)
         world.cloud.deleteEveryZone(account: World.person, reason: .purged)
         world.settle()
         let mac = try world.device("Mac", kind: .Mac, account: nil)
@@ -487,6 +514,7 @@ import Testing
         mac.finishPlay()
         mac.signIn(to: World.person)
         world.settle()
+        #expect(mac.zonesToldDeleted.contains(old), "it is told of the old deletion")
         #expect(mac.history.plays.count == 1, "what was made on the Mac without iCloud goes into the account")
         #expect(world.historyInICloud().plays.count == 1 && world.disagreements().isEmpty)
     }
@@ -542,8 +570,13 @@ import Testing
         let base = try #require(world.cloud.record(.toy(in: zone), account: World.person))
         let broken = RecordToSend(type: CloudRecord.toyType, zone: zone, name: CloudRecord.toyName, systemFields: base.systemFields, format: 1, payload: Data("{".utf8))
         _ = world.cloud.save(broken, account: World.person, device: nil)
+        let saved = try #require(world.cloud.record(.toy(in: zone), account: World.person))
         let mine = iPhone.keptToy
-        iPhone.pickUp(moves: 0)
+        iPhone.cameToFront()
+        iPhone.requestFetch()
+        let side = iPhone.toySide
+        #expect(side.base?.systemFields == saved.systemFields && side.base?.stamps == [], "the base, through its system fields alone")
+        #expect(side.isChanged && side.held == nil)
         iPhone.putDown()
         world.settle()
         #expect(same(world.toyInICloud()?.toy, mine), "the toy here went out over the broken one")
@@ -604,7 +637,8 @@ import Testing
         iPad.relaunch()
         #expect(iPad.isOffered)
         world.settle()
-        #expect(!iPad.engine.state.pending.contains(.save(.toy(in: try #require(world.personsZone)))), "nothing is sent")
+        let zone = try #require(world.personsZone)
+        #expect(!iPad.engine.state.pending.contains(.save(.toy(in: zone))), "nothing is sent")
         #expect(iPad.isOffered && same(world.toyInICloud()?.toy, iPhone.keptToy))
     }
 
@@ -641,6 +675,36 @@ import Testing
         world.settle()
         #expect(iPad.history == iPhone.history && iPad.history.plays.count == 2)
         #expect(same(iPad.keptToy, iPhone.keptToy))
+    }
+
+    /// Writing fetched changes fails: the device syncs nothing more in that run, and the next launch fetches the same
+    /// changes again.
+    @Test func writingFetchedChangesFails() throws {
+        let world = World()
+        let (iPhone, iPad) = try twoSyncedDevices(world)
+        iPad.finishPlay()
+        iPad.putDown()
+        let iPadsPlay = try #require(iPad.history.plays.first)
+        iPhone.expectsAFailedWrite = true
+        iPhone.sync.store.failsNextSyncSave = true
+        iPhone.cameToFront()
+        iPhone.requestFetch()
+        #expect(iPhone.sync.run.writeFailed && !iPhone.history.plays.contains(iPadsPlay), "the write failed, and nothing was kept")
+        iPhone.finishPlay()
+        iPhone.move()
+        iPhone.toyChanged()
+        iPhone.leftFront()
+        iPhone.engineSends()
+        iPhone.requestFetch()
+        iPhone.engineSends()
+        #expect(iPhone.engine.state.pending.isEmpty, "nothing is queued for the rest of the run")
+        #expect(world.historyInICloud().plays.count == 2, "and nothing is handed over")
+        #expect(!iPhone.history.plays.contains(iPadsPlay), "nothing more is applied")
+        iPhone.relaunch()
+        world.settle(answeringOffers: false)
+        #expect(iPhone.history.plays.contains(iPadsPlay), "the next launch fetched the same changes again")
+        #expect(iPhone.history == iPad.history)
+        #expect(world.watcher.problems.isEmpty && world.disagreements().isEmpty)
     }
 
     /// The answer to a save is lost: the record's stamp shows the device that the record in iCloud is its own. A finished

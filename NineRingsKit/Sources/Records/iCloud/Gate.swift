@@ -141,10 +141,10 @@ extension ICloudSync {
         return zone.name
     }
 
-    /// Whether the gate waits for the account's confirmation or for this run's fetch, for the background time as the
-    /// app leaves the front.
+    /// Whether the gate waits for the account's confirmation, while an account is signed in, or for this run's fetch,
+    /// for the background time as the app leaves the front.
     func gateWaitsForAccountOrFetch(_ notes: SyncNotes) -> Bool {
-        guard !run.writeFailed else { return false }
+        guard !run.writeFailed, !run.knowsNoAccount else { return false }
         if !run.accountConfirmed { return true }
         if zoneKnownToExist(notes) != nil { return !fetchCountedSinceZoneUse }
         return run.lastCountedFetchBegan == nil
@@ -269,8 +269,8 @@ extension ICloudSync {
         guard let note = zoneNote(notes) else { return }
         let counting = deletions.filter { $0.zone > note.zone || ($0.zone == note.zone && note.knowledge != .deleted) }
         guard let top = counting.map(\.zone).max() else { return }
+        if note.knowledge != .deleted { run.noZoneSince = run.moment }
         setZoneNote(notes, ZoneNote(zone: top, knowledge: .deleted))
-        run.noZoneSince = run.moment
         if counting.contains(where: { $0.reason != .encryptedDataReset }) {
             try purge(side: &side, into: &result)
         } else {
