@@ -43,6 +43,8 @@ actor ProbeDevice: CKSyncEngineDelegate {
     private var keptIn: URL?
     /// Whether the device ends the process when a save's confirmation arrives, before it stores anything of it.
     private var endsOnConfirmation = false
+    /// Whether the device's fetches read its own zone only, as they do unless a question says otherwise.
+    private var fetchesOwnZoneOnly = true
 
     init(name: String, database: CKDatabase, zone: CKRecordZone, report: ProbeReport) {
         self.name = name
@@ -121,10 +123,20 @@ actor ProbeDevice: CKSyncEngineDelegate {
 
     // MARK: What the probe asks of it
 
-    func queueZoneSave() async {
+    /// Queues the save of the device's zone, or of `other`.
+    func queueZoneSave(_ other: CKRecordZone? = nil) async {
+        let zone = other ?? zone
         engine?.state.add(pendingDatabaseChanges: [.saveZone(zone)])
-        await report.say(name, "queues the zone's save")
+        await report.say(name, "queues the save of zone \(zone.zoneID.zoneName)")
     }
+
+    /// From now on, fetches every zone of the database, not only the device's own.
+    func fetchEveryZone() {
+        fetchesOwnZoneOnly = false
+    }
+
+    /// The zones the engine knows to have changes it has not fetched.
+    var zonesWithUnfetchedChanges: [CKRecordZone.ID] { engine?.state.zoneIDsWithUnfetchedServerChanges ?? [] }
 
     func queueZoneDelete() async {
         engine?.state.add(pendingDatabaseChanges: [.deleteZone(zone.zoneID)])
@@ -155,8 +167,8 @@ actor ProbeDevice: CKSyncEngineDelegate {
     /// Asks the engine to fetch, in the probe's zone only, so that no other zone of the database is read.
     func fetch(_ note: String = "") async {
         guard let engine else { return }
-        await report.say(name, "fetchChanges\(note.isEmpty ? "" : " (\(note))")")
-        let options = CKSyncEngine.FetchChangesOptions(scope: .zoneIDs([zone.zoneID]))
+        await report.say(name, "fetchChanges\(note.isEmpty ? "" : " (\(note))"), \(fetchesOwnZoneOnly ? "its own zone only" : "every zone")")
+        let options = CKSyncEngine.FetchChangesOptions(scope: fetchesOwnZoneOnly ? .zoneIDs([zone.zoneID]) : .all)
         let outcome = await Self.run(on: engine) { try await engine.fetchChanges(options) }
         await report.say(name, "fetchChanges returned \(outcome)")
     }
@@ -228,9 +240,9 @@ actor ProbeDevice: CKSyncEngineDelegate {
     func nextFetchChangesOptions(
         _ context: CKSyncEngine.FetchChangesContext, syncEngine: CKSyncEngine
     ) async -> CKSyncEngine.FetchChangesOptions {
-        // Scheduled fetches too read the probe's zone only.
+        // Scheduled fetches too read the probe's zone only, unless the device fetches every zone.
         var options = context.options
-        options.scope = .zoneIDs([zone.zoneID])
+        if fetchesOwnZoneOnly { options.scope = .zoneIDs([zone.zoneID]) }
         return options
     }
 

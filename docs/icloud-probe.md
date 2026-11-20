@@ -7,10 +7,10 @@ Each point keeps three things apart: what the probe **did**, what **came back**,
 ## Where and when
 
 - macOS 27.3 (26C5047e), Xcode 27.3 (27C5035i), `cktool` 1.0.23001.
-- 19 November 2026, between 17:00 and 17:35 Pacific time.
+- 19 November 2026, between 17:00 and 17:45 Pacific time.
 - The development environment of the app's container, its private database, and the iCloud account this Mac is signed in to.
 - Every engine ran in one app process, on one Mac. To CloudKit they are most likely one device. Several points below say what that leaves open.
-- Eight runs: questions 1 to 3 as a first try, and questions 1 to 14 with the app started by running its executable; then, through LaunchServices, questions 15, 4, 11 and 14, question 15 again with two saves added, a run of questions 1 to 15, a run of questions 15 and 16 after question 15 had grown, and questions 17 and 18, one launch each. The results below are the latest run's for each question, and every earlier run that asked the same question gave the same result, except where a point says otherwise.
+- Ten runs: questions 1 to 3 as a first try, and questions 1 to 14 with the app started by running its executable; then, through LaunchServices, questions 15, 4, 11 and 14, question 15 again with two saves added, a run of questions 1 to 15, a run of questions 15 and 16 after question 15 had grown, questions 17 and 18, one launch each, a run of questions 19, 20, 21 and 15, and question 20 once more after a fix. The results below are the latest run's for each question, and every earlier run that asked the same question gave the same result, except where a point says otherwise.
 
 ## How it runs
 
@@ -24,7 +24,7 @@ xcodebuild -project NineRings.xcodeproj -scheme NineRings -destination 'platform
 open -n --stdout /tmp/probe.txt --stderr /tmp/probe.err /tmp/probe-build/Build/Products/Debug/NineRings.app --args -ApplePersistenceIgnoreState YES -cloudkit-probe all
 ```
 
-- `-cloudkit-probe all` asks questions 1 to 16; `-cloudkit-probe 1,2,15` asks those. Questions 17 and 18 take a launch each, in that order: `-cloudkit-probe 17`, then `-cloudkit-probe 18`. Like every launch switch of the app, it takes a value, and only a debug build reads it.
+- `-cloudkit-probe all` asks every question but 17 and 18; `-cloudkit-probe 1,2,15` asks those. Questions 17 and 18 take a launch each, in that order: `-cloudkit-probe 17`, then `-cloudkit-probe 18`. Like every launch switch of the app, it takes a value, and only a debug build reads it.
 - The report goes to standard output, one line per event, and to the log under the category `CloudProbe`. The app writes no file of its own, and it quits when the probe is done. To stop it earlier, quit it by its process id: other copies of the app may be running.
 - While the probe runs, the app keeps its records in memory, so nothing else in it talks to CloudKit.
 - The probe stops before reaching CloudKit if the build lacks the iCloud entitlement, if it would talk to production, or if no account is available.
@@ -53,6 +53,9 @@ open -n --stdout /tmp/probe.txt --stderr /tmp/probe.err /tmp/probe-build/Build/P
 | 15 | A zone deleted and made again | **Nothing of the deletion reaches an engine that knew the old zone: it keeps the old zone's records. Tags start again, and a save on a base from the old zone is accepted when the tags coincide** | **Differs**; answers open point 13 |
 | 16 | A save and a deletion queued for one record | The later replaces the earlier; only it is sent | Agrees |
 | 17, 18 | A save whose answer is never stored | The saved state still lists the save; sent again, it is refused with the device's own save attached | Agrees |
+| 19 | A zone given up for another name | Every engine that knew the old zone, and every new one, is told of its deletion with the reason; saves into it fail with `zoneNotFound` and create nothing | Facts for the correction being weighed |
+| 20 | Saving a zone that exists; one new zone saved by two engines | Nothing changes, and nobody is told; both saves succeed, with one zone | Agrees |
+| 21 | A zone made again, through a token far ahead of its counter | Every new record arrives; the old records are never reported deleted | Part of 15 |
 
 ## Point by point
 
@@ -149,6 +152,7 @@ open -n --stdout /tmp/probe.txt --stderr /tmp/probe.err /tmp/probe-build/Build/P
 - A, which had deleted it, was told the same on its next fetch.
 - **C, new, was told of this zone's deletion, and of every other probe zone deleted earlier, each with the reason `deleted`.** That includes the zones of an earlier run, deleted directly through `CKDatabase` and not through an engine. C's fetch was limited to one zone, but database changes are not limited by zone.
 - This held in every run. In point 15, a zone that had been made again was not reported as deleted.
+- **How long the reports live.** At 17:41:59 Pacific time a new engine, fetching every zone, was told of 43 deleted probe zones: every probe zone that had existed and been deleted before that fetch. The oldest had been deleted at 17:01:58, 40 minutes earlier. None had expired. This is a lower bound only; how long CloudKit keeps such reports is not known. No zone from before the development environment was emptied that day was reported.
 
 **Against the design. This differs.** Section 9 acts on a zone's deletion as on news. But an engine that starts from nothing is also told of zones deleted at any earlier time, as long as the zone does not exist when it fetches. The probe cannot make a purge, which only the person can do in Settings, nor an encryption reset. *Inferred, not seen:* if a purge is reported the same way, a device that joins after a purge, before any device has saved the zone again, would be told `purged`, and under section 9 it would remove its history and its toy and send nothing again, even if its plays were made after the purge. Whether this can happen depends on order: joining queues the zone's save (section 8), and once the zone exists, no deletion is reported (point 15). In point 11 the engine's own schedule fetched before it sent.
 
@@ -222,9 +226,9 @@ In a second zone, E's save was repeated with one difference: the new toy was sav
 - **B still holds the play of the first zone,** which is no longer in iCloud, beside the new toy and the new play.
 - C, new, was told the same as B: the zone as modified, and the records in it.
 - **The tags started again.** The toy in the first zone and the new toy both had the tag `3`. The two plays both had `4`.
-- **B2's save on the first zone's toy was accepted.** It replaced the new toy, which B2 had never seen.
+- **B2's save on the first zone's toy was accepted.** It replaced the new toy, which B2 had never seen. A, fetching afterwards, read the toy B2 had written, its encrypted values decrypted; so did C.
 - In the second zone, where the new toy had the tag `4` and E's base `3`, the same save was refused with `serverRecordChanged` and the new toy attached.
-- Three runs gave the same; the two before the latest had no play in the zones.
+- Four runs gave the same; the two earliest had no play in the zones.
 
 **Against the design. This differs, and it answers open point 13.** Of the three outcomes that point names, the engine gives the last: nothing at all. A device that held state for the old zone keeps the old zone's records for good, unless the app finds out otherwise, and the devices disagree. In the same case the toy is not protected either. Principle 2 says a device replaces the toy only if it has seen the one that is there, and section 6 rests this on CloudKit's change tag. Across a zone that is deleted and made again, that does not hold:
 
@@ -260,6 +264,57 @@ A zone is deleted and made again after a purge or an encryption reset, as soon a
 
 **Against the design.** As sections 6, 7 and 10 expect for an answer that is lost. The toy comes back as a refusal carrying the device's own save, and its stamp is how the device can tell (section 6, step 5, second case). The play comes back as an "already exists" refusal, which rule 4 of section 7 settles. This is an app ended between the send and storing its answer, not an answer lost on the network. The state at the next start is the same in both cases, but the engine's own handling of `serverResponseLost` was not seen.
 
+### 19. A zone given up for another name
+
+This tests the facts that a correction now weighed by the coordinating session would rest on: a deleted zone's name is never used again, and the devices go on in a zone with the next number.
+
+**Did.** A made zone 1 with a toy. B, B1 and B2 fetched it. A deleted zone 1 and made zone 2, another name, with a toy in it; zone 1 was not made again. Then:
+
+- B, which held state for zone 1, fetched every zone;
+- B1, which held state for zone 1, fetched zone 1 only;
+- C, a new engine with no state, fetched every zone;
+- B2, which held state for zone 1 and had not fetched since, saved into zone 1: first a new record, then the toy on the system fields it held. Then it asked for a send with nothing queued again.
+
+**Came back.**
+
+- **B was told that zone 1 was deleted, with the reason `deleted`, and that zone 2 had changed.** The two reports came in one event, which gives changed and deleted zones as two lists, so there is no order between them. Then the engine fetched zone 2 by itself and delivered its toy. The app had not named zone 2; its fetch covered every zone.
+- **B1, fetching zone 1 only, was told the same two zone reports**, but the engine did not fetch zone 2's records. Afterwards its state listed zone 2 among the zones with changes it has not fetched.
+- **C, new, was told the same as B**: zone 2 as changed, zone 1 deleted with the reason `deleted`, then zone 2's toy. It was also told of every probe zone deleted earlier that day (see point 9).
+- **B2's new record into zone 1 was refused with `zoneNotFound`** (26), "Zone does not exist". **So was its save on the system fields it held**, the same code and message. No record was attached to either, and the engine dropped both saves. The send that followed, with nothing queued again, sent nothing. Zone 1 did not come back into being.
+- Neither B nor B1 got an error about its change tokens.
+- The probe's own store still held zone 1's toy after these fetches. That is the probe's doing, not CloudKit's: it removes records when they are reported deleted, and a zone's deletion does not report its records one by one.
+
+One run, at 17:42 Pacific time.
+
+**Against the design.** These are facts for the correction being weighed, not a judgment of it. A zone that is deleted and never made again is reported deleted, with its reason, to every engine that knew it and to every new one; a fetch limited to the old zone is still told of the new zone; and saves into the old zone fail with `zoneNotFound` without creating it. Section 9 then applies, since the zone is missing.
+
+### 20. Saving a zone that exists, and one new zone saved by two engines
+
+**Did.** A made a zone with three plays and fetched. B, a new engine, saved the same zone again. The probe read the three plays directly before and after, and A fetched again. Then C and D, two new engines, each queued the save of one new zone and a play in it, and both asked for a send at the same moment.
+
+**Came back.**
+
+- **B's save of the zone that exists was accepted, without error.** The three plays kept their tags and dates. A's next fetch was told nothing.
+- **C's and D's zone saves were both accepted,** and both plays were saved, in one zone. The zone's counter went on: C's play got `3` and D's `4`.
+- The two sends began together, but D's zone save was confirmed only after C's zone and C's play were saved. CloudKit's client in one process appears to queue its operations (its log speaks of a "container throttle queue"). So this shows that a second save of a zone keeps what the first engine saved in it; it does not show two saves at the same instant from two devices.
+
+Two runs for the first part (in the first, A had not fetched before B's save, so its later fetch proved nothing, and it is set aside); one for the second.
+
+**Against the design.** As section 8 expects: saving a zone that exists changes nothing (source 10).
+
+### 21. A zone made again, seen through a token far ahead of its counter
+
+**Did.** A saved twelve plays in a zone, with the tags `3` to `e`, and B fetched them all. A deleted the zone, made it again under the same name, and saved one play in it (tag `3`). B fetched. A saved twelve more, and B fetched again.
+
+**Came back.**
+
+- **B received the play of the zone made again**, though its token came from a zone whose counter stood at `e`, and then all twelve later plays.
+- B was told of no deletion, and still held the twelve plays of the first zone, which iCloud no longer has.
+
+One run, at 17:42 Pacific time.
+
+**Against the design.** A token from the old zone did not make B miss new records. What it does is what point 15 shows: the old zone's records are never reported deleted.
+
 ## What the probe could not find out
 
 - **Anything that needs a second device:** whether a push reaches the Mac or wakes an iPhone, and whether the other device then fetches by itself; whether a fetch from nothing on a second device is told of deletions of records it did not create.
@@ -267,7 +322,7 @@ A zone is deleted and made again after a purge or an encryption reset, as soon a
 - **The person's side:** the app's switch in Settings, signing out, another account.
 - **Production:** whether change tags are counters there too, and anything else about production.
 - **An answer lost on the network** (`serverResponseLost`), and a send cut short when the app is suspended. Points 17 and 18 show the same state at the next start, by ending the process instead.
-- **A long absence:** expired change tokens, and how long deletions are kept.
+- **A long absence:** expired change tokens, and how long deletions are kept beyond the 40 minutes seen (point 9).
 - **A real return to the front.** The probe only posted the notification (point 14).
 
 ## The design's open points
@@ -278,10 +333,10 @@ A zone is deleted and made again after a purge or an encryption reset, as soon a
 | 2. The engine's save policy | Answered by behaviour: a stale tag and a missing tag are both refused (points 1, 2). A save on a base from a deleted zone can pass (point 15). |
 | 3. The app's switch in Settings | Not tried. |
 | 4. A state from a backup | In part: two engines from a copied state went on normally (point 12). |
-| 5. A device away for a long time | In part: on one Mac, a fetch from nothing delivered deletions (point 8). New engines are told of old zone deletions (point 9). Expiry was not tried. |
+| 5. A device away for a long time | In part: on one Mac, a fetch from nothing delivered deletions (point 8). New engines are told of old zone deletions, at least 40 minutes old (point 9). Expiry was not reached. |
 | 6. Pushes | In part: the engine registers for pushes by itself when automatic syncing is on (point 11). Delivery needs a second device. |
 | 7. Sending on leaving the front, fetching on coming to it | In part: the engine fetches by itself when it hears the app become active (point 14). A real return to the front, and sending on leaving it, were not tried. |
-| 13. A zone created again before a device fetched | **Answered: nothing at all.** The device is told of no deletion and no token problem, and keeps the old zone's records (point 15). Its base can also pass the tag check. |
+| 13. A zone created again before a device fetched | **Answered: nothing at all.** The device is told of no deletion and no token problem, and keeps the old zone's records (points 15, 21). Its base can also pass the tag check. A zone given up for another name, by contrast, is reported deleted with its reason (point 19). |
 | 14. The sign-in at a first launch | Answered on this Mac: every engine that started from nothing reported a sign-in with the account's own id, at its first operation or at once (point 10). |
 
 Not in section 15, but found here for the delegate:

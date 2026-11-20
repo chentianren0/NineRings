@@ -37,10 +37,13 @@ nonisolated struct ProbeRun: Sendable {
         16: "A save and a deletion queued for one record",
         17: "A save whose answer the app never stores: the first launch, which ends itself",
         18: "A save whose answer the app never stores: the next start",
+        19: "A zone given up for another name",
+        20: "Saving a zone that exists, and one new zone saved by two engines",
+        21: "A zone made again, seen through a token far ahead of its counter",
     ]
 
     /// The questions `all` asks: every one but 17 and 18, which take two launches of their own.
-    static let askedByAll = questions.keys.filter { $0 < 17 }.sorted()
+    static let askedByAll = questions.keys.filter { $0 != 17 && $0 != 18 }.sorted()
 
     func ask(_ question: Int) async {
         guard let title = Self.questions[question] else {
@@ -66,6 +69,9 @@ nonisolated struct ProbeRun: Sendable {
         case 16: await q16()
         case 17: await q17()
         case 18: await q18()
+        case 19: await q19()
+        case 20: await q20()
+        case 21: await q21()
         default: break
         }
     }
@@ -653,6 +659,10 @@ nonisolated struct ProbeRun: Sendable {
         await b2.queueSave(toy, type: "Toy", base: await b2.known[toy], payload: "B2: on the first zone's toy, never having seen the new one")
         await b2.send("on the first zone's toy")
         await report.result(15, "B2's save on the first zone's toy, after the zone was made again: \(outcome(of: toy, in: await b2.events(since: mark)))")
+        mark = await a.mark
+        await a.fetch("A reads what B2 wrote")
+        let read = fetchedRecords(await a.events(since: mark)).last { $0.recordID == toy }
+        await report.result(15, "A fetched the toy B2 wrote: \(ProbeText.record(read))")
 
         let c = await device("C", zone)
         mark = await c.mark
@@ -687,18 +697,29 @@ nonisolated struct ProbeRun: Sendable {
 
     /// What a fetch told a device about `zone`: its database changes, its record changes, and any error, in order.
     private func told(about zone: CKRecordZone, in events: [ProbeDevice.Logged]) -> String {
-        let lines = events.compactMap { logged -> String? in
+        told(about: [zone], in: events)
+    }
+
+    /// What a fetch told a device about `zones`, in order: each zone reported as changed or deleted, each zone's
+    /// fetched records and deletions, and any error. Other zones are left out.
+    private func told(about zones: [CKRecordZone], in events: [ProbeDevice.Logged]) -> String {
+        let ids = Set(zones.map(\.zoneID))
+        let lines = events.flatMap { logged -> [String] in
             switch logged.event {
             case .fetchedDatabaseChanges(let changes):
-                let modified = changes.modifications.filter { $0.zoneID == zone.zoneID }.count
-                let deleted = changes.deletions.filter { $0.zoneID == zone.zoneID }.map { ProbeText.reason($0.reason) }
-                return "database changes: this zone modified \(modified) times, deleted \(deleted)"
+                let modified = changes.modifications.filter { ids.contains($0.zoneID) }.map { "zone \($0.zoneID.zoneName) changed" }
+                let deleted = changes.deletions.filter { ids.contains($0.zoneID) }.map { "zone \($0.zoneID.zoneName) deleted, reason \(ProbeText.reason($0.reason))" }
+                return ["database changes: \(modified + deleted)"]
+            case .willFetchRecordZoneChanges(let will) where ids.contains(will.zoneID):
+                return ["begins fetching zone \(will.zoneID.zoneName)"]
             case .fetchedRecordZoneChanges(let changes):
-                return "record changes: \(changes.modifications.map { ProbeText.record($0.record) }), deletions \(changes.deletions.map { ProbeText.short($0.recordID) })"
-            case .didFetchRecordZoneChanges(let did) where did.error != nil:
-                return "zone fetch error: \(ProbeText.error(did.error))"
+                let records = changes.modifications.filter { ids.contains($0.record.recordID.zoneID) }.map { "[\(ProbeText.record($0.record))]" }
+                let deletions = changes.deletions.filter { ids.contains($0.recordID.zoneID) }.map { ProbeText.short($0.recordID) }
+                return records.isEmpty && deletions.isEmpty ? [] : ["records \(records.joined(separator: " ")), record deletions \(deletions)"]
+            case .didFetchRecordZoneChanges(let did) where did.error != nil && ids.contains(did.zoneID):
+                return ["zone fetch error for \(did.zoneID.zoneName): \(ProbeText.error(did.error))"]
             default:
-                return nil
+                return []
             }
         }
         return lines.isEmpty ? "nothing" : lines.joined(separator: " | ")
@@ -826,6 +847,183 @@ nonisolated struct ProbeRun: Sendable {
         await report.result(18, "the fetch delivered: \(fetchedRecords(await a.events(since: mark)).map { ProbeText.record($0) })")
         try? FileManager.default.removeItem(at: Self.lostAnswerFile)
         await finish(zone, [a])
+    }
+
+    // MARK: 19. A zone given up for another name
+
+    private func q19() async {
+        let first = CKRecordZone(zoneName: "\(Self.zonePrefix)\(run)_q19_1")
+        let second = CKRecordZone(zoneName: "\(Self.zonePrefix)\(run)_q19_2")
+        let both = [first, second]
+        let a = await device("A", first)
+        let every = await device("B", first)
+        await every.fetchEveryZone()
+        let own = await device("B1", first)
+        let saver = await device("B2", first)
+        let toy = toyID(first)
+        await a.queueZoneSave()
+        await a.queueSave(toy, type: "Toy", base: nil, payload: "A: the toy in zone 1")
+        await a.send()
+        for peer in [every, own, saver] { await peer.fetch("learns zone 1") }
+
+        // A gives zone 1 up and goes on in zone 2. Zone 1 is not made again.
+        await a.queueZoneDelete()
+        await a.send("zone 1 deleted")
+        await a.queueZoneSave(second)
+        await a.queueSave(toyID(second), type: "Toy", base: nil, payload: "A: the toy in zone 2")
+        await a.send("zone 2 made")
+
+        // B, which held state for zone 1, fetching every zone.
+        var mark = await every.mark
+        await every.fetch("B, which knew zone 1, every zone")
+        await report.result(19, "B, fetching every zone, was told, in order: \(told(about: both, in: await every.events(since: mark)))")
+        let held = await every.known.values.map { ProbeText.record($0) }.sorted()
+        await report.result(19, "B holds afterwards: \(held); zones with changes it has not fetched: \(await every.zonesWithUnfetchedChanges.map(\.zoneName))")
+
+        // B1, which held state for zone 1, fetching zone 1 only.
+        mark = await own.mark
+        await own.fetch("B1, which knew zone 1, zone 1 only")
+        await report.result(19, "B1, fetching zone 1 only, was told, in order: \(told(about: both, in: await own.events(since: mark)))")
+        await report.result(19, "B1 holds afterwards: \(await own.known.values.map { ProbeText.record($0) }.sorted()); zones with changes it has not fetched: \(await own.zonesWithUnfetchedChanges.map(\.zoneName))")
+
+        // A new engine, every zone.
+        let c = await device("C", first)
+        await c.fetchEveryZone()
+        mark = await c.mark
+        await c.fetch("C, a new engine with no state, every zone")
+        let cEvents = await c.events(since: mark)
+        await report.result(19, "C, new, was told, in order: \(told(about: both, in: cEvents))")
+        let deletedProbeZones = zoneDeletions(cEvents).filter { $0.zoneID.zoneName.hasPrefix(Self.zonePrefix) }
+        await report.result(19, "C was told of \(deletedProbeZones.count) deleted probe zones: \(deletedProbeZones.map { "\($0.zoneID.zoneName) \(ProbeText.reason($0.reason))" })")
+        await report.result(19, "zones C was told exist: \(cEvents.flatMap { logged -> [String] in if case .fetchedDatabaseChanges(let changes) = logged.event { changes.modifications.map(\.zoneID.zoneName) } else { [] } })")
+
+        // B2, which held state for zone 1 and has not fetched since, saves into it.
+        let play = playID(first)
+        mark = await saver.mark
+        await saver.queueSave(play, type: "FinishedPlay", base: nil, payload: "B2: a new play in zone 1, which is gone")
+        await saver.send("a new record into zone 1")
+        await report.result(19, "B2's new record into zone 1: \(outcome(of: play, in: await saver.events(since: mark))); pending afterwards: \(await saver.pendingText)")
+        mark = await saver.mark
+        await saver.queueSave(toy, type: "Toy", base: await saver.known[toy], payload: "B2: on the toy it holds from zone 1")
+        await saver.send("a record on the system fields it holds")
+        await report.result(19, "B2's save on the system fields it holds: \(outcome(of: toy, in: await saver.events(since: mark))); pending afterwards: \(await saver.pendingText)")
+        mark = await saver.mark
+        await saver.send("once more, queuing nothing")
+        await report.result(19, "B2's next send, with nothing queued again: \(sentSummary(await saver.events(since: mark)))")
+        await report.result(19, "zone 1 exists now: \(await zoneExists(first)); zone 2 exists: \(await zoneExists(second))")
+        await finish(second, [a, every, own, c, saver])
+        if await zoneExists(first) { await removeZone(first) }
+    }
+
+    private func zoneExists(_ zone: CKRecordZone) async -> Bool {
+        (try? await database.allRecordZones().contains { $0.zoneID == zone.zoneID }) ?? false
+    }
+
+    // MARK: 20. Saving a zone that exists, and one new zone saved by two engines
+
+    private func q20() async {
+        let zone = zone(20)
+        let a = await device("A", zone)
+        let plays = [playID(zone), playID(zone), playID(zone)]
+        await a.queueZoneSave()
+        for (index, id) in plays.enumerated() {
+            await a.queueSave(id, type: "FinishedPlay", base: nil, payload: "A: play \(index + 1)")
+        }
+        await a.send()
+        await a.fetch("A learns its zone as it is")
+        let before = await onServer(plays)
+        let b = await device("B", zone)
+        var mark = await b.mark
+        await b.queueZoneSave()
+        await b.send("the save of a zone that exists")
+        await report.result(20, "B's save of the zone that exists: \(zoneSaves(await b.events(since: mark)))")
+        let after = await onServer(plays)
+        await report.result(20, "the zone's records, read directly, are as they were: \(before == after): \(after)")
+        mark = await a.mark
+        await a.fetch("A, after B saved the zone again")
+        await report.result(20, "A was then told: \(told(about: zone, in: await a.events(since: mark)))")
+        await finish(zone, [a, b])
+
+        // Two engines with no state, each saving the same new zone with a play, at the same time.
+        let shared = CKRecordZone(zoneName: zone.zoneID.zoneName + "b")
+        let c = await device("C", shared)
+        let d = await device("D", shared)
+        let cPlay = playID(shared)
+        let dPlay = playID(shared)
+        await c.queueZoneSave()
+        await c.queueSave(cPlay, type: "FinishedPlay", base: nil, payload: "C: a play in the new zone")
+        await d.queueZoneSave()
+        await d.queueSave(dPlay, type: "FinishedPlay", base: nil, payload: "D: a play in the new zone")
+        let marks = (await c.mark, await d.mark)
+        async let one: Void = c.send("at the same time as D")
+        async let two: Void = d.send("at the same time as C")
+        _ = await (one, two)
+        await report.result(20, "C: \(zoneSaves(await c.events(since: marks.0))); its play \(outcome(of: cPlay, in: await c.events(since: marks.0)))")
+        await report.result(20, "D: \(zoneSaves(await d.events(since: marks.1))); its play \(outcome(of: dPlay, in: await d.events(since: marks.1)))")
+        let zones = (try? await database.allRecordZones().filter { $0.zoneID.zoneName == shared.zoneID.zoneName }.count) ?? -1
+        await report.result(20, "zones of that name afterwards: \(zones); both plays, read directly: \(await onServer([cPlay, dPlay]))")
+        await finish(shared, [c, d])
+    }
+
+    /// The zone saves the engine reported in `events`.
+    private func zoneSaves(_ events: [ProbeDevice.Logged]) -> String {
+        let parts = events.compactMap { logged -> String? in
+            guard case .sentDatabaseChanges(let sent) = logged.event else { return nil }
+            return "zones saved \(sent.savedZones.map(\.zoneID.zoneName)), refused \(sent.failedZoneSaves.map { "\($0.zone.zoneID.zoneName): \(ProbeText.error($0.error))" })"
+        }
+        return parts.isEmpty ? "no zone sent" : parts.joined(separator: "; ")
+    }
+
+    private func onServer(_ ids: [CKRecord.ID]) async -> [String] {
+        var lines: [String] = []
+        for id in ids { lines.append(await onServer(id)) }
+        return lines
+    }
+
+    // MARK: 21. A zone made again, seen through a token far ahead of its counter
+
+    private func q21() async {
+        let zone = zone(21)
+        let a = await device("A", zone)
+        let b = await device("B", zone)
+        let firstPlays = (1...12).map { _ in playID(zone) }
+        await a.queueZoneSave()
+        for (index, id) in firstPlays.enumerated() {
+            await a.queueSave(id, type: "FinishedPlay", base: nil, payload: "A: play \(index + 1) in the first zone")
+        }
+        await a.send()
+        await b.fetch("B learns all twelve")
+        let tags = await b.known.values.compactMap(\.recordChangeTag).sorted()
+        await report.result(21, "B holds \(await b.known.count) records of the first zone, tags \(tags)")
+
+        await a.queueZoneDelete()
+        await a.send()
+        await a.queueZoneSave()
+        let only = playID(zone)
+        await a.queueSave(only, type: "FinishedPlay", base: nil, payload: "A: the only play in the zone made again")
+        await a.send("the zone made again, with one record")
+        await report.result(21, "the record in the zone made again: \(ProbeText.record(await a.known[only]))")
+
+        var mark = await b.mark
+        await b.fetch("B, whose token is from the first zone")
+        var events = await b.events(since: mark)
+        await report.result(21, "B was told: \(told(about: zone, in: events))")
+        await report.result(21, "B received the record of the zone made again: \(fetchedRecords(events).contains { $0.recordID == only })")
+
+        let more = (1...12).map { _ in playID(zone) }
+        for (index, id) in more.enumerated() {
+            await a.queueSave(id, type: "FinishedPlay", base: nil, payload: "A: play \(index + 1) more in the zone made again")
+        }
+        await a.send("twelve more")
+        mark = await b.mark
+        await b.fetch("B, after twelve more")
+        events = await b.events(since: mark)
+        let received = Set(fetchedRecords(events).map(\.recordID))
+        await report.result(21, "B received \(more.filter(received.contains).count) of the 12 later records")
+        let known = await b.known
+        let stale = firstPlays.filter { known[$0] != nil }.count
+        await report.result(21, "B still holds \(stale) of the 12 records of the first zone, which iCloud no longer has")
+        await finish(zone, [a, b])
     }
 
     // MARK: Helpers
