@@ -87,7 +87,8 @@ final class Player {
         publish()
     }
 
-    /// The toy as `keeper` kept it, or every ring on when it kept none; kept there from now on.
+    /// The toy as `keeper` kept it, or every ring on when it kept none; kept there from now on. A toy read later, as
+    /// GameSave's folder loads, comes through `take(_:)`.
     init(keeper: Keeper) {
         play = keeper.keptPlay() ?? PlayState()
         self.keeper = keeper
@@ -162,6 +163,15 @@ final class Player {
     /// Sets the toy where `move` begins and plays it, with the lesson closed.
     func begin(at move: Move) {
         change { $0.begin(at: move) }
+    }
+
+    /// Makes `snapshot`'s toy the person's, as a toy read from where it is kept arrives: at once, closing the lesson
+    /// and the rings being set (see `PlayState.take`). Returns whether it did: not when it is the toy in play.
+    @discardableResult
+    func take(_ snapshot: ToySnapshot) -> Bool {
+        var took = false
+        change { took = $0.take(snapshot) }
+        return took
     }
 
     // MARK: Setting the rings

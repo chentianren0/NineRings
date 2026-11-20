@@ -19,7 +19,7 @@ struct NineRingsApp: App {
         #endif
         // The lesson's tip; what it knows stays on the device.
         LessonTip.configure()
-        _keeper = State(initialValue: Keeper(samplePlays: LaunchOptions.samplePlays))
+        _keeper = State(initialValue: Keeper(inMemory: LaunchOptions.keepsRecordsInMemory, samplePlays: LaunchOptions.samplePlays))
     }
 
     var body: some Scene {

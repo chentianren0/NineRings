@@ -40,6 +40,9 @@ import Puzzle
 /// - What is kept between launches is the person's own toy, as closing the lesson or cancelling the rings being set
 ///   would give it back, with the play in progress and the journeys toward achievements under way (``snapshot``).
 ///   Brought back, it goes on as it would have without the relaunch.
+/// - A kept toy can also arrive while the toy is in play, as when another device kept it (``take(_:)``). It becomes
+///   the person's toy at once, a jump, with its play and journeys, and the lesson and the rings being set close. The
+///   toy in play arriving, whatever time each says was spent on the play, changes nothing.
 public struct PlayState: Sendable, Equatable {
     /// The person's own toy. While the lesson is open it waits, and the lesson's toy is shown instead.
     public private(set) var own: PuzzleSession
@@ -198,6 +201,26 @@ public struct PlayState: Sendable, Equatable {
         own = PuzzleSession(at: move)
         own.togglePlay()
         settle(jump: true, rebase: true, beginsPlay: true)
+    }
+
+    /// The person's toy becomes the one `snapshot` keeps, at once, with its play in progress and its journeys under
+    /// way: a kept toy arriving while the toy is in play. The lesson and the rings being set close, and it says where
+    /// the toy rests, or where it stopped part way. Returns whether it did: nothing changes when `snapshot` keeps the
+    /// toy in play, whatever time each says was spent on the play (``ToySnapshot/isSameToy(as:)``), or when its moves
+    /// break the rule.
+    @discardableResult
+    public mutating func take(_ snapshot: ToySnapshot) -> Bool {
+        guard !snapshot.isSameToy(as: self.snapshot), let toy = snapshot.toy else { return false }
+        lesson = nil
+        settingRings = nil
+        own = toy
+        judged = toy
+        play = snapshot.play
+        congratulation = Congratulation(isArmed: snapshot.play != nil)
+        achievementRule = AchievementRule(underWay: snapshot.journeys)
+        settle(jump: true, rebase: true, sayingWhereItRests: !own.isPartWay)
+        if own.isPartWay { narration = Narration([.paused(own.status)]) }
+        return true
     }
 
     /// Opens the lesson at step `index`, counted from 0, keeping the toy as it is to give back on closing.

@@ -1,3 +1,4 @@
+import Foundation
 import Motion
 import Puzzle
 import Testing
@@ -227,5 +228,89 @@ import Testing
         state = PlayState(PuzzleSession(resting: PuzzleState("100000000")!))
         state.tap(1)
         #expect(playOut(&state).congratulated == 1)
+    }
+
+    // MARK: - A kept toy arriving
+
+    /// A toy kept elsewhere, two moves in, with a play in progress and time spent on it.
+    private var keptElsewhere: ToySnapshot {
+        var other = PlayState()
+        for ring in PuzzleState.allOn.moves(to: .allOff).prefix(2) {
+            other.tap(ring)
+            playOut(&other)
+        }
+        other.spend(42)
+        return other.snapshot
+    }
+
+    /// The toy arrives at once, silently, with its play, its time and its journeys, and says where it rests.
+    @Test func aToyArrivingBecomesThePersonsAtOnce() {
+        var state = PlayState()
+        let snapshot = keptElsewhere
+        let took = state.take(snapshot)
+        #expect(took)
+        #expect(state.snapshot == snapshot)
+        #expect(state.jumps == 1)
+        expectSilent(&state, "a toy arriving")
+        #expect(state.narration == Narration([.rested(ToySummary(state.toy.state))]))
+        #expect(state.play?.secondsSpent == 42)
+        #expect(state.finished == nil && !state.isCongratulating)
+    }
+
+    /// The toy in play arriving, with another time spent on it, changes nothing: no jump, and the lesson stays open.
+    @Test func theToyInPlayArrivingChangesNothing() {
+        var state = PlayState()
+        state.tap(1)
+        playOut(&state)
+        var later = state
+        later.spend(30)
+        state.openLesson(at: 2)
+        let jumps = state.jumps
+        let took = state.take(later.snapshot)
+        #expect(!took)
+        #expect(state.jumps == jumps && state.lesson != nil)
+        #expect(state.snapshot.play?.secondsSpent != later.snapshot.play?.secondsSpent, "the play keeps its own time")
+    }
+
+    /// The lesson and the rings being set close: the toy arriving is the person's own.
+    @Test func aToyArrivingClosesTheLessonAndTheRingsBeingSet() {
+        var state = PlayState()
+        state.openLesson(at: 3)
+        let tookOverLesson = state.take(keptElsewhere)
+        #expect(tookOverLesson)
+        #expect(state.lesson == nil && state.toy == state.own)
+
+        state = PlayState()
+        state.startSettingRings()
+        let snapshot = keptElsewhere
+        let tookOverRings = state.take(snapshot)
+        #expect(tookOverRings)
+        #expect(!state.isSettingRings)
+        #expect(state.snapshot == snapshot)
+    }
+
+    /// A play arriving goes on: the person's own last move congratulates and finishes it, with the moves made before.
+    @Test func thePlayArrivingIsFinishedByTheLastMove() throws {
+        var other = PlayState()
+        let moves = PuzzleState.allOn.moves(to: .allOff)
+        for ring in moves.dropLast() {
+            other.tap(ring)
+            playOut(&other)
+        }
+        var state = PlayState()
+        let took = state.take(other.snapshot)
+        #expect(took)
+        state.tap(try #require(moves.last))
+        #expect(playOut(&state).congratulated == 1)
+        #expect(state.finished?.moves == moves.count)
+    }
+
+    @Test func aToyThatBreaksTheRuleIsNotTaken() throws {
+        let json = #"{"start":"111111111","moves":[1,5],"queue":[],"isSolving":false,"journeys":[]}"#
+        let snapshot = try #require(ToySnapshot(data: Data(json.utf8), format: 1))
+        var state = PlayState()
+        let took = state.take(snapshot)
+        #expect(!took)
+        #expect(state.jumps == 0)
     }
 }

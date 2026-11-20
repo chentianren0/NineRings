@@ -43,20 +43,27 @@ enum LaunchOptions {
         #endif
     }
 
-    #if DEBUG
-    /// Whether this launch sets up or plays its own toy, or asks for sample plays: `-keeps-toy NO`, `-move`,
-    /// `-set-rings`, `-play-last-move`, the store's pictures, the frame capture and `-sample-plays`. Such a launch has
-    /// to start where it says and leave what the person keeps as it was. Today every launch keeps its records in memory
-    /// and nothing reads this; it is the list of launches that are to stay in memory once the records are kept between
-    /// launches.
-    private static var keepsRecordsInMemory: Bool {
+    /// Whether this launch keeps the toy and the finished plays in memory, for itself only, and never opens GameSave's
+    /// folder, which the person's other launches and devices share. A measuring build does. So does a debug launch that
+    /// sets up or plays its own toy, or asks for sample plays: `-keeps-toy NO`, `-move`, `-set-rings`,
+    /// `-play-last-move`, the store's pictures, the frame capture and `-sample-plays`. Such a launch has to start where
+    /// it says and leave what the person keeps as it was. Every other launch, a plain debug launch too, uses the
+    /// folder: iCloud Drive has no separate place for development.
+    static var keepsRecordsInMemory: Bool {
+        #if MEASURE
+        return true
+        #elseif DEBUG
         let arguments = ProcessInfo.processInfo.arguments
         let keepsNoToy = arguments.firstIndex(of: "-keeps-toy").map { $0 + 1 < arguments.count && arguments[$0 + 1] == "NO" } ?? false
         let setsUpToy = keepsNoToy || move != nil || settingRings != nil || ScreenLaunchOptions.playsLastMove
             || StoreCapture.isActive || Capture.request != nil
         return setsUpToy || arguments.contains("-sample-plays")
+        #else
+        return false
+        #endif
     }
 
+    #if DEBUG
     /// `-set-rings 110100000` opens the app setting the rings by hand, set to that arrangement: nine digits, ring 1
     /// first, 1 for on.
     static var settingRings: PuzzleState? {
