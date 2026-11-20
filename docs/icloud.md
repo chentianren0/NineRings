@@ -138,7 +138,7 @@ CloudKit gives every stored record a change tag, which changes with each save. A
 
 A device that has never seen the record sends no tag. If a record of that name already exists, the save is refused in the same way, with iCloud's record attached. Apple's documentation does not describe this case; an Apple engineer and a developer's report do [49] (open points 1 and 2).
 
-A change tag holds within one zone. Tags are counters for each zone, and they start again when a zone is made again under its name, so a tag from the old zone can equal a tag in the new one [54]. No device makes a zone again under its name (principle 8), and a base from another zone is emptied when a device joins (section 8).
+A change tag holds within one zone. Tags are counters for each zone, and they start again when a zone is made again under its name, so a tag from the old zone can equal a tag in the new one [54]. No device makes a zone again under its name (principle 8), and a base from another zone is emptied before the device sends into a new one (sections 8 and 9).
 
 ### What a device does
 
@@ -180,7 +180,7 @@ The stamps serve the cases that the change tag alone cannot settle. A device's o
 
 1. **A play is finished.** The store adds it as *unsent* and queues its record. The record's name is the play's id. A play is recorded once on a device: finishing under an id the store already holds changes nothing.
 2. **The record is handed to iCloud.** When the engine asks for the record, the entry becomes *sent*. This is saved in the store before the record is handed over.
-3. **iCloud accepts the record.** The play becomes *in iCloud*. If the entry is no longer here because a deletion of that record arrived while the save was on its way, another device had cleared the play. The entry then comes back as *cleared*, and its deletion is queued, so that the clearing stands.
+3. **iCloud accepts the record.** The play becomes *in iCloud*. If the entry is no longer here, the play was cleared while the save was on its way, on this device or on another: in the zone the device uses, an entry can be gone for no other reason. The entry then comes back as *cleared*, and its deletion is queued, so that the clearing stands. A purge or another account puts the device out of that zone, and then the answer is ignored (section 9).
 4. **iCloud refuses the record because one of that name exists.** Either the same play was also finished on another device, or this device is offering what iCloud already has. The record in iCloud stands. Its content replaces the entry here, which becomes *in iCloud*. Whichever arrived first is kept. Should the refusal come without the record [49], the entry becomes *in iCloud* with the content it has, and the device asks the engine to fetch.
 5. **A finished play arrives.** It is added, or replaces the entry of the same id, as *in iCloud*. An entry that is *cleared* stays cleared.
 6. **A deletion arrives.** The entry is removed. An entry that is *unsent* stays, because iCloud never had it. If the entry was *cleared*, its own queued deletion is withdrawn.
@@ -198,7 +198,7 @@ Clearing removes what this device knew was in iCloud, or might be there. A play 
 
 1. The app opens the store and shows the toy from it. It never waits for iCloud.
 2. It creates the engine, with the saved state or with none.
-3. If the engine has its saved state, the app queues again whatever the store marks as not yet received: plays that are *unsent* or *sent*, deletions for plays that are *cleared*, and the toy if it is marked as changed and no toy is held. The engine drops duplicates [3]. A crash between a change and its sending therefore loses nothing.
+3. If the engine has its saved state, the app queues again whatever the store marks as not yet received: plays that are *unsent* or *sent*, deletions for plays that are *cleared*, and the toy if it is marked as changed and no toy is held. The engine drops duplicates [3]. A crash between a change and its sending therefore loses nothing. If the device's zone is one it created and iCloud has not yet confirmed, nothing is queued until this run's fetch has finished (section 9).
 4. If the engine started from nothing, the app queues nothing and builds no record until the account is known. Then the device joins, as described next, and the join queues everything. What the store holds may belong to another account, and Apple does not document that an engine which starts from nothing clears what was queued before it named the account [18].
 5. It asks the engine to fetch.
 
@@ -241,19 +241,22 @@ The zone's name ends in a number, starting at 1, and a name is used once (princi
 - **The zone in use** is the existing zone with the highest number. A device that hears of an existing zone with a higher number than its own, or that has no zone, joins it and keeps everything (section 8).
 - **Other zones.** Answers and records that belong to a zone other than the one the device uses are ignored. A device whose zone is marked as *deleted* uses none.
 - **Sending.** A device sends only into a zone it knows to exist: one the engine has reported as existing, or one whose creation iCloud has confirmed to it.
-- **Creating a zone.** A device that has something to send and no zone to send it to creates one, with the number after the highest it has heard of. It does so only after a fetch in this run has finished without naming an existing zone. Until iCloud confirms the creation, only the zone is queued. *Something to send* is a play that is *unsent* or *sent*, a *cleared* entry, or a toy that is marked as changed while none is held. Saving a zone that exists changes nothing, and two engines that each saved the same new zone ended with one [54]. Two devices at the same instant are open point 16.
+- **Creating a zone.** A device that has something to send and no zone to send it to creates one, with the number after the highest it has heard of. It does so only after a fetch in this run has finished without naming an existing zone. Until iCloud confirms the creation, only the zone is queued. *Something to send* is a play that is *unsent* or *sent*, a *cleared* entry, or a toy that is marked as changed while none is held. A zone the device creates counts as heard of: its number is then the highest the device has heard of. Saving a zone that exists changes nothing, and two engines that each saved the same new zone ended with one [54]. Two devices at the same instant are open point 16.
+- **A zone not yet confirmed at launch.** Nothing is queued until this run's fetch has finished. If the fetch names that zone as existing, it is confirmed. If it names a higher existing zone, the device joins that one. If it names a deletion that counts, the deletion is handled as below. Otherwise the device queues the same zone again, under the same number.
 
 ### When a zone is deleted
 
 The engine reports the deletion of a zone together with a reason [6]. It tells every engine that held state for the zone, and also an engine that starts from nothing, of every zone that was deleted and whose name is not in use again [54].
 
-A deletion counts for a device if the device has a zone number and the deleted zone's number is not lower than it. Then the reason decides, as the table says. Afterwards the store notes the deleted zone's number as the device's zone, marked as *deleted*. If several deletions count in one report, and one of them is a purge or a deletion, the device removes its data as for a purge. A deletion with a lower number, and any deletion heard by a device with no zone number, changes nothing that the device holds. An engine that starts from nothing hears of old deletions too: a device that has never joined, or that returns after a sign-out, must not take them for its own, and a device that was asleep must.
+A deletion counts for a device if the device has a zone number and the deleted zone's number is not lower than it. Then the reason decides, as the table says. Afterwards the store notes the deleted zone's number as the device's zone, marked as *deleted*. If several deletions count in one report, the highest of their numbers becomes the device's zone, and if one of them is a purge or a deletion, the device removes its data as for a purge. A deletion with a lower number, and any deletion heard by a device with no zone number, changes nothing that the device holds. An engine that starts from nothing hears of old deletions too: a device that has never joined, or that returns after a sign-out, must not take them for its own, and a device that was asleep must.
 
 | Reason | What it means | The device |
 |---|---|---|
 | Purged | The person deleted the app's data from iCloud in Settings. Apple tells them it is then removed from every device that syncs [42]. | removes the history, puts the toy back to its untouched start, and empties the toy's notes: its base, its marks, its stamps and any held toy. The account note, the engine's state and the highest zone number stay. What was removed is never sent again [7]. Afterwards the device joins the next zone when another device has made it, or creates it when the person plays again. |
-| Encrypted data reset | The person had to reset their encrypted data to recover their account. The zone could no longer be decrypted and is gone [34]. They did not ask for the app's data to be deleted. | keeps everything, and joins the next zone at once, so that its copy goes to iCloud again: the zone another device has made, or one it creates. The join empties the toy's base and the system fields of a held toy, and marks the toy as changed unless it is untouched (section 8). |
+| Encrypted data reset | The person had to reset their encrypted data to recover their account. The zone could no longer be decrypted and is gone [34]. They did not ask for the app's data to be deleted. | keeps everything, and goes on in the next zone at once, as described below the table, so that its copy goes to iCloud again. |
 | Deleted | Another copy of the app deleted the zone. No version in this design does that. | treats it as purged. A later version that wants to delete everything everywhere can then do so by deleting the zone. |
+
+A device that keeps its data after losing its zone, because of a reset or because its zone was found missing with no report, does three things at once. Every play that is *in iCloud* goes back to *sent*. The toy's base and the system fields of a held toy are emptied. The toy is marked as changed unless it is untouched. The device then has something to send, and it joins the next zone or creates it, by the rules of the zone in use.
 
 Apple's pages disagree about what to do after an encryption reset [7]. This design sends the data again, because after such a reset the copies on the devices are the only ones left.
 
@@ -261,7 +264,7 @@ After a reset the first device to send its toy into the next zone creates the re
 
 ### When a save finds no zone
 
-A save can also fail because the zone is missing. iCloud then attaches no record and creates nothing, and the engine drops the save [54]. The device never makes that zone again. It fetches first, so that a deletion and its reason are seen before anything is sent again. If the failure itself is marked as an encryption reset [34], the device acts on that. If no deletion is reported, the device keeps everything, notes its zone as *deleted*, and goes on in the next zone.
+A save can also fail because the zone is missing. iCloud then attaches no record and creates nothing, and the engine drops the save [54]. The device never makes that zone again. It fetches first, so that a deletion and its reason are seen before anything is sent again. If the failure itself is marked as an encryption reset [34], the device acts on that. If no deletion is reported, the device keeps everything, notes its zone as *deleted*, and goes on in the next zone at once, as described above for a device that keeps its data.
 
 ## 10. When something fails
 
@@ -380,7 +383,7 @@ Apple does not document these. Each is to be verified in the running app, on rea
 12. **Accounts in unusual states.** Developers have reported errors about user keys on some accounts [46].
 13. **How long iCloud keeps the report of a zone's deletion.** At least 40 minutes, in the development environment [54]. Apple publishes no time span. A device that was away for longer is not told why its zone is gone (section 16).
 14. **The sign-in at a first launch.** A developer reports that an engine that starts from nothing always reports a sign-in [17]. Apple's documentation does not say so. If no such report comes, the app asks CloudKit for the account's id when it joins (section 8).
-15. **The reasons purged and reset.** Only the reason "deleted" could be produced in the development environment [54]. It has to be verified on devices that a purge and a reset are reported in the same way, also to an engine with no state.
+15. **The reasons purged and reset.** Only the reason "deleted" could be produced in the development environment [54]. For a purge it is verified on devices: the app's data is deleted in Settings while a second device is asleep, and a third device joins afterwards. A reset cannot be provoked, so that it is reported in the same way stays an assumption, and its rule is tested without CloudKit only (point 8).
 16. **Two devices that create the same zone at the same instant.** Two engines in one process that each saved the same new zone ended with one zone, but their saves ran one after the other [54].
 
 ## 16. The choices, and what was set aside
@@ -443,7 +446,7 @@ Apple does not document these. Each is to be verified in the running app, on rea
 - *Set aside:* one key for the zone, available from iOS 26. It saves some storage and cannot be changed later.
 
 **14. A zone's name is used once.**
-- *Why:* CloudKit keeps a zone's change tags, its tokens and the report of its deletion under the zone's name [54]. Under a name that is used again, a device that knew the old zone is told nothing, keeps the old zone's records, and can replace a toy it has never seen when the tags happen to be equal. Under a new name, every device is told what became of the zone it knew, and a save into the old zone is refused.
+- *Why:* CloudKit keeps a zone's change tags, its tokens and the report of its deletion under the zone's name [54]. Under a name that is used again, a device that knew the old zone is told nothing, keeps the old zone's records, and can replace a toy it has never seen when the tags happen to be equal. Apple's 2018 paper says that creating a zone again makes the old tokens invalid [50], but the test saw no such error, and the device was told nothing [54]. Under a new name, every device is told what became of the zone it knew, and a save into the old zone is refused.
 - *Set aside:* making the zone again under its name, as Apple's sample does [10].
 - *Set aside:* one name, with a record of the app's own that marks each copy. It needs a third kind of record, CloudKit cannot check it when a toy is saved, and it rebuilds what the zone's name already provides.
 
@@ -492,7 +495,7 @@ Apple does not document these. Each is to be verified in the running app, on rea
 | The answer to a save is lost | The record's stamp shows the device that the record in iCloud is its own. A finished play stays *sent*, so clearing still reaches it. |
 | A save lands, its answer is lost, and the person plays on elsewhere | The first device finds its own stamp among the arriving toy's earlier stamps and takes the toy up. |
 | An answer or a record arrives out of order | A version older than the one the device holds changes nothing. The base never goes back. |
-| A play's save lands after another device cleared that play | The play stays cleared, and its deletion is sent. |
+| A play's save lands after the play was cleared, here or on another device | The play stays cleared, and its deletion is sent. |
 | An older version meets a newer format | A finished play is counted and not shown. A toy is neither taken up nor replaced. |
 | A device's clock is wrong | Only the order and the times shown in the history are affected. |
 
