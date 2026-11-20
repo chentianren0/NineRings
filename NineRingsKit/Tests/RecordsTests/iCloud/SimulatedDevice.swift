@@ -183,13 +183,14 @@ final class Watcher {
     private var finishedAt: [String: Int] = [:]
     /// When a clearing last took each play away: the clearing device showed it.
     private var clearedAt: [String: Int] = [:]
-    /// When a clearing took a play away while a device held its own finish of that play, unsent. On another device,
-    /// that finish comes back if it is sent before the record reaches that device, and goes with the clearing if it is
-    /// not. On the clearing device, the unsent entry is removed and no deletion is sent, so a copy that another device
-    /// finished and sent stays in iCloud (section 7, rules 1 and 7).
+    /// When a clearing took a play away while a device held its own finish of that play with its first save not
+    /// answered. On another device, that finish comes back if it is sent before the record reaches that device, and
+    /// goes with the clearing if it is not; a first save that landed and whose answer has not come back is sent again
+    /// as a first save, and brings the play back (section 16). On the clearing device, an unsent entry is removed and no
+    /// deletion is sent, so a copy that another device finished and sent stays in iCloud (section 7, rules 1 and 7).
     private var clearedWhileUnsent: [String: Int] = [:]
-    /// The plays the other devices hold unsent than the one named: their own finishes, which iCloud never had, and which
-    /// a clearing elsewhere does not reach (section 7, an arriving deletion leaves an unsent play alone).
+    /// The plays the devices other than the one named hold with their first save not answered: their own finishes,
+    /// which a clearing elsewhere does not reach for certain.
     var unsentElsewhere: (String) -> Set<String> = { _ in [] }
     /// When a device last lost each play with data the design lets go: in a purge it was told of, or, while the play
     /// had not reached iCloud, with another account's data, a backup brought back, or an app that was deleted.
@@ -549,7 +550,7 @@ final class SimulatedDevice: StandInEngineDelegate {
     }
 
     func clearHistory() {
-        watcher.cleared(plays: Set(shownPlayIDs.map(\.uuidString)), on: name, unsentThere: playsNeverSent)
+        watcher.cleared(plays: Set(shownPlayIDs.map(\.uuidString)), on: name, unsentThere: playsNeverAnswered)
         trace?("\(name) clears \(shownPlayIDs.map { $0.uuidString.prefix(8) }.sorted())")
         allowingLeaving(.any) { apply(must { try sync.clearHistory() }) }
     }
@@ -906,9 +907,12 @@ final class SimulatedDevice: StandInEngineDelegate {
         Set((must { try sync.store.allPlays() } ?? []).map(\.playID.uuidString))
     }
 
-    /// The plays finished here and never handed over.
-    var playsNeverSent: Set<String> {
-        Set((must { try sync.store.allPlays() } ?? []).filter { $0.sync == .unsent }.map(\.playID.uuidString))
+    /// The plays finished here whose first save iCloud has not answered: never handed over, or handed over without
+    /// system fields and not answered yet. Sent again, such a play is a first save once more.
+    var playsNeverAnswered: Set<String> {
+        Set((must { try sync.store.allPlays() } ?? []).filter { entry in
+            entry.sync == .unsent || (entry.sync == .sent && entry.systemFields == nil)
+        }.map(\.playID.uuidString))
     }
 
     /// The plays held here that iCloud lacks, in every zone of the account the store's data belongs to: what goes when

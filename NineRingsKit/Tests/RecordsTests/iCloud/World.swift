@@ -31,7 +31,7 @@ final class World {
             }
         }
         watcher.unsentElsewhere = { [unowned self] device in
-            devices.filter { $0.name != device }.reduce(into: []) { $0.formUnion($1.playsNeverSent) }
+            devices.filter { $0.name != device }.reduce(into: []) { $0.formUnion($1.playsNeverAnswered) }
         }
     }
 

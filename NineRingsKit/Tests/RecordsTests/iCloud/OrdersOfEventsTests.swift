@@ -94,6 +94,9 @@ import Testing
         if let zone = order.world.personsZone {
             lines.append("iCloud holds \(order.world.cloud.records(zone: zone, account: World.person).compactMap { $0.playID?.uuidString.prefix(8) }.sorted())")
         }
+        for zone in order.world.cloud.zoneNames(account: World.person) where zone != order.world.personsZone {
+            lines.append("iCloud's zone \(zone.prefix(14)), which no device uses, holds \(order.world.cloud.records(zone: zone, account: World.person).compactMap { $0.playID?.uuidString.prefix(8) }.sorted())")
+        }
         for (what, count) in order.world.watcher.tally.counts.sorted(by: { $0.key < $1.key }) { lines.append("\(what): \(count)") }
         let file = URL.temporaryDirectory.appending(path: "orders-\(seed).txt")
         try lines.joined(separator: "\n").write(to: file, atomically: true, encoding: .utf8)
