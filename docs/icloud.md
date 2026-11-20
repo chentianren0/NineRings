@@ -138,17 +138,20 @@ A device that has never seen the record sends no tag. If a record of that name a
 
 1. **The person changes the toy.** The store marks the toy as changed. A change in time spent alone does not set the mark.
 2. **A sending moment comes** (section 11). If the toy is marked as changed and no toy is held, the device queues the Toy record. The record is built when the engine asks for it, from the toy as it then is, the base's tag, and the stamps: the base's stamps, followed by this version's own. A toy that has not changed since it was last handed over keeps its stamp, so sending it again uses no new one. The stamp is saved in the store before the record is handed over. If a toy is held by then, no record is built.
-3. **iCloud accepts the save.** The returned record becomes the base. If the toy has not changed since it was handed over, the mark is cleared.
+3. **iCloud accepts the save.** The returned record becomes the base. If the toy has not changed since it was handed over, the mark is cleared. An answer can arrive late, when a later version is already the base or is held. The returned record is then an earlier version, as the second case of step 5 describes, and the base stays as it is.
 4. **iCloud refuses the save,** because the record there is not the one this device saw. The device treats the record that came back as an arriving toy. Should a refusal ever come without the record [49], the device asks the engine to fetch, and the record arrives that way.
-5. **A toy arrives,** through a fetch or with a refusal. The first of these six cases that fits is the one that applies.
+5. **A toy arrives,** through a fetch or with a refusal. The first of these seven cases that fits is the one that applies.
    - *It is the record this device already holds as its base,* with the same change tag. Nothing is new, and nothing happens. A fetch from nothing delivers the record again in this way.
+   - *It is an earlier version than one this device already holds.* Its own stamp is among the earlier stamps of the base, or of a held toy. Nothing happens. Answers and records can arrive out of order, and the base never goes back.
    - *Its own stamp is one of this device's own stamps.* It is this device's own send coming back, and it becomes the base. If it is the same toy as the one here, the mark is cleared. If the toy here has changed since, the mark stays and the toy is queued again.
    - *It is the same toy as the one here.* It becomes the base, and the mark is cleared.
-   - *The toy here is not marked as changed.* The device **takes the arriving toy up**: it replaces the toy here at the next calm moment, and at that moment it becomes the base. Until then the base stays as it was. If the person changes the toy before that moment comes, the last case applies.
+   - *The toy here is not marked as changed.* The device **takes the arriving toy up**: it replaces the toy here at the next calm moment. At that moment it becomes the base, and the note of the last send is emptied, because the toy here has then never been handed over. Until then the base stays as it was. If the person changes the toy before that moment comes, the last case applies.
    - *The toy here is marked as changed, but it has not changed since it was handed over, and its stamp is among the arriving toy's earlier stamps.* This device's save reached iCloud, although its answer did not come back, and whoever wrote the arriving toy had that save before them. The device takes the arriving toy up, as in the case before.
    - *Otherwise.* Both devices have changed the toy. The device **holds** the arriving toy and shows the offer. The base stays as it was.
+
+   When an arriving toy becomes the base in the third or the fourth case, a toy that was held is no longer held: iCloud has gone on from the record it came from.
 6. **The person answers the offer.**
-   - *Play That One.* The held toy replaces the toy here and becomes the base, and the mark is cleared. Nothing is sent.
+   - *Play That One.* The held toy replaces the toy here and becomes the base. The mark is cleared, and the note of the last send is emptied. Nothing is sent.
    - *Keep This One.* The held toy becomes the base, so the device has now seen it, and the toy here is sent at once. The other device takes it up when it arrives there.
 
 A *calm moment* is one in which no move is playing, the person is not dragging a move, and no lesson, hand-setting of rings or congratulation is open.
@@ -173,10 +176,10 @@ The stamps serve the cases that the change tag alone cannot settle. A device's o
 
 1. **A play is finished.** The store adds it as *unsent* and queues its record. The record's name is the play's id. A play is recorded once on a device: finishing under an id the store already holds changes nothing.
 2. **The record is handed to iCloud.** When the engine asks for the record, the entry becomes *sent*. This is saved in the store before the record is handed over.
-3. **iCloud accepts the record.** The play becomes *in iCloud*.
-4. **iCloud refuses the record because one of that name exists.** Either the same play was also finished on another device, or this device is offering what iCloud already has. The record in iCloud stands. Its content replaces the entry here, which becomes *in iCloud*. Whichever arrived first is kept.
+3. **iCloud accepts the record.** The play becomes *in iCloud*. If the entry is no longer here, a deletion arrived while the save was on its way: another device had cleared the play. The entry then comes back as *cleared*, and its deletion is queued, so that the clearing stands.
+4. **iCloud refuses the record because one of that name exists.** Either the same play was also finished on another device, or this device is offering what iCloud already has. The record in iCloud stands. Its content replaces the entry here, which becomes *in iCloud*. Whichever arrived first is kept. Should the refusal come without the record [49], the entry becomes *in iCloud* with the content it has, and the device asks the engine to fetch.
 5. **A finished play arrives.** It is added, or replaces the entry of the same id, as *in iCloud*. An entry that is *cleared* stays cleared.
-6. **A deletion arrives.** The entry is removed. An entry that is *unsent* stays, because iCloud never had it.
+6. **A deletion arrives.** The entry is removed. An entry that is *unsent* stays, because iCloud never had it. If the entry was *cleared*, its own queued deletion is withdrawn.
 7. **The person clears the history.** Entries that are *unsent* are removed at once. All other entries become *cleared*: they vanish from the screen, and their deletions are queued. When iCloud confirms a deletion, or reports that the record is already gone, the entry is removed for good.
 
 The history on screen is every entry that is not *cleared*, newest first. Entries in a format this version of the app does not know are counted and not shown (section 14).
@@ -191,8 +194,8 @@ Clearing removes what this device knew was in iCloud, or might be there. A play 
 
 1. The app opens the store and shows the toy from it. It never waits for iCloud.
 2. It creates the engine, with the saved state or with none.
-3. It queues again whatever the store marks as not yet received: plays that are *unsent* or *sent*, deletions for plays that are *cleared*, and the toy if it is marked as changed and no toy is held. The engine drops duplicates [3]. A crash between a change and its sending therefore loses nothing.
-4. If the engine started from nothing, the device joins, as described next.
+3. If the engine has its saved state, the app queues again whatever the store marks as not yet received: plays that are *unsent* or *sent*, deletions for plays that are *cleared*, and the toy if it is marked as changed and no toy is held. The engine drops duplicates [3]. A crash between a change and its sending therefore loses nothing.
+4. If the engine started from nothing, the app queues nothing and builds no record until the account is known. Then the device joins, as described next, and the join queues everything. What the store holds may belong to another account, and Apple does not document that an engine which starts from nothing clears what was queued before it named the account [18].
 5. It asks the engine to fetch.
 
 ### Joining
@@ -203,8 +206,8 @@ A device joins when its engine starts from nothing. That happens on its first la
 2. Every finished play marked *in iCloud* goes back to *sent*. Entries that are *cleared* stay cleared.
 3. The zone is queued for saving. The engine saves zones before records [10], and saving a zone that exists changes nothing.
 4. The device fetches. Plays that arrive are matched by id and become *in iCloud*. Deletions that arrive remove their entries, by rule 6 of section 7.
-5. What is still *unsent* or *sent* is queued for saving, and what is *cleared* for deletion.
-6. For the toy there is no special step. Its base stays as it is, and the rules of section 6 decide.
+5. What is still *unsent* or *sent* is queued for saving, and what is *cleared* for deletion. The toy is queued if it is marked as changed and no toy is held.
+6. For the toy there is no other step. Its base stays as it is, and the rules of section 6 decide.
 
 Joining gives a union: afterwards iCloud and the device both have every play that either of them had. The one exception is a play whose deletion iCloud still delivers to the joining device: that play is removed.
 
@@ -249,6 +252,7 @@ After a reset the first device to send its toy creates the record. Every other d
 | A save of a finished play is refused | The app | Section 7, rule 4. |
 | The answer to a save is lost, although the save may have landed [51] | The app | The marks stay, so the change is queued again at the next sending moment, the next return to the front or the next launch. The stamps, and the state *sent*, let the rules recognise a save that had landed (sections 6 and 7). |
 | iCloud no longer knows the record the device wanted to change | The app | The base is emptied and the toy is sent as a new record [10][52]. |
+| A deletion of the Toy record arrives | The app | No version in this design deletes that record. The base is emptied, and nothing else changes. |
 | The zone is missing | The app | Section 9. |
 | The person's iCloud storage is full [13] | The app | The data stays in the store, marked as not received. The engine drops such a save from its list [17], so the app queues it again at the next launch and the next time it comes to the front, and never in a loop. A line in the app's settings says so. |
 | Writing fetched changes into the store fails | The app | It stops saving the engine's state for this run, so that the same changes are fetched again [3][17]. Applying a change twice gives the same result as applying it once. |
@@ -327,7 +331,7 @@ Each payload's `format` starts at 1. The JSON is read leniently, so a version th
 A version that meets a higher format number than it knows never interprets the payload.
 
 - A finished play in a higher format is kept as it is and counted, not shown.
-- A toy in a higher format is held without an offer. It is neither taken up nor replaced, and while it is held this device sends no toy. This device's toy stays on the device until a version that can read the other one is installed, or until a readable toy arrives.
+- A toy in a higher format is held without an offer. It is neither taken up nor replaced, and while it is held this device sends no toy. This device's toy stays on the device until a version that can read the other one is installed, or until a readable toy arrives. A toy in a known format that this version still cannot read, because its JSON is broken or its moves break the puzzle's rule, is handled in the same way.
 
 ### Tests
 
@@ -407,7 +411,7 @@ Apple does not document these. Each is to be verified in the running app, on rea
 - *Set aside:* sending only when the app leaves the front. A Mac app can stay in front while the person walks away.
 
 **12. The Toy record carries the stamps of its last twenty versions.**
-- *Why:* a device's own save can come back as a fetched change before its confirmation [17]. Its confirmation can also be lost, and the save that is sent again is then refused because of the device's own first save [49][51]. Without its own stamp on the record, the device would take its own toy for another device's. And when another device has gone on from a save whose answer was lost, the earlier stamps show the first device that the arriving toy was written with its own in view. Without them it would ask the person about a play that only continues the one here.
+- *Why:* a device's own save can come back as a fetched change before its confirmation [17]. Its confirmation can also be lost, and the save that is sent again is then refused because of the device's own first save [49][51]. Without its own stamp on the record, the device would take its own toy for another device's. And when another device has gone on from a save whose answer was lost, the earlier stamps show the first device that the arriving toy was written with its own in view. Without them it would ask the person about a play that only continues the one here. The earlier stamps also show a device that a record is older than the one it holds, when an answer or a record arrives out of order.
 - *What the stamps are not:* they name versions of the one record, in the order in which CloudKit accepted them. They name no device, and they compare no times.
 - *Set aside:* comparing change tags alone.
 
@@ -454,6 +458,8 @@ Apple does not document these. Each is to be verified in the running app, on rea
 | The app crashes between a change and its sending | The store's marks queue the change again at the next launch. |
 | The answer to a save is lost | The record's stamp shows the device that the record in iCloud is its own. A finished play stays *sent*, so clearing still reaches it. |
 | A save lands, its answer is lost, and the person plays on elsewhere | The first device finds its own stamp among the arriving toy's earlier stamps and takes the toy up. |
+| An answer or a record arrives out of order | A version older than the one the device holds changes nothing. The base never goes back. |
+| A play's save lands after another device cleared that play | The play stays cleared, and its deletion is sent. |
 | An older version meets a newer format | A finished play is counted and not shown. A toy is neither taken up nor replaced. |
 | A device's clock is wrong | Only the order and the times shown in the history are affected. |
 
@@ -480,7 +486,7 @@ Each entry says what kind of source it is. *Doc* is Apple's documentation, inclu
 15. *Doc.* "Pushing background updates to your App", `NSApplicationDelegate`, "Configuring background execution modes". On iPhone and iPad a silent push can start or wake the app in the background, with low priority, possibly throttled, and not after the person force-quit the app. A Mac app receives pushes only while it runs, and macOS has no background modes.
 16. *Apple, other.* Developer Forums thread 756315 (an Apple engineer, June 2024). On the Mac, CloudKit syncing mostly when the app comes to the front is as designed.
 17. *Reports.* Developers who shipped the engine, in published notes of 2026 and in Developer Forums threads 771941 and 774014. A save refused for a full quota drops out of the pending list. A device's own changes sometimes come back as fetched changes. The state must be saved only after the fetched changes are safely stored. An engine created without saved state reports a sign-in. One developer saw a fetch from nothing replay the zone's history, deletions included; see [50].
-18. *Not documented.* What the engine does with a state restored from a backup, or with an expired change token. Its save policy, which only an engineer's answer names; see [49]. Whether it registers for pushes by itself. What it reports when only the app's iCloud switch is turned off.
+18. *Not documented.* What the engine does with a state restored from a backup, or with an expired change token. Its save policy, which only an engineer's answer names; see [49]. Whether it registers for pushes by itself. What it reports when only the app's iCloud switch is turned off. Whether an engine created without saved state clears changes that were queued before it reported the account.
 19. *Apple, other.* WWDC23 session 10188. Apple's advice: the Core Data container for a complete solution that includes storage, the engine for an app that brings its own storage, and the plain operations only for finer control.
 20. *Doc.* "Deploying an iCloud Container's Schema", "Integrating a Text-Based Schema into Your Workflow", `CKContainer`. The development schema can be written as text and applied with `cktool`. Deploying to production is done in CloudKit Console and only adds. Record types and fields in production cannot be deleted or changed. App Store and TestFlight builds use production, and Simulator uses only development. A container cannot be deleted or renamed.
 21. *Doc and Apple, other.* `Configuration.automaticallySync` and Apple's sample. Apple gives no stand-in for CloudKit in tests. With automatic syncing off, a test fetches and sends by hand, and several engines on the development database stand in for several devices.
