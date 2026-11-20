@@ -80,7 +80,10 @@ public struct Play: Sendable, Equatable, Codable {
 }
 
 /// A finished play, as its record keeps it: the numbers ``Play`` counts, with when it ended and where.
-public struct PlayRecord: Sendable, Equatable {
+///
+/// It is written as JSON with its ``rules``, and its rings as ``Play`` writes them. A record written with rules this
+/// build does not know cannot be read.
+public struct PlayRecord: Sendable, Equatable, Codable {
     /// What the numbers mean. It goes up if that ever changes, so that an older build can tell a record it does not
     /// understand.
     public static let rules = 1
@@ -119,6 +122,41 @@ public struct PlayRecord: Sendable, Equatable {
     /// for the person. From every ring on to every ring off that is 341 moves.
     public static func isShortestWay(from start: PuzzleState, to end: PuzzleState, moves: Int, undos: Int, movesPlayedForThePerson: Int) -> Bool {
         undos == 0 && movesPlayedForThePerson == 0 && moves == abs(start.rank - end.rank)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case rules, playID, startedAt, finishedAt, startRings, endRings, moves, undos, movesPlayedForThePerson, secondsSpent
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let rules = try container.decode(Int.self, forKey: .rules)
+        guard rules <= Self.rules else {
+            throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "rules \(rules) not known"))
+        }
+        playID = try container.decode(UUID.self, forKey: .playID)
+        startedAt = try container.decode(Date.self, forKey: .startedAt)
+        finishedAt = try container.decode(Date.self, forKey: .finishedAt)
+        startRings = try container.decode(Rings.self, forKey: .startRings).state
+        endRings = try container.decode(Rings.self, forKey: .endRings).state
+        moves = try container.decode(Int.self, forKey: .moves)
+        undos = try container.decode(Int.self, forKey: .undos)
+        movesPlayedForThePerson = try container.decode(Int.self, forKey: .movesPlayedForThePerson)
+        secondsSpent = try container.decode(Double.self, forKey: .secondsSpent)
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(Self.rules, forKey: .rules)
+        try container.encode(playID, forKey: .playID)
+        try container.encode(startedAt, forKey: .startedAt)
+        try container.encode(finishedAt, forKey: .finishedAt)
+        try container.encode(Rings(startRings), forKey: .startRings)
+        try container.encode(Rings(endRings), forKey: .endRings)
+        try container.encode(moves, forKey: .moves)
+        try container.encode(undos, forKey: .undos)
+        try container.encode(movesPlayedForThePerson, forKey: .movesPlayedForThePerson)
+        try container.encode(secondsSpent, forKey: .secondsSpent)
     }
 }
 

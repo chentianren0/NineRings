@@ -36,7 +36,8 @@ let package = Package(
             dependencies: ["Puzzle", "Toy", "Motion"],
             swiftSettings: [.strictMemorySafety()]
         ),
-        // The finished plays as values, and the sample plays for trying the app.
+        // The finished plays as values, the sample plays for trying the app, and the two files that keep the toy
+        // and the plays.
         .target(
             name: "Records",
             dependencies: ["Puzzle", "Session"],
