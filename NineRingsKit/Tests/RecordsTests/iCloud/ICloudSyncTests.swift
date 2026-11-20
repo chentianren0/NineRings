@@ -14,7 +14,7 @@ import Testing
     private var sync: ICloudSync
 
     init() throws {
-        container = try RecordStore.deviceContainer(in: .memory)
+        container = try RecordStore.syncContainer(in: .memory)
         sync = ICloudSync(store: RecordStore(container: container), madeOn: .iPhone, appVersion: "2.0")
     }
 
@@ -147,7 +147,7 @@ import Testing
         _ = try sync.fetched(FetchedChanges(records: [try record(of: inICloud)]))
         let finished = play(finishedAt: 2)
         _ = try sync.finished(finished)
-        _ = try sync.sent(SentChanges(failedSaves: [FailedSave(type: CloudRecord.finishedPlayType, id: playID(finished), reason: .storageFull)]))
+        _ = try sync.sent(SentChanges(failedSaves: [FailedSave(id: playID(finished), reason: .storageFull)]))
         #expect(sync.storageIsFull && sync.run.storageFullThisRun)
         #expect(try state(of: finished) == .unsent)
         #expect(try sync.toyChanged().engine.saves.isEmpty)
@@ -164,7 +164,7 @@ import Testing
         try joined()
         let finished = play()
         _ = try sync.finished(finished)
-        _ = try sync.sent(SentChanges(failedSaves: [FailedSave(type: CloudRecord.finishedPlayType, id: playID(finished), reason: .storageFull)]))
+        _ = try sync.sent(SentChanges(failedSaves: [FailedSave(id: playID(finished), reason: .storageFull)]))
         let front = try sync.cameToFront()
         #expect(front.engine.fetches && !front.engine.asksForAccount)
         #expect(front.engine.saves == [playID(finished)])
@@ -300,7 +300,7 @@ import Testing
     @Test mutating func aZoneNotKnownToExistIsGivenUp() throws {
         try joined()
         try sync.keep(toy([1]))
-        _ = try sync.sent(SentChanges(failedSaves: [FailedSave(type: CloudRecord.toyType, id: .toy(in: zone1.name), reason: .zoneGone(.missing))]))
+        _ = try sync.sent(SentChanges(failedSaves: [FailedSave(id: .toy(in: zone1.name), reason: .zoneGone(.missing))]))
         #expect(try zoneNote?.knowledge == .notKnownToExist)
         try fetch(pendingZoneSaves: [zone1.name])
         #expect(try zoneNote?.knowledge == .notKnownToExist, "the engine holds the zone's save")
@@ -425,7 +425,7 @@ import Testing
         let finished = play()
         _ = try sync.finished(finished)
         _ = try sync.batch(for: [.save(playID(finished))])
-        _ = try sync.sent(SentChanges(failedSaves: [FailedSave(type: CloudRecord.finishedPlayType, id: playID(finished), reason: .refused(serverRecord: nil))]))
+        _ = try sync.sent(SentChanges(failedSaves: [FailedSave(id: playID(finished), reason: .refused(serverRecord: nil))]))
         #expect(try state(of: finished) == .inICloud)
         try fetch(DatabaseChanges(existing: [zone2.name]))
         #expect(try state(of: finished) == .sent)
@@ -439,7 +439,7 @@ import Testing
         try joined()
         let finished = play()
         _ = try sync.finished(finished)
-        _ = try sync.sent(SentChanges(failedSaves: [FailedSave(type: CloudRecord.finishedPlayType, id: playID(finished), reason: .zoneGone(gone))]))
+        _ = try sync.sent(SentChanges(failedSaves: [FailedSave(id: playID(finished), reason: .zoneGone(gone))]))
         switch gone {
         case .missing: #expect(try zoneNote == ZoneNote(zone: zone1, knowledge: .notKnownToExist))
         case .encryptedDataReset: #expect(try zoneNote?.knowledge == .deleted && state(of: finished) == .unsent)
@@ -614,7 +614,7 @@ import Testing
         let finished = play()
         _ = try sync.finished(finished)
         _ = try sync.batch(for: [.save(playID(finished))])
-        let result = try sync.sent(SentChanges(failedSaves: [FailedSave(type: CloudRecord.finishedPlayType, id: playID(finished), reason: failure)]))
+        let result = try sync.sent(SentChanges(failedSaves: [FailedSave(id: playID(finished), reason: failure)]))
         #expect(try state(of: finished) == .sent)
         #expect(result.engine.withdrawnSaves == (failure == .other ? [playID(finished)] : []))
         #expect(try sync.toyChanged().engine.saves == [playID(finished)], "it goes out again at the next sending moment")
@@ -623,7 +623,7 @@ import Testing
     @Test func aToyRefusedWithoutItsRecordFetches() throws {
         try joined()
         try sync.keep(toy([1]))
-        let result = try sync.sent(SentChanges(failedSaves: [FailedSave(type: CloudRecord.toyType, id: .toy(in: zone1.name), reason: .refused(serverRecord: nil))]))
+        let result = try sync.sent(SentChanges(failedSaves: [FailedSave(id: .toy(in: zone1.name), reason: .refused(serverRecord: nil))]))
         #expect(try result.engine.fetches && sync.store.toySide().isChanged)
     }
 
@@ -632,19 +632,19 @@ import Testing
         let folder = URL.temporaryDirectory.appending(path: "ICloudSyncTests-\(UUID().uuidString)", directoryHint: .isDirectory)
         defer { try? FileManager.default.removeItem(at: folder) }
         do {
-            let writable = ICloudSync(store: RecordStore(container: try RecordStore.deviceContainer(in: .folder(folder))), madeOn: .Mac, appVersion: "2.0")
+            let writable = ICloudSync(store: RecordStore(container: try RecordStore.syncContainer(in: .folder(folder))), madeOn: .Mac, appVersion: "2.0")
             try writable.keep(toy([1]))
             _ = try writable.launched(engineStartsFromNothing: false)
         }
-        let readOnly = ModelConfiguration("Device", schema: RecordStore.deviceSchema, url: folder.appending(path: "Device.store"), allowsSave: false, cloudKitDatabase: .none)
-        let store = RecordStore(container: try ModelContainer(for: RecordStore.deviceSchema, configurations: readOnly))
+        let readOnly = ModelConfiguration("Sync", schema: RecordStore.syncSchema, url: folder.appending(path: "Sync.store"), allowsSave: false, cloudKitDatabase: .none)
+        let store = RecordStore(container: try ModelContainer(for: RecordStore.syncSchema, configurations: readOnly))
         let failing = ICloudSync(store: store, madeOn: .Mac, appVersion: "2.0")
         let before = try store.toySide()
         #expect(throws: (any Error).self) { try failing.keep(toy([1, 3])) }
         #expect(try store.toySide() == before)
         #expect(throws: (any Error).self) { try failing.finished(play()) }
         #expect(try store.allPlays().isEmpty)
-        #expect(!store.container.mainContext.hasChanges)
+        #expect(!store.syncContext.hasChanges)
     }
 
     /// Writing fetched changes fails: for the rest of the run nothing more is applied, nothing is sent, no fetch counts,
@@ -653,13 +653,13 @@ import Testing
         let folder = URL.temporaryDirectory.appending(path: "ICloudSyncTests-\(UUID().uuidString)", directoryHint: .isDirectory)
         defer { try? FileManager.default.removeItem(at: folder) }
         do {
-            let writable = ICloudSync(store: RecordStore(container: try RecordStore.deviceContainer(in: .folder(folder))), madeOn: .Mac, appVersion: "2.0")
+            let writable = ICloudSync(store: RecordStore(container: try RecordStore.syncContainer(in: .folder(folder))), madeOn: .Mac, appVersion: "2.0")
             _ = try writable.launched(engineStartsFromNothing: true)
             _ = try writable.accountAnswered(.account("person"))
             try writable.engineStateUpdated(Data("first".utf8))
         }
-        let readOnly = ModelConfiguration("Device", schema: RecordStore.deviceSchema, url: folder.appending(path: "Device.store"), allowsSave: false, cloudKitDatabase: .none)
-        let failing = ICloudSync(store: RecordStore(container: try ModelContainer(for: RecordStore.deviceSchema, configurations: readOnly)), madeOn: .Mac, appVersion: "2.0")
+        let readOnly = ModelConfiguration("Sync", schema: RecordStore.syncSchema, url: folder.appending(path: "Sync.store"), allowsSave: false, cloudKitDatabase: .none)
+        let failing = ICloudSync(store: RecordStore(container: try ModelContainer(for: RecordStore.syncSchema, configurations: readOnly)), madeOn: .Mac, appVersion: "2.0")
         _ = try failing.launched(engineStartsFromNothing: false)
         let request = failing.fetchWillBeRequested()
         failing.fetchBegan(manual: true)
@@ -695,6 +695,34 @@ import Testing
         #expect(try sync.batch(for: [.delete(playID(inICloud))]).deletions == [playID(inICloud)])
     }
 
+    /// A batch takes at most 250 of the changes it is offered, saves and deletions together; the rest stay as they are,
+    /// neither batched nor withdrawn.
+    @Test func aBatchTakesAtMostOneRequest() throws {
+        try joined()
+        let plays = (0..<300).map { play(finishedAt: TimeInterval($0)) }
+        for each in plays { _ = try sync.finished(each) }
+        let batch = try sync.batch(for: plays.map { .save(playID($0)) })
+        #expect(batch.records.count == Batch.mostChanges && batch.withdrawn.isEmpty)
+        #expect(try plays.prefix(250).allSatisfy { try state(of: $0) == .sent })
+        #expect(try plays.suffix(50).allSatisfy { try state(of: $0) == .unsent })
+    }
+
+    /// The steps come in the order the delegate applies them: the withdrawals, then the zone's save, the saves and the
+    /// deletions.
+    @Test func theStepsAreInOrder() {
+        let deleted = playID(play(), in: zone2)
+        var requests = EngineRequests()
+        requests.deletions = [deleted]
+        requests.saves = [.toy(in: zone2.name)]
+        requests.savesZone = zone2.name
+        requests.withdrawnSaves = [.toy(in: zone1.name)]
+        requests.withdrawsEverythingOutside = zone2.name
+        #expect(requests.steps == [
+            .withdrawEverythingOutside(zone2.name), .withdrawSave(.toy(in: zone1.name)), .saveZone(zone2.name),
+            .save(.toy(in: zone2.name)), .delete(deleted),
+        ])
+    }
+
     /// A play is recorded once; the history shows every entry that is not cleared, newest first, and counts what this build
     /// cannot read.
     @Test func theHistory() throws {
@@ -712,30 +740,35 @@ import Testing
 
     // MARK: The store
 
-    /// The device's store keeps the rules' models; the store that syncs through SwiftData never has them.
-    @Test func theDevicesStoreAloneKeepsTheRulesModels() {
-        #expect(Set(RecordStore.deviceSchema.entities.map(\.name)) == ["FinishedPlay", "SavedToy", "KeptToy", "KeptPlay", "SyncNotes"])
+    /// The rules' models are in a store of their own, which never syncs through SwiftData; neither the device's store nor
+    /// the store that syncs through SwiftData has them.
+    @Test func theRulesKeepAStoreOfTheirOwn() throws {
+        #expect(Set(RecordStore.syncSchema.entities.map(\.name)) == ["KeptToy", "KeptPlay", "SyncNotes"])
         #expect(Set(RecordStore.schema.entities.map(\.name)) == ["FinishedPlay", "SavedToy"])
+        for place in [RecordStore.Place.memory, .folder(URL.temporaryDirectory.appending(path: "ICloudSyncTests"))] {
+            let configuration = RecordStore.syncConfiguration(in: place)
+            #expect(Set(configuration.schema?.entities.map(\.name) ?? []) == ["KeptToy", "KeptPlay", "SyncNotes"])
+            #expect(String(describing: configuration.cloudKitDatabase) == String(describing: ModelConfiguration.CloudKitDatabase.none))
+        }
+        let folder = URL.temporaryDirectory.appending(path: "Places")
+        #expect(RecordStore.syncConfiguration(in: .folder(folder)).url == folder.appending(path: "Sync.store"))
+        #expect(RecordStore.syncConfiguration(in: .folder(folder)).url != RecordStore.deviceConfiguration(in: .folder(folder)).url)
     }
 
-    /// A device store written by the code before these rules opens without an error. Nothing it held is carried over.
-    @Test func aStoreWrittenBeforeOpens() throws {
+    /// The device's store, as the builds before these rules wrote it, is not touched: it opens as it was, and the rules'
+    /// store beside it starts empty. Nothing it held is carried over.
+    @Test func theDevicesStoreIsNotTouched() throws {
         let folder = URL.temporaryDirectory.appending(path: "ICloudSyncTests-\(UUID().uuidString)", directoryHint: .isDirectory)
         defer { try? FileManager.default.removeItem(at: folder) }
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        do {
-            let earlier = ModelConfiguration("Device", schema: RecordStore.schema, url: folder.appending(path: "Device.store"), cloudKitDatabase: .none)
-            let container = try ModelContainer(for: RecordStore.schema, configurations: earlier)
-            let store = RecordStore(container: container)
-            try store.record(play(), madeOn: .iPhone, appVersion: "1.0")
-            _ = try store.keep(toy([1]), installation: "earlier", appVersion: "1.0")
-        }
-        let store = RecordStore(container: try RecordStore.deviceContainer(in: .folder(folder)))
-        #expect(try store.playHistory().plays.count == 1, "the earlier way still reads")
-        let rules = ICloudSync(store: store, madeOn: .iPhone, appVersion: "2.0")
+        let earlier = RecordStore(container: try RecordStore.deviceContainer(in: .folder(folder)))
+        try earlier.record(play(), madeOn: .iPhone, appVersion: "1.0")
+        _ = try earlier.keep(toy([1]), installation: "earlier", appVersion: "1.0")
+        let rules = ICloudSync(store: RecordStore(container: try RecordStore.syncContainer(in: .folder(folder))), madeOn: .iPhone, appVersion: "2.0")
         #expect(try rules.toy() == nil && rules.history() == .empty)
         _ = try rules.launched(engineStartsFromNothing: true)
         _ = try rules.finished(play())
         #expect(try rules.history().plays.count == 1)
+        let reopened = RecordStore(container: try RecordStore.deviceContainer(in: .folder(folder)))
+        #expect(try reopened.playHistory().plays.count == 1, "the device's store holds what it held, and no more")
     }
 }

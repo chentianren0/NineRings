@@ -35,7 +35,8 @@ import Testing
 /// in the temporary folder, with what the orders reach. Neither runs unless asked for.
 @MainActor
 @Suite struct OrdersOfEventsTools {
-    @Test func sweep() throws {
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["ORDERS_SWEEP"] != nil))
+    func sweep() throws {
         let bounds = (ProcessInfo.processInfo.environment["ORDERS_SWEEP"] ?? "").split(separator: "-").compactMap { UInt64($0) }
         guard bounds.count == 2 else { return }
         var failing = 0
@@ -54,7 +55,8 @@ import Testing
         print("\(failing) of \(bounds[1] - bounds[0]) seeds failed")
     }
 
-    @Test func trace() throws {
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["ORDERS_TRACE"] != nil))
+    func trace() throws {
         guard let seed = ProcessInfo.processInfo.environment["ORDERS_TRACE"].flatMap({ UInt64($0) }) else { return }
         var lines: [String] = []
         let order = try RandomOrder(seed: seed)

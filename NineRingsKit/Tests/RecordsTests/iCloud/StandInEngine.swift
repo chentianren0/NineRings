@@ -201,25 +201,30 @@ final class StandInEngine {
 
     // MARK: Pending changes
 
-    /// Applies what the rules asked, as ``EngineRequests`` describes. Fetching and sending are left to the caller.
+    /// Applies what the rules asked, step by step, as ``EngineRequests/steps`` lists them. Fetching and sending are left
+    /// to the caller.
     func apply(_ requests: EngineRequests) {
         guard !requests.isEmpty else { return }
-        if requests.withdrawsEverything {
-            state.pending = []
-            state.pendingZoneSaves = []
-        } else if let zone = requests.withdrawsEverythingOutside {
-            state.pending.removeAll { $0.id.zone != zone }
-            state.pendingZoneSaves.removeAll { $0 != zone }
-        }
-        state.pending.removeAll { change in
-            switch change {
-            case .save(let id): requests.withdrawnSaves.contains(id)
-            case .delete(let id): requests.withdrawnDeletions.contains(id)
+        for step in requests.steps {
+            switch step {
+            case .withdrawEverything:
+                state.pending = []
+                state.pendingZoneSaves = []
+            case .withdrawEverythingOutside(let zone):
+                state.pending.removeAll { $0.id.zone != zone }
+                state.pendingZoneSaves.removeAll { $0 != zone }
+            case .withdrawSave(let id):
+                state.pending.removeAll { $0 == .save(id) }
+            case .withdrawDeletion(let id):
+                state.pending.removeAll { $0 == .delete(id) }
+            case .saveZone(let zone):
+                if !state.pendingZoneSaves.contains(zone) { state.pendingZoneSaves.append(zone) }
+            case .save(let id):
+                add(.save(id))
+            case .delete(let id):
+                add(.delete(id))
             }
         }
-        if let zone = requests.savesZone, !state.pendingZoneSaves.contains(zone) { state.pendingZoneSaves.append(zone) }
-        for id in requests.saves { add(.save(id)) }
-        for id in requests.deletions { add(.delete(id)) }
         if random.chance(choices.stateUpdateAfterChange) { handOverState() }
     }
 
@@ -276,16 +281,16 @@ final class StandInEngine {
             let change = Pending.save(record.id)
             if random.chance(choices.answerLost) {
                 if random.chance(choices.landsWhenAnswerLost) { _ = cloud.save(record, account: account, device: device) }
-                answer.failedSaves.append(FailedSave(type: record.type, id: record.id, reason: .answerLost))
+                answer.failedSaves.append(FailedSave(id: record.id, reason: .answerLost))
                 if choices.resendsLostAnswers { kept.append(change) }
                 continue
             }
             switch cloud.save(record, account: account, device: device) {
             case .saved(let saved): answer.saved.append(saved)
-            case .refused(let server): answer.failedSaves.append(FailedSave(type: record.type, id: record.id, reason: .refused(serverRecord: server)))
-            case .unknownItem: answer.failedSaves.append(FailedSave(type: record.type, id: record.id, reason: .unknownItem))
-            case .zoneGone(let gone): answer.failedSaves.append(FailedSave(type: record.type, id: record.id, reason: .zoneGone(gone)))
-            case .storageFull: answer.failedSaves.append(FailedSave(type: record.type, id: record.id, reason: .storageFull))
+            case .refused(let server): answer.failedSaves.append(FailedSave(id: record.id, reason: .refused(serverRecord: server)))
+            case .unknownItem: answer.failedSaves.append(FailedSave(id: record.id, reason: .unknownItem))
+            case .zoneGone(let gone): answer.failedSaves.append(FailedSave(id: record.id, reason: .zoneGone(gone)))
+            case .storageFull: answer.failedSaves.append(FailedSave(id: record.id, reason: .storageFull))
             }
         }
         for id in batch.deletions {

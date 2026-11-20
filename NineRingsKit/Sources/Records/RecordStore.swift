@@ -40,18 +40,14 @@ public final class RecordStore {
         case memory
     }
 
-    /// The models the device's own store keeps: those of ``schema``, and the toy, the finished plays and the notes the
-    /// iCloud rules keep (``ICloudSync``), which never go into a store that syncs through SwiftData.
-    static let deviceSchema = Schema([FinishedPlay.self, SavedToy.self, KeptToy.self, KeptPlay.self, SyncNotes.self])
-
     /// The device's own store in `place`, which never syncs: `cloudKitDatabase` is `.none` explicitly, so that the
     /// iCloud entitlement, once the app has it, does not make it sync.
     public static func deviceConfiguration(in place: Place) -> ModelConfiguration {
         switch place {
         case .folder(let folder):
-            ModelConfiguration("Device", schema: deviceSchema, url: folder.appending(path: "Device.store"), cloudKitDatabase: .none)
+            ModelConfiguration("Device", schema: schema, url: folder.appending(path: "Device.store"), cloudKitDatabase: .none)
         case .memory:
-            ModelConfiguration("Device", schema: deviceSchema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
+            ModelConfiguration("Device", schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         }
     }
 
@@ -60,11 +56,42 @@ public final class RecordStore {
         if case .folder(let folder) = place {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         }
-        return try ModelContainer(for: deviceSchema, configurations: deviceConfiguration(in: place))
+        return try ModelContainer(for: schema, configurations: deviceConfiguration(in: place))
+    }
+
+    /// The models the iCloud rules keep (``ICloudSync``): the toy, the finished plays and the notes, in a store of their
+    /// own. The device's store above stays as the builds before them wrote it, and the store that syncs through
+    /// SwiftData never has them.
+    static let syncSchema = Schema([KeptToy.self, KeptPlay.self, SyncNotes.self])
+
+    /// The iCloud rules' store in `place`, beside the device's store, which never syncs through SwiftData:
+    /// `cloudKitDatabase` is `.none`, as for the device's store.
+    public static func syncConfiguration(in place: Place) -> ModelConfiguration {
+        switch place {
+        case .folder(let folder):
+            ModelConfiguration("Sync", schema: syncSchema, url: folder.appending(path: "Sync.store"), cloudKitDatabase: .none)
+        case .memory:
+            ModelConfiguration("Sync", schema: syncSchema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
+        }
+    }
+
+    /// A container for the iCloud rules' store in `place`.
+    public static func syncContainer(in place: Place) throws -> ModelContainer {
+        if case .folder(let folder) = place {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        }
+        return try ModelContainer(for: syncSchema, configurations: syncConfiguration(in: place))
     }
 
     public let container: ModelContainer
     private var context: ModelContext { container.mainContext }
+    /// The iCloud rules' context: one of their own, which nothing else in the app shares and which never saves by itself,
+    /// so that what one call changes reaches the store in one save, and a rollback undoes that call alone.
+    lazy var syncContext: ModelContext = {
+        let context = ModelContext(container)
+        context.autosaveEnabled = false
+        return context
+    }()
     /// Whether the next save of the iCloud rules fails, as a full disk would make it: for the tests of a failed write.
     var failsNextSyncSave = false
 

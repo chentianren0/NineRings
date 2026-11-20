@@ -17,8 +17,8 @@ struct RunNotes: Equatable {
     /// Whether the app knows of no signed-in account: the engine reported a sign-out, or CloudKit answered that there
     /// is no account. No fetch is asked again for a request then (section 11).
     var knowsNoAccount = false
-    /// A start from nothing whose account's part is still to come (section 8).
-    var startFromNothing: StartFromNothing?
+    /// Whether a start from nothing waits for its account's part (section 8).
+    var startFromNothingWaitsForAccount = false
     /// Whether the engine was created without saved state and has not yet reported an account: its sign-in belongs to
     /// the start from nothing that began at launch.
     var awaitsEnginesSignIn = false
@@ -57,8 +57,6 @@ struct RunNotes: Equatable {
 
     /// Whether the app left the front while the gate waited, and keeps background time until it no longer does.
     var keepsBackgroundTime = false
-
-    struct StartFromNothing: Equatable {}
 
     struct ManualFetch: Equatable {
         var began: Int
@@ -330,7 +328,7 @@ extension ICloudSync {
         notes.engineState = nil
         run.heldEngineState = nil
         run.accountConfirmed = false
-        run.startFromNothing = RunNotes.StartFromNothing()
+        run.startFromNothingWaitsForAccount = true
     }
 
     /// The engine or CloudKit named `account`: the account table's row for an account, compared with the store's note.
@@ -357,10 +355,10 @@ extension ICloudSync {
             if usedAZone { run.noZoneSince = run.moment }
         }
         notes.account = account
-        if run.startFromNothing != nil {
+        if run.startFromNothingWaitsForAccount {
             if run.savesEngineState, let state = run.heldEngineState { notes.engineState = state }
             run.heldEngineState = nil
-            run.startFromNothing = nil
+            run.startFromNothingWaitsForAccount = false
         }
         run.accountConfirmed = true
     }

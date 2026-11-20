@@ -23,7 +23,7 @@ import SwiftData
 ///
 /// | The engine, or the app's request | The delegate calls |
 /// |---|---|
-/// | is about to be created, at launch | ``launched(engineStartsFromNothing:)``, with whether ``engineState()`` was nil |
+/// | is about to be created, at launch | ``launched(engineStartsFromNothing:)``, with whether it is created without a saved state: ``engineState()`` was nil, or could not be read |
 /// | `stateUpdate` | ``engineStateUpdated(_:)``, with the state serialized |
 /// | `accountChange` | ``accountChanged(_:)``, with the user record ids' `recordName`s |
 /// | `fetchedDatabaseChanges` | ``databaseChanged(_:)``, with every zone it names, changed and deleted |
@@ -40,8 +40,8 @@ import SwiftData
 ///
 /// The events `willFetchRecordZoneChanges`, `willSendChanges` and `didSendChanges` need no call.
 ///
-/// Each call returns what to do, which the delegate applies as ``EngineRequests`` describes: the changes to the pending
-/// list at once, and the question for the account, the fetch and the send outside the engine's callback, since the
+/// Each call returns what to do, which the delegate applies as ``EngineRequests`` describes: its ``EngineRequests/steps``
+/// at once, in order, and the question for the account, the fetch and the send outside the engine's callback, since the
 /// engine stops an app that fetches or sends from inside one. A fetch it asks for is one request of the app's: the
 /// delegate calls ``fetchWillBeRequested()``, then `fetchChanges()`, then
 /// ``fetchRequestReturned(_:error:pendingZoneSaves:)`` with the error it threw and the zones whose save is still in the
@@ -98,7 +98,8 @@ public final class ICloudSync {
     }
 
     /// The app launched and is about to create the engine, with its saved state or, when `engineStartsFromNothing`,
-    /// without one. The app calls it before it creates the engine, so that no event of the engine comes before it, and
+    /// without one: ``engineState()`` was nil, or the engine's state could not be read from it, and the engine is created
+    /// from nothing. The app calls it before it creates the engine, so that no event of the engine comes before it, and
     /// applies the result once the engine exists.
     ///
     /// A start from nothing begins. A held toy in a higher format that this version can now read is handled as an
@@ -116,7 +117,7 @@ public final class ICloudSync {
             // A held toy is of the zone the device uses, or has no system fields since its zone was left.
             let heldZone = side.held?.record.zone
             if heldZone == nil || heldZone == usedZone(notes)?.zone.name, let record = side.takeHeldUnreadableThatNowReads() {
-                try toyArrived(record, side: &side, into: &result)
+                side.arrived(record)
             }
             try store.write(side)
             result.engine.asksForAccount = true
@@ -309,11 +310,6 @@ public final class ICloudSync {
             throw error
         }
         return result
-    }
-
-    /// A toy arrived from the zone the device uses, through a fetch or with a refusal (step 5).
-    func toyArrived(_ record: CloudRecord, side: inout ToySide, into result: inout SyncResult) throws {
-        side.arrived(record)
     }
 
     /// Applies `events` to the plays' entries, in order, by the rules of section 7. The saves and deletions they withdraw

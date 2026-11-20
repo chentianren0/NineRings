@@ -6,11 +6,11 @@ import Session
 // 14).
 //
 // Each payload's format starts at 1. The JSON is read leniently: a value this version does not know is ignored, and a
-// value it knows but does not find takes a default, so adding a value needs no new format. A new format is for a change
-// that an older version would misread. A version that meets a format it does not know never interprets the payload:
-// reading gives nil. So does a payload that is not valid in its own format, which no version writes. A finished play
-// that cannot be read is kept as it is either way; a toy is held when its format is higher, and replaced when it is
-// broken (`ToyPayload.Reading`).
+// value added after format 1 that it does not find takes a default, so adding a value needs no new format. A new format
+// is for a change that an older version would misread. A version that meets a format it does not know never interprets
+// the payload: reading gives nil. So does a payload that is not valid in its own format, which no version writes. A
+// finished play that cannot be read is kept as it is either way; a toy is held when its format is higher, and replaced
+// when it is broken (`ToyPayload.Reading`).
 //
 // Dates are written as seconds since Foundation's reference date, the form `ToySnapshot` uses, so that they come back
 // exactly. Keys are sorted, so that the same payload is always the same bytes.

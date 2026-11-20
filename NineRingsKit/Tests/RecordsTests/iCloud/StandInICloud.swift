@@ -335,7 +335,7 @@ final class StandInICloud {
             if token == nil {
                 deletions = zone.deleted.sorted()
                     .filter { zone.records[$0] == nil && (choices.fetchFromNothingBringsOldDeletions || zone.madeBy[$0] == device) }
-                    .map { DeletedRecord(type: type(of: $0), id: RecordID(zone: name, name: $0)) }
+                    .map { DeletedRecord(id: RecordID(zone: name, name: $0)) }
             }
             return .success((records, deletions, next))
         }
@@ -347,7 +347,7 @@ final class StandInICloud {
                 if change.by == device, change.answered, random.chance(1 - choices.ownChangesComeBack) { continue }
                 records.append(cloudRecord(stored, zone: zone))
             } else {
-                deletions.append(DeletedRecord(type: type(of: change.name), id: RecordID(zone: name, name: change.name)))
+                deletions.append(DeletedRecord(id: RecordID(zone: name, name: change.name)))
             }
         }
         return .success((records.reversed(), deletions.reversed(), next))
@@ -388,10 +388,6 @@ final class StandInICloud {
         zone.changes.last { $0.name == name }?.seq ?? 0
     }
 
-    /// The type of a record by its name: the toy's, or a finished play's.
-    private func type(of name: String) -> String {
-        name == CloudRecord.toyName ? CloudRecord.toyType : CloudRecord.finishedPlayType
-    }
 }
 
 /// A random generator that a seed fixes, so that a failing order of events can be replayed (SplitMix64).

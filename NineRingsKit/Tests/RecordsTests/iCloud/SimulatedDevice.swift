@@ -237,7 +237,7 @@ final class SimulatedDevice: StandInEngineDelegate {
         self.clock = clock
         self.random = random
         self.engineChoices = engineChoices
-        container = try RecordStore.deviceContainer(in: .memory)
+        container = try RecordStore.syncContainer(in: .memory)
         if let backup { try Backup.copy(from: backup, into: container) }
         launch()
     }
@@ -251,7 +251,7 @@ final class SimulatedDevice: StandInEngineDelegate {
 
     /// A copy of the device's store, as a device backup keeps it.
     func backUp() throws -> ModelContainer {
-        let copy = try RecordStore.deviceContainer(in: .memory)
+        let copy = try RecordStore.syncContainer(in: .memory)
         try Backup.copy(from: container, into: copy)
         return copy
     }
@@ -811,8 +811,12 @@ final class SimulatedDevice: StandInEngineDelegate {
 @MainActor
 enum Backup {
     static func copy(from source: ModelContainer, into target: ModelContainer) throws {
-        let from = source.mainContext
-        let into = target.mainContext
+        // Contexts of their own that never save by themselves, as the rules' own: the containers' main contexts are
+        // left alone, so that no autosave of theirs meets the rules' saves.
+        let from = ModelContext(source)
+        let into = ModelContext(target)
+        from.autosaveEnabled = false
+        into.autosaveEnabled = false
         for play in try into.fetch(FetchDescriptor<KeptPlay>()) { into.delete(play) }
         for toy in try into.fetch(FetchDescriptor<KeptToy>()) { into.delete(toy) }
         for notes in try into.fetch(FetchDescriptor<SyncNotes>()) { into.delete(notes) }

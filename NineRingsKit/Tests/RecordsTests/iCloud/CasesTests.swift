@@ -237,11 +237,13 @@ import Testing
         switch engineReports {
         case "a sign-in":
             // The restored engine state names no account: the engine reports the account it finds as a sign-in.
-            let notes = try #require(try backup.mainContext.fetch(FetchDescriptor<SyncNotes>()).first)
+            let context = ModelContext(backup)
+            context.autosaveEnabled = false
+            let notes = try #require(try context.fetch(FetchDescriptor<SyncNotes>()).first)
             var state = try JSONDecoder().decode(StandInEngine.State.self, from: try #require(notes.engineState))
             state.account = nil
             notes.engineState = try JSONEncoder().encode(state)
-            try backup.mainContext.save()
+            try context.save()
         case "nothing":
             world.engineChoices.reportsChangeWhileNotRunning = false
         default:

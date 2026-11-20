@@ -6,14 +6,16 @@ import SwiftData
 // The store's side of the iCloud design (docs/icloud.md, section 5): the device's store keeps, next to the data, what
 // iCloud has not yet received, so that the engine's list of pending changes can always be rebuilt from the store alone.
 //
-// Three models hold it, all in the device's own store, which never syncs through SwiftData:
+// Three models hold it, in a store of their own (`RecordStore.syncContainer(in:)`, `Sync.store` beside the device's
+// store), which never syncs through SwiftData:
 // - `KeptToy`, one for the store: the person's toy and its notes about iCloud;
 // - `KeptPlay`, one for each finished play: the play's record as kept, its system fields and its state;
 // - `SyncNotes`, one for the store: the engine's state, the zone note, the highest number, the account and the note of
 //   a full storage.
-// They are models of their own, apart from the earlier way's `SavedToy` and `FinishedPlay`: nothing kept the earlier way
-// is carried over (docs/icloud.md, section 2). `ICloudSync` changes them and saves once for each call, so that a crash
-// cannot leave the data and its marks disagreeing.
+// They are models of their own, apart from the earlier way's `SavedToy` and `FinishedPlay`, and in a file of their own:
+// nothing kept the earlier way is carried over (docs/icloud.md, section 2), and the device's store is not touched.
+// `ICloudSync` changes them through a context of its own and saves once for each call, so that a crash cannot leave the
+// data and its marks disagreeing.
 
 /// The person's toy on this device, with its notes about iCloud. There is one in a store.
 @Model
@@ -43,6 +45,8 @@ final class KeptToy {
 /// One finished play, as the iCloud rules keep it.
 @Model
 final class KeptPlay {
+    #Index<KeptPlay>([\.playID], [\.state], [\.systemFieldsZone])
+
     /// The play's id, which is its record's name.
     var playID: UUID = UUID()
     /// When it was finished, by the clock of the device that finished it, for the order of the history. Distant past
@@ -136,7 +140,6 @@ extension KeptPlay {
 }
 
 extension RecordStore {
-    private var syncContext: ModelContext { container.mainContext }
 
     // MARK: The toy and its notes
 

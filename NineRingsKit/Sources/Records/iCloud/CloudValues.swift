@@ -108,13 +108,11 @@ public struct RecordToSend: Sendable, Equatable {
     public var id: RecordID { RecordID(zone: zone, name: name) }
 }
 
-/// A record that iCloud reports as deleted, in a fetch: its type and its id.
+/// A record that iCloud reports as deleted, in a fetch, by its id. The toy's record is told apart by its name.
 public struct DeletedRecord: Sendable, Hashable {
-    public var type: String
     public var id: RecordID
 
-    public init(type: String, id: RecordID) {
-        self.type = type
+    public init(id: RecordID) {
         self.id = id
     }
 }
@@ -201,14 +199,12 @@ public struct SentChanges: Sendable, Equatable {
     }
 }
 
-/// A save that failed: the record's type and id, and why.
+/// A save that failed: the record's id, and why. The toy's record is told apart by its name.
 public struct FailedSave: Sendable, Equatable {
-    public var type: String
     public var id: RecordID
     public var reason: SaveFailure
 
-    public init(type: String, id: RecordID, reason: SaveFailure) {
-        self.type = type
+    public init(id: RecordID, reason: SaveFailure) {
         self.id = id
         self.reason = reason
     }
@@ -339,6 +335,9 @@ public enum PendingChange: Sendable, Hashable {
 
 /// What to hand the engine for one batch (``ICloudSync/batch(for:)``).
 public struct Batch: Sendable, Equatable {
+    /// The most changes of records in one batch, saves and deletions together: one request to CloudKit.
+    public static let mostChanges = 250
+
     /// The records to save, built now.
     public var records: [RecordToSend] = []
     /// The deletions to send.
@@ -351,10 +350,9 @@ public struct Batch: Sendable, Equatable {
 
 /// What the rules ask the delegate to do with the engine after a call.
 ///
-/// The delegate applies it in this order: the withdrawals (``withdrawsEverything``, ``withdrawsEverythingOutside``,
-/// ``withdrawnSaves`` and ``withdrawnDeletions``), then ``savesZone``, ``saves`` and ``deletions``. Then, outside the
-/// engine's callback, since the engine stops an app that fetches or sends from inside one: ``asksForAccount``,
-/// ``fetches`` and ``sendsNow``.
+/// The delegate applies ``steps``, in their order: the withdrawals, then the zone's save, the saves and the deletions.
+/// Then, outside the engine's callback, since the engine stops an app that fetches or sends from inside one:
+/// ``asksForAccount``, ``fetches`` and ``sendsNow``.
 public struct EngineRequests: Sendable, Equatable {
     /// Remove every pending change: of records, and the zones' own saves.
     public var withdrawsEverything = false
@@ -384,6 +382,21 @@ public struct EngineRequests: Sendable, Equatable {
     /// Whether it asks for nothing.
     public var isEmpty: Bool { self == EngineRequests() }
 
+    /// The changes to the engine's pending lists, in the order to apply them, each one engine call: the withdrawals,
+    /// then the zone's save, the saves and the deletions. ``asksForAccount``, ``fetches`` and ``sendsNow`` come after,
+    /// outside the engine's callback.
+    public var steps: [EngineStep] {
+        var steps: [EngineStep] = []
+        if withdrawsEverything { steps.append(.withdrawEverything) }
+        if let zone = withdrawsEverythingOutside { steps.append(.withdrawEverythingOutside(zone)) }
+        steps += withdrawnSaves.map(EngineStep.withdrawSave)
+        steps += withdrawnDeletions.map(EngineStep.withdrawDeletion)
+        if let zone = savesZone { steps.append(.saveZone(zone)) }
+        steps += saves.map(EngineStep.save)
+        steps += deletions.map(EngineStep.delete)
+        return steps
+    }
+
     /// Adds `later`'s requests to these, as if the delegate applied these first and then `later`.
     mutating func add(_ later: EngineRequests) {
         if later.withdrawsEverything {
@@ -400,17 +413,35 @@ public struct EngineRequests: Sendable, Equatable {
         }
         withdrawnSaves.appendNew(later.withdrawnSaves)
         withdrawnDeletions.appendNew(later.withdrawnDeletions)
-        saves.removeAll { later.withdrawnSaves.contains($0) }
-        deletions.removeAll { later.withdrawnDeletions.contains($0) }
+        if !later.withdrawnSaves.isEmpty { saves.removeAll(where: Set(later.withdrawnSaves).contains) }
+        if !later.withdrawnDeletions.isEmpty { deletions.removeAll(where: Set(later.withdrawnDeletions).contains) }
         if let zone = later.savesZone { savesZone = zone }
         saves.appendNew(later.saves)
         deletions.appendNew(later.deletions)
-        withdrawnSaves.removeAll { later.saves.contains($0) }
-        withdrawnDeletions.removeAll { later.deletions.contains($0) }
+        if !later.saves.isEmpty { withdrawnSaves.removeAll(where: Set(later.saves).contains) }
+        if !later.deletions.isEmpty { withdrawnDeletions.removeAll(where: Set(later.deletions).contains) }
         asksForAccount = asksForAccount || later.asksForAccount
         fetches = fetches || later.fetches
         sendsNow = sendsNow || later.sendsNow
     }
+}
+
+/// One change to the engine's pending lists (``EngineRequests/steps``), each one call on `CKSyncEngine.State`.
+public enum EngineStep: Sendable, Equatable {
+    /// `remove(pendingRecordZoneChanges:)` and `remove(pendingDatabaseChanges:)` with every pending change.
+    case withdrawEverything
+    /// The same, with every pending change whose zone is not this one.
+    case withdrawEverythingOutside(String)
+    /// `remove(pendingRecordZoneChanges: [.saveRecord(id)])`.
+    case withdrawSave(RecordID)
+    /// `remove(pendingRecordZoneChanges: [.deleteRecord(id)])`.
+    case withdrawDeletion(RecordID)
+    /// `add(pendingDatabaseChanges: [.saveZone(CKRecordZone(zoneName:))])`.
+    case saveZone(String)
+    /// `add(pendingRecordZoneChanges: [.saveRecord(id)])`.
+    case save(RecordID)
+    /// `add(pendingRecordZoneChanges: [.deleteRecord(id)])`.
+    case delete(RecordID)
 }
 
 /// What a call changed, beyond the store.

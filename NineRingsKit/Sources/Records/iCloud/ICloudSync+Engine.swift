@@ -12,11 +12,12 @@ extension ICloudSync {
     /// the state (section 10).
     public func engineStateUpdated(_ state: Data) throws {
         guard run.savesEngineState else { return }
-        if run.startFromNothing != nil {
+        if run.startFromNothingWaitsForAccount {
             run.heldEngineState = state
             return
         }
-        _ = try call { _ in try store.syncNotes().engineState = state }
+        let result = try call { _ in try store.syncNotes().engineState = state }
+        assert(result == SyncResult(), "saving the engine's state lifts no condition of the gate")
     }
 
     /// The engine cannot go on from its saved state (open points 4 and 5): the state is removed, and not saved again in
@@ -142,7 +143,7 @@ extension ICloudSync {
             var events: [(UUID, PlayRules.Event)] = []
             for record in changes.records where record.zone == zone {
                 if record.isToy {
-                    try toyArrived(record, side: &side, into: &result)
+                    side.arrived(record)
                 } else if let id = record.playID {
                     events.append((id, .arrived(record)))
                 }
@@ -265,9 +266,13 @@ extension ICloudSync {
     /// only while its entry is cleared. Everything else goes into no batch, and is withdrawn. What the records need is
     /// saved before they are handed over: the toy's stamp (section 6, step 2) and each play's state *sent* (section 7,
     /// rule 2). When that save fails, the call throws and nothing is to be handed over.
-    public func batch(for pending: [PendingChange]) throws -> Batch {
+    ///
+    /// It takes at most ``Batch/mostChanges`` of `pending`, saves and deletions together, as one request to CloudKit
+    /// allows (source 56); the rest it leaves as they are, neither batched nor withdrawn, for the engine's next batch.
+    public func batch(for offered: [PendingChange]) throws -> Batch {
+        let pending = offered.prefix(Batch.mostChanges)
         var batch = Batch()
-        _ = try call { _ in
+        let result = try call { _ in
             let notes = try store.syncNotes()
             let zone = gateZone(notes)
             var side = try store.toySide()
@@ -303,6 +308,7 @@ extension ICloudSync {
             }
             try store.write(side)
         }
+        assert(result == SyncResult(), "a batch lifts no condition of the gate")
         return batch
     }
 
@@ -328,7 +334,7 @@ extension ICloudSync {
                 case .refused(let serverRecord):
                     if failure.id.isToy {
                         if let serverRecord, serverRecord.zone == zone {
-                            try toyArrived(serverRecord, side: &side, into: &result)
+                            side.arrived(serverRecord)
                         } else {
                             result.engine.fetches = true
                         }
