@@ -27,7 +27,7 @@ Read with `cktool export-schema` (version 1.0.23001, from Xcode 27.3) at 02:13 U
 - **Development** held `Toy`, `FinishedPlay` and `Users`, and nothing else. `Toy` and `FinishedPlay` had `format ENCRYPTED INT64` and `payload ENCRYPTED BYTES`, CloudKit's six system fields (`___createTime`, `___createdBy`, `___etag`, `___modTime`, `___modifiedBy`, `___recordID`), no index on any field, and no `GRANT`. `Users` was as in the file. This is the file, with the system fields that every type has.
 - **Production** held `Users` alone.
 
-The probe ([icloud-probe.md](icloud-probe.md)) then saved about 250 records of both types into development, as the app writes them, and no save was refused for its record type or its fields. An export after its last run, at 02:43 UTC, was the same as the one above.
+The probe ([icloud-probe.md](icloud-probe.md)) then saved about 450 records of both types into development, as the app writes them, and no save was refused for its record type or its fields. Exports after its runs, at 02:43 and 11:11 UTC, were the same as the one above.
 
 ## Applying it to the development environment
 
