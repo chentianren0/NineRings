@@ -9,7 +9,7 @@ import Toy
 /// Renders the toy to PNG files without a window and quits: how an agent sees what the app draws.
 ///
 /// Launch the debug app with, for example,
-/// `-capture-frames 16 -capture-views side,top,tip -capture-sheet -capture-dir /tmp/captures`.
+/// `-capture-frames 16 -capture-views side,top,tip -capture-sheet -capture-dir scratch/captures`.
 ///
 /// - `-capture-frames 16`: that many frames evenly across the move, from every ring on (progress 0) to its ring
 ///   off (progress 1). Or `-capture-progress 0,0.25,0.5` for frames at given progress values.

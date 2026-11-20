@@ -92,7 +92,6 @@ final class Player {
         play = keeper.keptPlay() ?? PlayState()
         self.keeper = keeper
         publish()
-        listen()
     }
 
     /// A session at the start of `move`, with that move on the slider at `progress`, kept in `keeper` from now on when
@@ -101,7 +100,6 @@ final class Player {
         play = PlayState(PuzzleSession(at: move, progress: progress))
         self.keeper = keeper
         publish()
-        listen()
     }
 
     /// What decides the pose: when none of it changes, the toy need not be drawn again.
@@ -194,7 +192,6 @@ final class Player {
     func dismissCongratulation() {
         play.dismissCongratulation()
         isCongratulating = false
-        takeLaterToyIfCalm()
     }
 
     /// Moves playing on to where the clock has reached. Called once a frame.
@@ -221,7 +218,6 @@ final class Player {
         if let finished = play.finished { keeper?.record(finished) }
         if !play.toy.isPlaying && !isDragging { keeper?.keep(play.snapshot) }
         publish()
-        takeLaterToyIfCalm()
     }
 
     /// The slider is being dragged, or has been let go: playing stops as the drag begins, and the toy is kept as it ends.
@@ -231,59 +227,21 @@ final class Player {
             pause()
         } else if !play.toy.isPlaying {
             keeper?.keep(play.snapshot)
-            takeLaterToyIfCalm()
         }
     }
 
-    /// The app has come to the front: its time counts toward the play from now, and the other devices' toys are looked
-    /// at.
+    /// The app has come to the front: its time counts toward the play from now.
     func cameToFront() {
         guard frontSince == nil else { return }
         frontSince = .now
-        keeper?.cameToFront()
-        takeLaterToyIfCalm()
     }
 
     /// The app has left the front, or is quitting: its time stops counting, and the toy is kept as it is, a move
-    /// playing as stopped where it is, and sent to the person's other devices.
+    /// playing as stopped where it is.
     func leftFront() {
         giveTimeToPlay()
         frontSince = nil
         keeper?.keep(play.snapshot)
-        keeper?.leftFront()
-    }
-
-    // MARK: The toy between devices
-
-    /// Listens for a toy from another device made knowing this one, to take it up at a calm moment; one the keeper found
-    /// at launch, before this player was made, is taken up at once.
-    private func listen() {
-        keeper?.laterToyArrived = { [weak self] in self?.takeLaterToyIfCalm() }
-        takeLaterToyIfCalm()
-    }
-
-    /// Takes up the toy another device left, made knowing this one, when one waits and the toy is calm: never in the
-    /// middle of a move or a drag, nor while the lesson, the rings being set or the congratulation show (see
-    /// `PlayState.isCalm`). A jump, as Reset is, that says where the toy now rests.
-    private func takeLaterToyIfCalm() {
-        guard let keeper, keeper.hasLaterToy, play.isCalm, !isDragging, let snapshot = keeper.takeLaterToy() else { return }
-        giveTimeToPlay()
-        play.takeUp(snapshot)
-        publish()
-    }
-
-    /// Takes up the other device's play, offered when the play has parted in two, in place of this one: a jump, as Reset
-    /// is, that says where the toy now rests.
-    func playThatOne() {
-        guard let snapshot = keeper?.playThatOne() else { return }
-        giveTimeToPlay()
-        play.takeUp(snapshot)
-        publish()
-    }
-
-    /// Keeps this play over the other device's, offered when the play has parted in two: the other device then follows.
-    func keepThisOne() {
-        keeper?.keepThisOne()
     }
 
     private func giveTimeToPlay() {
@@ -355,7 +313,6 @@ final class Player {
         play = PlayState(session)
         self.keeper = keeper
         publish()
-        listen()
     }
 
     /// For the store-capture mode: plays lesson step `index` from its start at once, as far as `progress` through its

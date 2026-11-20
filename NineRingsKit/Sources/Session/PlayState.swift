@@ -215,29 +215,6 @@ public struct PlayState: Sendable, Equatable {
         settle(jump: true, rebase: true, sayingWhereItRests: true)
     }
 
-    /// Takes up `snapshot`'s toy as the person's own, as another installation of the app left it: a jump, as Reset is,
-    /// that says where the toy now rests. The lesson and the rings being set close; the play in progress and the journeys
-    /// under way are the snapshot's, so that the play goes on as it would have there. Returns false, changing nothing,
-    /// when the snapshot's moves break the rule.
-    @discardableResult
-    public mutating func takeUp(_ snapshot: ToySnapshot) -> Bool {
-        guard let toy = snapshot.toy else {
-            nothingChanged()
-            return false
-        }
-        lesson = nil
-        settingRings = nil
-        own = toy
-        play = snapshot.play
-        congratulation = Congratulation(isArmed: snapshot.play != nil)
-        achievementRule = AchievementRule(underWay: snapshot.journeys)
-        // The toy as taken up is where the play stands, not a move from the toy before: nothing is counted, and no play
-        // begins.
-        judged = toy
-        settle(jump: true, rebase: true, sayingWhereItRests: true)
-        return true
-    }
-
     /// Goes to step `index` of the lesson and plays it from its start.
     public mutating func goToLessonStep(_ index: Int) {
         guard lesson != nil else { return nothingChanged() }

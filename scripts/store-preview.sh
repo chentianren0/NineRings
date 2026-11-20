@@ -5,13 +5,12 @@
 # simulator records no sound). Also the poster frame: ring 3 part way through the slot, as in the first picture; and the
 # same moment at the simulator's full size, upright, as poster-full.png, for other store pictures.
 #
-#   scripts/store-preview.sh --out DIR [--devices iphone-6.3,ipad-13] [--skip-build] [--edit-only]
+#   scripts/store-preview.sh [--devices iphone-6.3,ipad-13] [--out DIR] [--skip-build] [--edit-only]
 #
 #   --devices    iphone-6.3 (886 x 1920, portrait) and/or ipad-13 (1600 x 1200, landscape); default both.
-#   --out        Where the videos go; required. As OUT/preview/<device>/preview.mp4, poster.png and poster-full.png; the
-#                raw recording and the steps under OUT/captures/preview/; the builds under OUT/build/. Nothing is written
-#                anywhere else.
-#   --skip-build Use the app and the tests as last built into OUT/build (by this script or scripts/store-assets.sh).
+#   --out        Where the videos go (default: scratch/store/out in the main checkout), as OUT/preview/<device>/preview.mp4
+#                poster.png and poster-full.png; the raw recording and the steps under OUT/captures/preview/.
+#   --skip-build Use the app and the tests as last built (by this script or scripts/store-assets.sh).
 #   --edit-only  Cut the last recording again, without the simulator.
 #
 # One simulator at a time: it boots the device's simulator only if it is not running, and shuts down only what it booted.
@@ -29,25 +28,25 @@ while [ $# -gt 0 ]; do
         --out) out="$2"; shift 2 ;;
         --skip-build) skip_build=1; shift ;;
         --edit-only) edit_only=1; shift ;;
-        -h|--help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "store-preview: unknown option $1" >&2; exit 2 ;;
     esac
 done
 
-[ -n "$out" ] || { echo "store-preview: name the folder for the videos with --out DIR (--help lists the options)" >&2; exit 2; }
 root="$(cd "$(dirname "$0")/.." && pwd)"
+main_checkout="$(git -C "$root" worktree list --porcelain | sed -n '1s/^worktree //p')"
+[ -n "$out" ] || out="$main_checkout/scratch/store/out"
 mkdir -p "$out"; out="$(cd "$out" && pwd)"
 manifest="$root/StoreTools/Shots.json"
-build="$out/build"
-mkdir -p "$build"
+build="$root/scratch/store-build"
 composer_bin="$build/tools/release/store-compose"
 say() { echo "store-preview: $*"; }
 now() { perl -MTime::HiRes=time -e 'printf "%.3f\n", time'; }
 command -v ffmpeg > /dev/null || { say "needs ffmpeg"; exit 1; }
 
 if [ "$skip_build" -eq 0 ] || [ ! -x "$composer_bin" ]; then
-    swift build --package-path "$root/StoreTools" -c release --scratch-path "$build/tools" --product store-compose > "$build/tools.log" 2>&1 \
-        || { tail -30 "$build/tools.log"; say "the composer did not build"; exit 1; }
+    swift build --package-path "$root/StoreTools" -c release --scratch-path "$build/tools" --product store-compose > "$build-tools.log" 2>&1 \
+        || { tail -30 "$build-tools.log"; say "the composer did not build"; exit 1; }
 fi
 field() { "$composer_bin" device --manifest "$manifest" --device "$1" | sed -n "s/^$2=//p"; }
 
@@ -71,10 +70,10 @@ record() {
     if [ "$skip_build" -eq 0 ]; then
         say "building the app and the tests for $simulator"
         xcodebuild build -project "$root/NineRings.xcodeproj" -scheme NineRings -configuration Debug \
-            -destination "$destination" -derivedDataPath "$build/app" CODE_SIGNING_ALLOWED=NO > "$build/sim.log" 2>&1 \
+            -destination "$destination" -derivedDataPath "$build/app" CODE_SIGNING_ALLOWED=NO > "$build-sim.log" 2>&1 \
         && xcodebuild build-for-testing -project "$root/NineRings.xcodeproj" -scheme StoreShots -configuration Debug \
-            -destination "$destination" -derivedDataPath "$build/app" CODE_SIGNING_ALLOWED=NO >> "$build/sim.log" 2>&1 \
-        || { tail -30 "$build/sim.log"; say "the build for $simulator failed"; return 1; }
+            -destination "$destination" -derivedDataPath "$build/app" CODE_SIGNING_ALLOWED=NO >> "$build-sim.log" 2>&1 \
+        || { tail -30 "$build-sim.log"; say "the build for $simulator failed"; return 1; }
     fi
     if ! xcrun simctl list devices booted | grep -qF -- "    $simulator ("; then
         xcrun simctl boot "$simulator"; booted_here=1
