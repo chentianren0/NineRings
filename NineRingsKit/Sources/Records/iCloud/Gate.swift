@@ -256,6 +256,18 @@ extension ICloudSync {
         result.engine.fetches = true
     }
 
+    /// The save of the zone in the note, not known to exist, was refused because the storage is full (section 9,
+    /// "Creating a zone"): the device goes back to using no zone. The note's zone is emptied and the highest number
+    /// stays; what is still queued is withdrawn. It is not the run's one give-up: the creating rule tries again after the
+    /// next launch or return to the front, under a new name.
+    func dropRefusedZone(notes: SyncNotes, into result: inout SyncResult) {
+        setZoneNote(notes, nil)
+        run.noZoneSince = run.moment
+        var withdrawal = EngineRequests()
+        withdrawal.withdrawsEverything = true
+        result.engine.add(withdrawal)
+    }
+
     // MARK: Deleted zones (section 9)
 
     /// Zones reported as deleted, or met as deleted through an error. A deletion counts if the deleted zone is higher

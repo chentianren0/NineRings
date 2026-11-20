@@ -274,6 +274,36 @@ import Testing
         #expect(try fetch().engine.saves == [.toy(in: created.name)])
     }
 
+    /// When the zone's own save is refused because the storage is full, the device goes back to using no zone: the
+    /// note's zone is emptied, the highest number stays, and no give-up is used. The next return to the front creates
+    /// a zone again, under the next number.
+    @Test func aZoneRefusedForAFullStorageIsDropped() throws {
+        _ = try sync.launched(engineStartsFromNothing: true)
+        try sync.keep(toy([1]))
+        _ = try sync.accountAnswered(.account("person"))
+        let created = try #require(try fetch().engine.savesZone.flatMap(ZoneName.init))
+        let other = ZoneName(number: 9, id: UUID())
+        _ = try sync.zonesSent(SentZones(failed: [FailedZoneSave(zone: other.name, storageFull: true)]))
+        #expect(try zoneNote == ZoneNote(zone: created, knowledge: .notKnownToExist), "another zone's refusal")
+        let refused = try sync.zonesSent(SentZones(failed: [FailedZoneSave(zone: created.name, storageFull: true)]))
+        #expect(try zoneNote == nil && sync.usedZone(notes) == nil)
+        #expect(refused.engine.withdrawsEverything && refused.engine.savesZone == nil)
+        #expect(try notes.highestNumber == created.number && notes.storageFull)
+        #expect(!sync.run.gaveUpZone)
+        #expect(try sync.toyChanged().engine.savesZone == nil, "the full storage holds the creation back in this run")
+        let front = try sync.cameToFront()
+        #expect(front.engine.savesZone == nil && front.engine.fetches, "the creation waits for a fetch after the refusal")
+        let again = try #require(try fetch().engine.savesZone.flatMap(ZoneName.init))
+        #expect(again.number == created.number + 1)
+    }
+
+    /// A save of the zone the device uses, refused for a full storage, does not drop it.
+    @Test func aRefusedSaveOfAnExistingZoneKeepsIt() throws {
+        try joined()
+        _ = try sync.zonesSent(SentZones(failed: [FailedZoneSave(zone: zone1.name, storageFull: true)]))
+        #expect(try zoneNote == ZoneNote(zone: zone1, knowledge: .existing))
+    }
+
     @Test func noZoneIsCreatedWithNothingToSend() throws {
         _ = try sync.launched(engineStartsFromNothing: true)
         try sync.keep(fresh)

@@ -412,6 +412,30 @@ import Testing
         #expect(world.historyInICloud().plays.count == 3)
     }
 
+    /// The first device of an account meets a full storage: the zone's own save is refused, and the device goes back to
+    /// using no zone, keeping its data. Once the person has freed the storage, the next return to the front creates a
+    /// zone again, under the next number, and everything goes out (section 9, "Creating a zone").
+    @Test func theFirstDeviceMeetsAFullStorage() throws {
+        let world = World()
+        world.cloud.database(World.person).isFull = true
+        let iPhone = try world.device("iPhone")
+        iPhone.move()
+        iPhone.finishPlay()
+        iPhone.putDown()
+        iPhone.syncFully()
+        #expect(iPhone.zoneNote == nil && iPhone.sync.storageIsFull && iPhone.hasMarks)
+        #expect(world.cloud.zoneNames(account: World.person).isEmpty)
+        #expect(!iPhone.engine.hasPendingChanges, "nothing waits in the engine")
+        world.cloud.database(World.person).isFull = false
+        iPhone.cameToFront()
+        iPhone.syncFully()
+        let zone = try #require(iPhone.zoneNote)
+        #expect(zone.zone.number == 2 && zone.knowledge == .existing, "the next number, without a launch")
+        #expect(!iPhone.hasMarks && !iPhone.sync.storageIsFull)
+        #expect(world.historyInICloud(zone: zone.zone.name).plays.count == 1)
+        #expect(world.settle() && world.watcher.problems.isEmpty)
+    }
+
     /// The device is offline: the engine waits, and the store keeps the marks. Nothing is sent in a run before a fetch
     /// has finished.
     @Test func theDeviceIsOffline() throws {

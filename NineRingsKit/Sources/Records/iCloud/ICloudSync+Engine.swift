@@ -385,13 +385,17 @@ extension ICloudSync {
 
     /// The engine sent zones' saves, and this is what came back (`sentDatabaseChanges`). When iCloud confirms the zone
     /// the device created, the device joins it (section 9). A zone's save refused for a full storage is noted like a
-    /// record's.
+    /// record's; when it is the save of the zone in the note, not known to exist, the device goes back to using no zone.
     public func zonesSent(_ changes: SentZones) throws -> SyncResult {
         try call { result in
             let notes = try store.syncNotes()
             var side = try store.toySide()
-            if let note = zoneNote(notes), note.knowledge == .notKnownToExist, changes.saved.contains(note.zone.name) {
-                try join(note.zone, notes: notes, side: &side, into: &result)
+            if let note = zoneNote(notes), note.knowledge == .notKnownToExist {
+                if changes.saved.contains(note.zone.name) {
+                    try join(note.zone, notes: notes, side: &side, into: &result)
+                } else if changes.failed.contains(where: { $0.zone == note.zone.name && $0.storageFull }) {
+                    dropRefusedZone(notes: notes, into: &result)
+                }
             }
             if changes.failed.contains(where: \.storageFull) {
                 notes.storageFull = true
