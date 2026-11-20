@@ -213,7 +213,10 @@ public struct PlayState: Sendable, Equatable {
     /// rule.
     @discardableResult
     public mutating func take(_ snapshot: ToySnapshot) -> Bool {
-        guard !snapshot.isSameToy(as: self.snapshot), let toy = snapshot.toy else { return false }
+        guard !snapshot.isSameToy(as: self.snapshot), let toy = snapshot.toy else {
+            nothingChanged()
+            return false
+        }
         own = toy
         lesson?.replaceOwnToy(with: toy)
         judged = toy
@@ -221,7 +224,7 @@ public struct PlayState: Sendable, Equatable {
         congratulation = Congratulation(isArmed: snapshot.play != nil)
         achievementRule = AchievementRule(underWay: snapshot.journeys)
         settle(jump: true, rebase: true, sayingWhereItRests: !self.toy.isPartWay, quiet: isSettingRings)
-        if lesson == nil, !isSettingRings, own.isPartWay { narration = Narration([.paused(own.status)]) }
+        if let persons, persons.isPartWay { narration = Narration([.paused(persons.status)]) }
         return true
     }
 

@@ -48,7 +48,7 @@ struct MainScreen: View {
                 rig.showDefault()
             }
             .storeCapture(player: player, rig: rig)
-            .keepsPlay(player, keeper: keeper, scenePhase: scenePhase)
+            .keepsPlay(modes, keeper: keeper, scenePhase: scenePhase)
             .gameSaveSyncingAlert(directory: $keeper.loading) {
                 if let toy = keeper.finishLoading() { modes.take(toy) }
             }
@@ -61,27 +61,31 @@ struct MainScreen: View {
 }
 
 extension View {
-    /// Tells `player` and `keeper` when the app comes to the front and leaves it: the play counts its time there and
-    /// the toy is kept as the app leaves, and the keeper opens GameSave's folder again when the app comes back. On the
-    /// Mac a window stays active behind other apps, so it is the app being the active one, and quitting; and closing
-    /// the window, which leaves the app running, so that the window the Dock opens next brings the toy back as it was
-    /// and opens the folder again. On iPhone and iPad it is the scene's phase: the play counts only while it is active,
-    /// and the folder opens again only after the app was in the background, not after a short interruption such as
-    /// Control Center.
-    func keepsPlay(_ player: Player, keeper: Keeper, scenePhase: ScenePhase) -> some View {
-        #if os(macOS)
-        onAppear {
-            guard NSApplication.shared.isActive else { return }
+    /// Tells the player of `modes` and `keeper` when the app comes to the front and leaves it: the play counts its time
+    /// there and the toy is kept as the app leaves, and the keeper opens GameSave's folder again when the app comes
+    /// back, or reads the folder that loaded with no word from Apple's alert, whose toy then comes to the player. On
+    /// the Mac a window stays active behind other apps, so it is the app being the active one, and quitting; and
+    /// closing the window, which leaves the app running, so that the window the Dock opens next brings the toy back as
+    /// it was and opens the folder again. On iPhone and iPad it is the scene's phase: the play counts only while it is
+    /// active, and the folder opens again only after the app was in the background, not after a short interruption such
+    /// as Control Center.
+    func keepsPlay(_ modes: ScreenModes, keeper: Keeper, scenePhase: ScenePhase) -> some View {
+        let player = modes.player
+        let cameToFront = {
             player.cameToFront()
-            keeper.cameToFront()
+            if let toy = keeper.cameToFront() { modes.take(toy) }
+        }
+        #if os(macOS)
+        return onAppear {
+            guard NSApplication.shared.isActive else { return }
+            cameToFront()
         }
         .onDisappear {
             player.leftFront()
             keeper.windowClosed()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            player.cameToFront()
-            keeper.cameToFront()
+            cameToFront()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
             player.leftFront()
@@ -89,11 +93,10 @@ extension View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in player.leftFront() }
         #else
-        onChange(of: scenePhase, initial: true) { _, phase in
+        return onChange(of: scenePhase, initial: true) { _, phase in
             switch phase {
             case .active:
-                player.cameToFront()
-                keeper.cameToFront()
+                cameToFront()
             case .background:
                 player.leftFront()
                 keeper.leftFront()

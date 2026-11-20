@@ -32,7 +32,8 @@ import os
 /// - While it loads, Apple's alert can show: the main window binds ``loading`` to `gameSaveSyncingAlert`, which also
 ///   lets the person choose when two devices have different saves. Nothing is written to the folder meanwhile.
 /// - When loading has finished (``finishLoading()``) with a folder, ready, offline or kept on the device, its two files
-///   are read; with none, as on an error, the records stay in memory, and the next return to the front tries again.
+///   are read; with none, as on an error, the records stay in memory, and the next return to the front tries again. A
+///   folder that finishes loading with no word from the alert is read at the next return to the front.
 /// - After each write to the folder it asks GameSave to send.
 @MainActor
 @Observable
@@ -122,17 +123,28 @@ final class Keeper {
 
     /// The app has come to the front: the first time, the folder is opened; after the app has left the front, it is
     /// closed and opened again. Nothing is written to it until it has loaded. A folder still loading is left to finish,
-    /// as Apple's alert follows only the folder it began with, and what it loads is new already.
-    func cameToFront() {
-        guard opensGameSave, opensAtFront else { return }
+    /// as Apple's alert follows only the folder it began with, and what it loads is new already. A folder that has
+    /// finished loading with no word from the alert is read now, as `finishLoading()` reads it, and this returns the
+    /// toy read when the player is to take it.
+    func cameToFront() -> ToySnapshot? {
+        guard opensGameSave, opensAtFront else { return nil }
         opensAtFront = false
-        guard loading == nil else { return }
+        if let loading {
+            switch loading.state {
+            case .syncing, .conflicted:
+                return nil
+            default:
+                Self.log.info("The folder had loaded with no word from Apple's alert; it is read now")
+                return finishLoading()
+            }
+        }
         directory?.close()
         records.closeFolder()
         let directory = GameSaveSyncedDirectory.openDirectory(containerIdentifier: Self.container)
         Self.log.info("Opening the folder \(directory.id, privacy: .public): \(directory.state.description, privacy: .public)")
         self.directory = directory
         loading = directory
+        return nil
     }
 
     /// The app has left the front: on the Mac, it is no longer the active app; on iPhone and iPad, it is in the
@@ -141,12 +153,14 @@ final class Keeper {
         opensAtFront = true
     }
 
-    /// The Mac's main window has closed, and the app runs on: as leaving the front. A folder still loading is closed,
-    /// as its alert has gone with the window, so that the window the Dock opens next opens it again under its own.
+    /// The Mac's main window has closed, and the app runs on: as leaving the front. A folder still loading is closed
+    /// and dropped, as its alert has gone with the window, so that a late word from that alert reads nothing, and the
+    /// window the Dock opens next opens it again under its own.
     func windowClosed() {
         opensAtFront = true
         guard loading != nil else { return }
         directory?.close()
+        directory = nil
         loading = nil
         Self.log.info("The window closed while the folder loaded; the next window opens it again")
     }

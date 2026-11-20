@@ -272,6 +272,25 @@ import Testing
         #expect(state.snapshot.play?.secondsSpent != later.snapshot.play?.secondsSpent, "the play keeps its own time")
     }
 
+    /// A take that changes nothing is heard and said as nothing, as every request that changes nothing is: what the
+    /// last change heard, said, congratulated and finished is not given again.
+    @Test func aTakeThatChangesNothingIsHeardAndSaidAsNothing() throws {
+        var state = PlayState(PuzzleSession(resting: try #require(PuzzleState("100000000"))))
+        state.tap(1)
+        #expect(playOut(&state).congratulated == 1)
+        #expect(state.congratulates && state.finished != nil)
+        let took = state.take(state.snapshot)
+        #expect(!took)
+        #expect(!state.congratulates && state.finished == nil && state.earned.isEmpty)
+
+        var moving = PlayState()
+        moving.tap(1)
+        #expect(!moving.narration.lines.isEmpty)
+        let tookWhileMoving = moving.take(moving.snapshot)
+        #expect(!tookWhileMoving)
+        #expect(moving.narration == Narration() && moving.hearing.events.isEmpty)
+    }
+
     /// Under the lesson the toy arriving waits: nothing on screen changes, the lesson stays at its step, and closing
     /// gives the new toy back.
     @Test func aToyArrivingWaitsUnderTheLesson() {
@@ -303,6 +322,22 @@ import Testing
         #expect(state.lesson?.index == 11)
         #expect(state.toy.state == (try #require(snapshot.toy)).state)
         #expect(state.snapshot == snapshot)
+    }
+
+    /// On the step that gives the toy back, a toy that arrives stopped part way says where it stopped, as it does with
+    /// the lesson closed.
+    @Test func aToyArrivingPartWayOnTheLastStepSaysWhereItStopped() {
+        var other = PlayState()
+        other.tap(1)
+        other.advance(by: 0.05)
+        let snapshot = other.snapshot
+        var state = PlayState()
+        state.openLesson(at: 10)
+        state.goToLessonStep(11)
+        let took = state.take(snapshot)
+        #expect(took)
+        #expect(state.toy.isPartWay)
+        #expect(state.narration == Narration([.paused(state.toy.status)]))
     }
 
     /// While the rings are being set the toy arriving waits; Cancel gives it back.

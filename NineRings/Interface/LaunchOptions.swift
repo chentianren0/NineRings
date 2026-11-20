@@ -46,9 +46,9 @@ enum LaunchOptions {
     /// Whether this launch keeps the toy and the finished plays in memory, for itself only, and never opens GameSave's
     /// folder, which the person's other launches and devices share. A measuring build does. So does a debug launch that
     /// sets up or plays its own toy, or asks for sample plays: `-keeps-toy NO`, `-move`, `-set-rings`,
-    /// `-play-last-move`, the store's pictures, the frame capture and `-sample-plays`. Such a launch has to start where
-    /// it says and leave what the person keeps as it was. Every other launch, a plain debug launch too, uses the
-    /// folder: iCloud Drive has no separate place for development.
+    /// `-play-last-move`, `-tap-rings`, the store's pictures, the frame capture and `-sample-plays`. Such a launch has
+    /// to start where it says and leave what the person keeps as it was. Every other launch, a plain debug launch too,
+    /// uses the folder: iCloud Drive has no separate place for development.
     static var keepsRecordsInMemory: Bool {
         #if MEASURE
         return true
@@ -56,7 +56,7 @@ enum LaunchOptions {
         let arguments = ProcessInfo.processInfo.arguments
         let keepsNoToy = arguments.firstIndex(of: "-keeps-toy").map { $0 + 1 < arguments.count && arguments[$0 + 1] == "NO" } ?? false
         let setsUpToy = keepsNoToy || move != nil || settingRings != nil || ScreenLaunchOptions.playsLastMove
-            || StoreCapture.isActive || Capture.request != nil
+            || AccessibilityLaunchOptions.tapsRings || StoreCapture.isActive || Capture.request != nil
         return setsUpToy || arguments.contains("-sample-plays")
         #else
         return false
