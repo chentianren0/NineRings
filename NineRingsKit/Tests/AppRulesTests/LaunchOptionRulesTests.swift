@@ -3,11 +3,10 @@ import Testing
 
 /// Which builds read the app's own launch options, checked in the app's sources in this repository.
 ///
-/// A build that ships reads none of them. Whatever it is launched with, it starts as the person left it, and it keeps
-/// their toy and their plays in the device's store. A launch option that set up the toy in such a build would replace
-/// the person's toy and record plays they never played. Only a debug build reads the launch options, and a measuring
-/// build reads its own `-measure` (`MeasureScript`). Settings given as `-key value` are the system's, not the app's
-/// options.
+/// A build that ships reads none of them. Whatever it is launched with, it starts as the person left it. A launch
+/// option that set up the toy in such a build would replace the person's toy and record plays they never played. Only
+/// a debug build reads the launch options, and a measuring build reads its own `-measure` (`MeasureScript`). Settings
+/// given as `-key value` are the system's, not the app's options.
 @Suite struct LaunchOptionRulesTests {
     /// The repository's root: this file is in NineRingsKit/Tests/AppRulesTests.
     private static let root = URL(filePath: #filePath)

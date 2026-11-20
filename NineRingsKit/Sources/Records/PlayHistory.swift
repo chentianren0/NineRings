@@ -1,15 +1,14 @@
 import Foundation
 import Puzzle
 import Session
-import SwiftData
 
-/// The finished plays as a screen shows them. They are values: holding them holds none of the store's objects, so the
-/// store behind them can change, or close, while a screen shows them.
+/// The finished plays as a screen shows them. They are values, so what is kept behind them can change while a screen
+/// shows them.
 public struct PlayHistory: Sendable, Equatable {
     /// Every finished play this build can read, newest first, one for each play: no two have the same `playID`.
     public var plays: [PlayRecord]
     /// How many finished plays are kept that this build cannot read, one for each play. A newer version of the app can
-    /// leave them, with rules this build does not know (``FinishedPlay/isUnderstood``). They are not among `plays`.
+    /// leave them, with rules this build does not know (``PlayRecord/rules``). They are not among `plays`.
     public var unreadable: Int
 
     public init(plays: [PlayRecord] = [], unreadable: Int = 0) {
@@ -19,44 +18,6 @@ public struct PlayHistory: Sendable, Equatable {
 
     /// No play kept.
     public static let empty = PlayHistory()
-}
-
-extension RecordStore {
-    /// The history as values: each play of ``history()`` that this build can read, in its order, and how many it
-    /// cannot.
-    public func playHistory() throws -> PlayHistory {
-        var read = PlayHistory()
-        for play in try history() {
-            if let record = play.record {
-                read.plays.append(record)
-            } else {
-                read.unreadable += 1
-            }
-        }
-        return read
-    }
-
-    /// Deletes every finished play, the ones this build cannot read and every copy of a play too, and leaves the kept
-    /// toys. Returns how many records it deleted.
-    ///
-    /// It deletes them one by one, with `ModelContext.delete(_:)`, and saves once. That is the delete Apple documents as
-    /// reaching the person's other devices when the store syncs; a batch delete and erasing the store are not documented
-    /// to. When the save fails, the store is left as it was and the error is thrown.
-    @discardableResult
-    public func clearHistory() throws -> Int {
-        let context = container.mainContext
-        let plays = try context.fetch(FetchDescriptor<FinishedPlay>())
-        for play in plays {
-            context.delete(play)
-        }
-        do {
-            try context.save()
-        } catch {
-            context.rollback()
-            throw error
-        }
-        return plays.count
-    }
 }
 
 extension PlayRecord {

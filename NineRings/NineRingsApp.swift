@@ -2,8 +2,8 @@ import SwiftUI
 
 @main
 struct NineRingsApp: App {
-    /// The launch's one keeper of records: made here once, so that its store is opened once however many times a
-    /// window is made, and given to every scene.
+    /// The launch's one keeper of records: made here once, so that every window reads the same records however many
+    /// times a window is made, and given to every scene.
     @State private var keeper: Keeper
 
     init() {
@@ -19,7 +19,7 @@ struct NineRingsApp: App {
         #endif
         // The lesson's tip; what it knows stays on the device.
         LessonTip.configure()
-        _keeper = State(initialValue: Keeper(place: LaunchOptions.recordPlace, samplePlays: LaunchOptions.samplePlays))
+        _keeper = State(initialValue: Keeper(samplePlays: LaunchOptions.samplePlays))
     }
 
     var body: some Scene {
