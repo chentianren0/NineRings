@@ -190,7 +190,7 @@ The history on screen is every entry that is not *cleared*, newest first. Entrie
 
 The state *sent* exists for a save whose answer never came back. iCloud may have such a play, and another device may already show it. Clearing therefore queues a deletion for it too, and a deletion that arrives for it removes it.
 
-A play that is *sent*, and whose answer has not come, is queued again only after a fetch has finished since the launch or since the app came to the front. Its save may have landed, and another device may have cleared the play since. Sent again, it would make the record again and undo the clearing; after a fetch, the deletion has arrived and has removed the entry. A play that is *unsent* is queued at once.
+A play is handed to iCloud a second time only after a fetch has finished since it was last handed over, in the same run. Whenever the engine asks for the record of a play that is *sent*, the app hands it over only if a fetch has finished in this run after the play was last handed over. This holds at a launch, where the engine may ask from its saved state before the first fetch has finished, and in the middle of a run, after an answer was lost. Otherwise the app hands over no record for that play, withdraws its save from the engine, and asks the engine to fetch. When the fetch has finished, every play that is still *sent* is queued again. The reason is a save that lands while its answer is lost: another device can clear the play in the meantime, and the play, sent again, would make the record again and undo the clearing. The fetch brings that deletion first, and the deletion removes the entry. A play that is *unsent* is handed over at once.
 
 Clearing removes what this device knew was in iCloud, or might be there. A play that another device finishes afterwards is a new record and stays. So does a play that another device had finished, but not yet sent, when the clearing happened.
 
@@ -200,7 +200,7 @@ Clearing removes what this device knew was in iCloud, or might be there. A play 
 
 1. The app opens the store and shows the toy from it. It never waits for iCloud.
 2. It creates the engine, with the saved state or with none.
-3. If the engine has its saved state, the app queues again whatever the store marks as not yet received: plays that are *unsent*, deletions for plays that are *cleared*, and the toy if it is marked as changed and no toy is held. Plays that are *sent* are queued again once this run's fetch has finished (section 7). The engine drops duplicates [3]. A crash between a change and its sending therefore loses nothing. If the device's zone is one it created and iCloud has not yet confirmed, nothing is queued until this run's fetch has finished (section 9).
+3. If the engine has its saved state, the app queues again whatever the store marks as not yet received: plays that are *unsent*, deletions for plays that are *cleared*, and the toy if it is marked as changed and no toy is held. Plays that are *sent* are queued again once this run's fetch has finished, and until then the app hands over no record for them (section 7). The engine drops duplicates [3]. A crash between a change and its sending therefore loses nothing. If the device's zone is one it created and iCloud has not yet confirmed, nothing is queued until this run's fetch has finished (section 9).
 4. If the engine started from nothing, the app queues nothing and builds no record until the account is known. Then the device joins, as described next, and the join queues everything. What the store holds may belong to another account, and Apple does not document that an engine which starts from nothing clears what was queued before it named the account [18].
 5. It asks the engine to fetch.
 
@@ -245,7 +245,7 @@ The zone's name ends in a number, starting at 1, and a name is used once (princi
 - **Sending.** A device sends only into a zone it knows to exist: one the engine has reported as existing, or one whose creation iCloud has confirmed to it.
 - **Creating a zone.** A device that has something to send and no zone to send it to creates one, with the number after the highest it has heard of. It does so only after a fetch in this run has finished without naming an existing zone. Until iCloud confirms the creation, only the zone is queued. *Something to send* is a play that is *unsent* or *sent*, a *cleared* entry, or a toy that is marked as changed while none is held. A zone the device creates counts as heard of: its number is then the highest the device has heard of. Saving a zone that exists changes nothing, and two engines that each saved the same new zone ended with one [54]. Two devices at the same instant are open point 16.
 - **A zone not yet confirmed at launch.** Nothing is queued until this run's fetch has finished. If the fetch names that zone as existing, it is confirmed. If it names a higher existing zone, the device joins that one. If it names a deletion that counts, the deletion is handled as below. Otherwise the device queues the same zone again, under the same number.
-- **Leaving a zone.** When a device's zone is marked as *deleted*, or the device goes on in another zone, the app withdraws from the engine whatever is still queued for the old zone, and queues from the store again for the zone it then uses. The engine keeps saves queued for a zone after it has reported the zone as deleted, and if it sends them, they are refused and dropped [54].
+- **Leaving a zone.** When a device's zone is marked as *deleted*, or the device goes on in another zone, the app withdraws from the engine whatever is still queued for the old zone, and queues from the store again for the zone it then uses. When the device goes on by joining, that queueing is the join's own, after the join's fetch (section 8). The engine keeps saves queued for a zone after it has reported the zone as deleted, and if it sends them, they are refused and dropped [54].
 
 ### When a zone is deleted
 
@@ -276,7 +276,7 @@ A save can also fail because the zone is missing. iCloud then attaches no record
 | The network, a server limit, a busy zone, or the service or the account being unavailable for a while | The engine [8] | It tries again later. The app does nothing and deletes nothing [45]. |
 | A save of the toy is refused | The app | Section 6. |
 | A save of a finished play is refused | The app | Section 7, rule 4. |
-| The answer to a save is lost, although the save may have landed [51] | The app | The marks stay, so the change is queued again at the next sending moment, the next return to the front or the next launch. A play that is *sent* is queued again only after a fetch (section 7). The stamps, and the state *sent*, let the rules recognise a save that had landed (sections 6 and 7). |
+| The answer to a save is lost, although the save may have landed [51] | The app | The marks stay, so the change is queued again at the next sending moment, the next return to the front or the next launch. A play that is *sent* is handed over again only after a fetch has finished since it was last handed over (section 7). The stamps, and the state *sent*, let the rules recognise a save that had landed (sections 6 and 7). |
 | iCloud no longer knows the record the device wanted to change | The app | The base is emptied and the toy is sent as a new record [10][52]. |
 | A deletion of the Toy record arrives | The app | No version in this design deletes that record. The base is emptied, and nothing else changes. |
 | The zone is missing | The app | Section 9. |
@@ -288,8 +288,8 @@ A save can also fail because the zone is missing. iCloud then attaches no record
 
 | Moment | What the app does |
 |---|---|
-| Launch | Creates the engine, queues what the store marks, and asks for a fetch. Plays that are *sent* wait until that fetch has finished (section 7). |
-| The app comes to the front | Asks for a fetch, so that the toy is the latest before the person plays. Queues again what a full storage left unsent. Plays that are *sent* wait until that fetch has finished (section 7). |
+| Launch | Creates the engine, queues what the store marks, and asks for a fetch. Plays that are *sent* are handed over only once that fetch has finished (section 7). |
+| The app comes to the front | Asks for a fetch, so that the toy is the latest before the person plays. Queues again what a full storage left unsent. A play that is *sent* is handed over only once a fetch has finished since it was last handed over (section 7). |
 | A play is finished | Queues the play's record and the toy. |
 | The toy changes | Queues the toy at most once a minute. The last change of a session is thus on its way within a minute, also on a Mac whose app stays in front while the person walks away. |
 | The app leaves the front | Queues the toy if it is marked as changed, and asks the engine to send within the background time the system grants, so that the save is out before the app is suspended. |
