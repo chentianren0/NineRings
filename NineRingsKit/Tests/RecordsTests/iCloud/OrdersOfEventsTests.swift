@@ -39,15 +39,18 @@ import Testing
         let bounds = (ProcessInfo.processInfo.environment["ORDERS_SWEEP"] ?? "").split(separator: "-").compactMap { UInt64($0) }
         guard bounds.count == 2 else { return }
         var failing = 0
+        var reached: [String: Int] = [:]
         for seed in bounds[0]..<bounds[1] {
             let order = try RandomOrder(seed: seed)
             order.run(steps: 160)
             let settled = order.finish()
+            for (what, count) in order.world.watcher.tally.counts { reached[what, default: 0] += count }
             let problems = order.world.watcher.problems + order.world.disagreements()
             guard !settled || !problems.isEmpty else { continue }
             failing += 1
             print("seed \(seed): settled \(settled), \(problems)")
         }
+        for (what, count) in reached.sorted(by: { $0.key < $1.key }) { print("reached \(what): \(count)") }
         print("\(failing) of \(bounds[1] - bounds[0]) seeds failed")
     }
 
@@ -199,7 +202,16 @@ final class RandomOrder {
         // Two cases the design accepts leave a device without records that iCloud holds, until its engine next starts
         // from nothing (section 16): it joined a zone whose records its engine had fetched while it used another, or a
         // play it had cleared came back to it and its deletion was answered only afterwards. It is given that start.
-        let lackingRecords = world.devices.filter { $0.joinedAZoneItsEngineHadFetched || $0.lacksAPlayThatCameBack }
+        // Only a device whose every missing play is among the records it did not apply, and that shows no play iCloud
+        // lacks, is in one of those cases.
+        let lackingRecords = world.devices.filter { device in
+            guard let zone = device.zoneNote?.zone.name else { return false }
+            let inICloud = Set(world.cloud.records(zone: zone, account: World.person).compactMap(\.playID))
+            let shown = Set(((try? device.sync.store.allPlays()) ?? []).filter { $0.sync != .cleared }.map(\.playID))
+            let missing = inICloud.subtracting(shown)
+            return !missing.isEmpty && shown.isSubset(of: inICloud)
+                && missing.allSatisfy { device.recordsNotApplied.contains(RecordID(zone: zone, name: $0.uuidString)) }
+        }
         if !lackingRecords.isEmpty {
             world.watcher.tally.count("accepted: records lacking until the next start from nothing")
             for device in lackingRecords { device.discardEngineState() }

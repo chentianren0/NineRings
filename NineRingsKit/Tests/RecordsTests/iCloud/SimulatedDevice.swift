@@ -208,15 +208,11 @@ final class SimulatedDevice: StandInEngineDelegate {
     /// nothing (section 16).
     private(set) var lostFetchedChangesWithAnotherAccount = false
     private var appliedChangesBeforeConfirmation = false
-    /// The zones whose records this device's engine fetched while the device used another zone, since its engine last
-    /// started from nothing; and whether the device then joined one of them, the case the design accepts in which it
-    /// lacks those records until its engine next starts from nothing (section 16).
-    private var ignoredZones: Set<String> = []
-    private(set) var joinedAZoneItsEngineHadFetched = false
-    /// The plays that came back to this device while they were cleared here; and whether the answer to the device's
-    /// deletion of one came after that, the case the design accepts in which the device lacks it (section 16).
-    private var cameBackWhileCleared: Set<RecordID> = []
-    private(set) var lacksAPlayThatCameBack = false
+    /// The records this device's engine fetched, since it last started from nothing, that the device did not apply: of a
+    /// zone other than the one it used, or of a play it had cleared. Two cases the design accepts leave the device
+    /// without such records until its engine next starts from nothing (section 16): it joins a zone whose records its
+    /// engine had fetched while it used another, or a play it cleared comes back and its deletion is answered afterwards.
+    private(set) var recordsNotApplied: Set<RecordID> = []
     /// Where a trace of every call goes, for a test that looks into one order of events.
     var trace: ((String) -> Void)?
     /// Whether the engine is to be offline.
@@ -297,10 +293,7 @@ final class SimulatedDevice: StandInEngineDelegate {
     /// The engine cannot go on from its saved state: the app discards it, and the next launch is a start from nothing.
     func discardEngineState() {
         must { try sync.discardEngineState() }
-        ignoredZones = []
-        joinedAZoneItsEngineHadFetched = false
-        cameBackWhileCleared = []
-        lacksAPlayThatCameBack = false
+        recordsNotApplied = []
         relaunch()
     }
 
@@ -551,11 +544,7 @@ final class SimulatedDevice: StandInEngineDelegate {
             sync.fetchBegan(manual: manual)
         case .databaseChanged(let changes):
             if !sync.run.accountConfirmed { appliedChangesBeforeConfirmation = true }
-            let noteBefore = zoneNote
             watchingPurges(deleted: changes.deleted) { apply(must { try sync.databaseChanged(changes) }) }
-            if let joined = zoneNote, joined != noteBefore, joined.knowledge == .existing, ignoredZones.contains(joined.zone.name) {
-                joinedAZoneItsEngineHadFetched = true
-            }
         case .fetched(let changes):
             for record in changes.records where record.type == CloudRecord.finishedPlayType {
                 watcher.received(play: record.name, on: name)
@@ -563,15 +552,10 @@ final class SimulatedDevice: StandInEngineDelegate {
             let before = toySide
             if !sync.run.accountConfirmed { appliedChangesBeforeConfirmation = true }
             let used = zoneNote.flatMap { $0.knowledge == .deleted ? nil : $0.zone.name }
-            for zone in Set(changes.records.compactMap(\.zone) + changes.deletions.map(\.id.zone)) where zone != used {
-                ignoredZones.insert(zone)
-            }
-            let ids = changes.records.compactMap(\.playID)
-            let entries = must { try sync.store.plays(ids) } ?? [:]
-            for record in changes.records where record.zone == used {
-                if let id = record.playID, entries[id]?.sync == .cleared, let zone = record.zone {
-                    cameBackWhileCleared.insert(RecordID(zone: zone, name: record.name))
-                }
+            let entries = must { try sync.store.plays(changes.records.compactMap(\.playID)) } ?? [:]
+            for record in changes.records {
+                guard let zone = record.zone, let id = record.playID else { continue }
+                if zone != used || entries[id]?.sync == .cleared { recordsNotApplied.insert(RecordID(zone: zone, name: record.name)) }
             }
             if changes.records.contains(where: \.isToy) { toyRefusedWithoutRecord = false }
             apply(must { try sync.fetched(changes) })
@@ -591,8 +575,6 @@ final class SimulatedDevice: StandInEngineDelegate {
             apply(must { try sync.zonesSent(changes) })
         case .sent(let changes):
             let before = toySide
-            let answered = changes.deleted + changes.failedDeletions.filter { $0.reason == .alreadyGone }.map(\.id)
-            if answered.contains(where: cameBackWhileCleared.contains) { lacksAPlayThatCameBack = true }
             let userDeleted = changes.failedSaves.filter { $0.reason == .zoneGone(.userDeletedZone) }.map(\.id.zone)
                 + changes.failedDeletions.filter { $0.reason == .zoneGone(.userDeletedZone) }.map(\.id.zone)
             watchingPurges(userDeleted: userDeleted) { apply(must { try sync.sent(changes) }) }
