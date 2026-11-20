@@ -40,14 +40,18 @@ public final class RecordStore {
         case memory
     }
 
+    /// The models the device's own store keeps: those of ``schema``, and the toy and the notes the iCloud rules keep
+    /// (``ICloudSync``), which never go into a store that syncs through SwiftData.
+    static let deviceSchema = Schema([FinishedPlay.self, SavedToy.self, KeptToy.self, SyncNotes.self])
+
     /// The device's own store in `place`, which never syncs: `cloudKitDatabase` is `.none` explicitly, so that the
     /// iCloud entitlement, once the app has it, does not make it sync.
     public static func deviceConfiguration(in place: Place) -> ModelConfiguration {
         switch place {
         case .folder(let folder):
-            ModelConfiguration("Device", schema: schema, url: folder.appending(path: "Device.store"), cloudKitDatabase: .none)
+            ModelConfiguration("Device", schema: deviceSchema, url: folder.appending(path: "Device.store"), cloudKitDatabase: .none)
         case .memory:
-            ModelConfiguration("Device", schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
+            ModelConfiguration("Device", schema: deviceSchema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         }
     }
 
@@ -56,7 +60,7 @@ public final class RecordStore {
         if case .folder(let folder) = place {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         }
-        return try ModelContainer(for: schema, configurations: deviceConfiguration(in: place))
+        return try ModelContainer(for: deviceSchema, configurations: deviceConfiguration(in: place))
     }
 
     public let container: ModelContainer
@@ -124,11 +128,14 @@ public final class RecordStore {
 
     /// Every finished play, newest first, each play once: of two with the same id the earlier shows, and nothing is
     /// deleted. Copies finished at the same moment are told apart by where and by which version they were made, so that
-    /// every device shows the same one.
+    /// every device shows the same one. A play the person cleared, whose deletion iCloud has not yet confirmed, is not
+    /// among them (``PlaySyncState/cleared``).
     public func history() throws -> [FinishedPlay] {
-        let all = try context.fetch(FetchDescriptor<FinishedPlay>(sortBy: [
-            SortDescriptor(\.finishedAt, order: .forward), SortDescriptor(\.madeOn), SortDescriptor(\.appVersion),
-        ]))
+        let cleared = PlaySyncState.cleared.rawValue
+        let all = try context.fetch(FetchDescriptor<FinishedPlay>(
+            predicate: #Predicate { $0.syncState != cleared },
+            sortBy: [SortDescriptor(\.finishedAt, order: .forward), SortDescriptor(\.madeOn), SortDescriptor(\.appVersion)]
+        ))
         var seen = Set<UUID>()
         return all.filter { seen.insert($0.playID).inserted }.reversed()
     }

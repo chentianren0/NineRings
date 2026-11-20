@@ -1,0 +1,131 @@
+import Foundation
+import Puzzle
+@testable import Records
+import Session
+import SwiftData
+import Testing
+
+/// Several simulated devices of one person against one stand-in iCloud: what the scenario tests and the orders of events
+/// run in.
+@MainActor
+final class World {
+    let cloud: StandInICloud
+    let watcher = Watcher()
+    let clock = TestClock()
+    let random: SharedRandom
+    var engineChoices: StandInEngine.Choices
+    private(set) var devices: [SimulatedDevice] = []
+    /// The person's account.
+    static let person = "person"
+    /// Another person's account.
+    static let other = "other"
+    static let zone = "Plays"
+
+    init(seed: UInt64 = 1, cloud choices: StandInICloud.Choices = .init(), engine: StandInEngine.Choices = .init()) {
+        cloud = StandInICloud(choices: choices, seed: seed)
+        random = SharedRandom(seed: seed)
+        engineChoices = engine
+    }
+
+    /// A new device, signed in to `account`, launched for the first time; or set up from `backup`, a copy of another
+    /// device's store. With `clock`, the device keeps time by a clock of its own.
+    @discardableResult
+    func device(
+        _ name: String, kind: MadeOn = .iPhone, account: String? = World.person, from backup: ModelContainer? = nil,
+        clock: TestClock? = nil
+    ) throws -> SimulatedDevice {
+        let device = try SimulatedDevice(
+            name: name, kind: kind, cloud: cloud, zone: Self.zone, account: account, watcher: watcher,
+            clock: clock ?? self.clock, random: random, engineChoices: engineChoices, restoredFrom: backup
+        )
+        devices.append(device)
+        return device
+    }
+
+    /// Takes `device` out of the world: it is no longer settled or checked, as an app that was deleted.
+    func remove(_ device: SimulatedDevice) {
+        devices.removeAll { $0 === device }
+    }
+
+    /// Lets every device come to the front, send, fetch, hear its answers and take toys up at calm moments, round after
+    /// round, until a round changes nothing. Coming to the front queues again what the store marks, as after a save whose
+    /// answer was lost (section 10). With `answeringOffers`, every offer is answered that way: Play That One when false.
+    @discardableResult
+    func settle(answeringOffers keepThisOne: Bool? = nil, rounds: Int = 60) -> Bool {
+        for _ in 0..<rounds {
+            let before = look()
+            for device in devices {
+                device.cameToFront()
+                device.deliverLateAnswers()
+                var sends = 0
+                while device.engine.hasPendingChanges, sends < 50 {
+                    device.engineSends()
+                    sends += 1
+                }
+                device.engineFetches()
+                device.calmMoment()
+                if let keepThisOne, device.isOffered { device.answerOffer(keepThisOne: keepThisOne) }
+            }
+            if look() == before { return true }
+        }
+        return false
+    }
+
+    /// Everything a round of settling can change, to tell when it changes no more.
+    private func look() -> [String] {
+        var seen = cloud.records(zone: Self.zone, account: Self.person).map { "\($0.name) \($0.changeTag ?? "")" }
+        for device in devices {
+            let side = device.toySide
+            seen.append("\(device.name) \(side.isChanged) \(side.base?.changeTag ?? "-") \(side.held?.changeTag ?? "-") \(side.lastSend.map { "\($0)" } ?? "-")")
+            seen.append("\(device.name) \(device.history.plays.map(\.playID)) \(device.history.unreadable)")
+            seen.append("\(device.name) \(device.engine.state.pending) \(device.engine.state.savesZone) \(device.engine.lateAnswers.count) \(device.engine.changesSent)")
+        }
+        return seen
+    }
+
+    // MARK: What iCloud holds
+
+    /// The finished plays iCloud holds, as a history.
+    func historyInICloud(account: String = World.person) -> PlayHistory {
+        var history = PlayHistory()
+        for record in cloud.records(zone: Self.zone, account: account) where record.type == CloudRecord.finishedPlayType {
+            if let format = record.format, let payload = record.payload,
+               let read = FinishedPlayPayload(format: format, payload: payload, recordName: record.name) {
+                history.plays.append(read.play)
+            } else {
+                history.unreadable += 1
+            }
+        }
+        history.plays.sort { ($0.finishedAt, $0.playID.uuidString) > ($1.finishedAt, $1.playID.uuidString) }
+        return history
+    }
+
+    /// The toy iCloud holds.
+    func toyInICloud(account: String = World.person) -> ToyPayload? {
+        cloud.record(CloudRecord.toyName, zone: Self.zone, account: account).flatMap(ToySide.read)
+    }
+
+    // MARK: The checks
+
+    /// What breaks the agreement of the person's devices once they have all synced: every device signed in to the
+    /// person's account shows the history iCloud holds, keeps iCloud's toy, holds no toy, and marks nothing as not yet
+    /// received.
+    func disagreements() -> [String] {
+        var problems: [String] = []
+        let history = historyInICloud()
+        let toy = toyInICloud()
+        for device in devices where device.account == Self.person {
+            let shown = device.history
+            let sortedShown = shown.plays.sorted { ($0.finishedAt, $0.playID.uuidString) > ($1.finishedAt, $1.playID.uuidString) }
+            if sortedShown != history.plays || shown.unreadable != history.unreadable {
+                problems.append("\(device.name) shows \(shown.plays.count) plays and \(shown.unreadable) unread; iCloud holds \(history.plays.count) and \(history.unreadable)")
+            }
+            if let toy, let kept = device.keptToy, !kept.isSameToy(as: toy.toy) {
+                problems.append("\(device.name) keeps another toy than iCloud's")
+            }
+            if device.toySide.held != nil { problems.append("\(device.name) still holds a toy") }
+            if device.hasMarks { problems.append("\(device.name) still marks changes iCloud has not received") }
+        }
+        return problems
+    }
+}

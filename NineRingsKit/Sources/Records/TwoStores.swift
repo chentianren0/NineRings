@@ -127,7 +127,7 @@ extension FinishedPlay {
     /// field added later is copied too.
     static let copiedFields: Set<String> = [
         "playID", "finishedAt", "startedAt", "startRings", "endRings", "moves", "undos", "movesPlayedForThePerson",
-        "secondsSpent", "madeOn", "appVersion", "rules",
+        "secondsSpent", "madeOn", "appVersion", "rules", "syncState", "format", "payload",
     ]
 
     /// A copy of `other`, field for field, for another store: a record this build does not understand is copied as it is.
@@ -149,6 +149,9 @@ extension FinishedPlay {
         copy.madeOn = other.madeOn
         copy.appVersion = other.appVersion
         copy.rules = other.rules
+        copy.syncState = other.syncState
+        copy.format = other.format
+        copy.payload = other.payload
         return copy
     }
 }

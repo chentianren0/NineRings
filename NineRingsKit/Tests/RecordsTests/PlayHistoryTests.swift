@@ -130,10 +130,10 @@ import Testing
             }
         }
         let readOnly = ModelConfiguration(
-            "Device", schema: RecordStore.schema, url: folder.appending(path: "Device.store"), allowsSave: false,
+            "Device", schema: RecordStore.deviceSchema, url: folder.appending(path: "Device.store"), allowsSave: false,
             cloudKitDatabase: .none
         )
-        let store = RecordStore(container: try ModelContainer(for: RecordStore.schema, configurations: readOnly))
+        let store = RecordStore(container: try ModelContainer(for: RecordStore.deviceSchema, configurations: readOnly))
         #expect(throws: (any Error).self) { try store.clearHistory() }
         #expect(try store.playHistory().plays == plays)
         #expect(!store.container.mainContext.hasChanges, "the deletes were rolled back")

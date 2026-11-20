@@ -3,11 +3,12 @@ import Puzzle
 import Session
 import SwiftData
 
-// The two stored models. They will sync through CloudKit, whose schema, once promoted for a release, can only grow: a
-// record type or field is never renamed, given another type or removed. So the class names and property names here
-// are fixed. They follow CloudKit's rules: no unique values, no relationships, and a default for every stored
-// property, each a plain number, text, date or `Data`. A later change adds a property whose default means "as
-// before", or a new model.
+// The two stored models of the earlier way of keeping and syncing. Both live in the device's store, and the store that
+// syncs through SwiftData mirrors them to CloudKit, with SwiftData's rules for that: no unique values, no
+// relationships, and a default for every stored property, each a plain number, text, date or `Data`. A property added
+// later has a default that means "as before", so that a store kept before it opens by itself. The iCloud rules
+// (`ICloudSync`) send `FinishedPlay` as a record of its own design, with a payload (docs/icloud.md, section 5), and keep
+// the toy in `KeptToy`.
 
 /// One finished play. Written once and never changed.
 @Model
@@ -34,8 +35,18 @@ public final class FinishedPlay {
     public var madeOn: String = ""
     /// The version of the app that wrote it.
     public var appVersion: String = ""
-    /// What the numbers mean (``PlayRecord/rules``), so that an older build can tell a record it does not understand.
+    /// What the numbers mean (``PlayRecord/rules``), so that an older build can tell a record it does not understand. A
+    /// play that came from iCloud in a payload this build cannot read has one more than this build knows.
     public var rules: Int = 1
+    /// Where the play stands with iCloud, a ``PlaySyncState`` (docs/icloud.md, section 7). A play recorded before this
+    /// field has never left the device through the sync engine: *unsent*.
+    public var syncState: Int = 0
+    /// The format of ``payload``.
+    public var format: Int = 1
+    /// The play's record payload, as it went to iCloud or came from there. It is kept as it is, so that a play in a format
+    /// this build cannot read goes back unchanged should the device offer it again. Empty for a play recorded before
+    /// this field: its payload is written from the fields above.
+    public var payload: Data = Data()
 
     /// The record of `play`, made on `madeOn` by version `appVersion` of the app.
     public init(_ play: PlayRecord, madeOn: MadeOn, appVersion: String) {
