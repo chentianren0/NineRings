@@ -8,8 +8,9 @@ import Session
 // Each payload's format starts at 1. The JSON is read leniently: a value this version does not know is ignored, and a
 // value it knows but does not find takes a default, so adding a value needs no new format. A new format is for a change
 // that an older version would misread. A version that meets a format it does not know never interprets the payload:
-// reading gives nil. So does a payload that is not valid in its own format, which no version writes; the rules handle
-// both the same way, as a payload this version cannot read.
+// reading gives nil. So does a payload that is not valid in its own format, which no version writes. A finished play
+// that cannot be read is kept as it is either way; a toy is held when its format is higher, and replaced when it is
+// broken (`ToyPayload.Reading`).
 //
 // Dates are written as seconds since Foundation's reference date, the form `ToySnapshot` uses, so that they come back
 // exactly. Keys are sorted, so that the same payload is always the same bytes.
@@ -63,6 +64,24 @@ public struct ToyPayload: Sendable, Equatable, Codable {
         guard format == Self.format, let read = try? PayloadCoding.decoder.decode(Self.self, from: payload),
               read.toy.toy != nil else { return nil }
         self = read
+    }
+
+    /// How this version reads a toy's record (docs/icloud.md, sections 6 and 14).
+    enum Reading: Equatable {
+        /// It reads.
+        case readable(ToyPayload)
+        /// Its format is higher than this version knows: it is never interpreted, and its stamps are not read.
+        case higherFormat
+        /// It is in no format higher than this version knows, and still cannot be read: its JSON is broken, or its moves
+        /// break the puzzle's rule. No later version could read it either.
+        case broken
+    }
+
+    /// How this version reads a record whose `format` and `payload` fields are these.
+    static func reading(format: Int?, payload: Data?) -> Reading {
+        if let format, format > Self.format { return .higherFormat }
+        guard let format, let payload, let read = ToyPayload(format: format, payload: payload) else { return .broken }
+        return .readable(read)
     }
 
     enum CodingKeys: String, CodingKey {

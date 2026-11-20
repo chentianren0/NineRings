@@ -40,9 +40,9 @@ public final class RecordStore {
         case memory
     }
 
-    /// The models the device's own store keeps: those of ``schema``, and the toy and the notes the iCloud rules keep
-    /// (``ICloudSync``), which never go into a store that syncs through SwiftData.
-    static let deviceSchema = Schema([FinishedPlay.self, SavedToy.self, KeptToy.self, SyncNotes.self])
+    /// The models the device's own store keeps: those of ``schema``, and the toy, the finished plays and the notes the
+    /// iCloud rules keep (``ICloudSync``), which never go into a store that syncs through SwiftData.
+    static let deviceSchema = Schema([FinishedPlay.self, SavedToy.self, KeptToy.self, KeptPlay.self, SyncNotes.self])
 
     /// The device's own store in `place`, which never syncs: `cloudKitDatabase` is `.none` explicitly, so that the
     /// iCloud entitlement, once the app has it, does not make it sync.
@@ -128,14 +128,11 @@ public final class RecordStore {
 
     /// Every finished play, newest first, each play once: of two with the same id the earlier shows, and nothing is
     /// deleted. Copies finished at the same moment are told apart by where and by which version they were made, so that
-    /// every device shows the same one. A play the person cleared, whose deletion iCloud has not yet confirmed, is not
-    /// among them (``PlaySyncState/cleared``).
+    /// every device shows the same one.
     public func history() throws -> [FinishedPlay] {
-        let cleared = PlaySyncState.cleared.rawValue
-        let all = try context.fetch(FetchDescriptor<FinishedPlay>(
-            predicate: #Predicate { $0.syncState != cleared },
-            sortBy: [SortDescriptor(\.finishedAt, order: .forward), SortDescriptor(\.madeOn), SortDescriptor(\.appVersion)]
-        ))
+        let all = try context.fetch(FetchDescriptor<FinishedPlay>(sortBy: [
+            SortDescriptor(\.finishedAt, order: .forward), SortDescriptor(\.madeOn), SortDescriptor(\.appVersion),
+        ]))
         var seen = Set<UUID>()
         return all.filter { seen.insert($0.playID).inserted }.reversed()
     }

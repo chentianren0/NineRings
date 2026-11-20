@@ -3,23 +3,23 @@ import Session
 
 /// The toy on this device and its notes about iCloud, as the rules of docs/icloud.md section 6 read and change them.
 ///
-/// It is a value: the store reads it, an event changes it, and the store writes it back in the same save as everything
-/// else the event changed (``ICloudSync``). It knows nothing of CloudKit: a record's change tag is a string, and its
-/// system fields are opaque data handed back for the next save.
+/// It is a value: the store reads it, a call changes it, and the store writes it back in the same save as everything else
+/// the call changed (``ICloudSync``). It knows nothing of CloudKit: a record's zone and change tag are strings, and its
+/// system fields are opaque data handed back for the next save. It knows nothing of the gate either: which zone the
+/// device uses, and whether a record arrived from it, is the caller's to say.
 struct ToySide: Equatable {
     /// The toy, with when and on which kind of device it last changed. Nil before the first toy is kept.
     var toy: Kept?
-    /// The mark *Toy changed*: the toy differs, in more than time spent, from the one last exchanged with iCloud.
+    /// The mark *Toy changed*: the toy has to be sent.
     var isChanged = false
-    /// The Toy record as this device last saw it, with the stamps it carried. Nil when the device has seen none.
+    /// The Toy record as this device last saw it, with its stamps. Nil when the device has seen none.
     var base: Base?
     /// The stamp under which the toy was last handed to iCloud, and whether the toy has changed since.
     var lastSend: LastSend?
     /// The stamps of this device's last sends of the toy, the oldest first.
     var ownStamps: [UUID] = []
-    /// Another device's toy, kept until the person has chosen or a calm moment lets this device take it up; or a toy this
-    /// version cannot read, kept without an offer. While a toy is held, this device sends no toy.
-    var held: CloudRecord?
+    /// Another device's toy, held to be taken up, offered to the person, or held because this version cannot read it.
+    var held: Held?
 
     /// The person's toy, with when and on which kind of device it last changed.
     struct Kept: Equatable {
@@ -28,31 +28,56 @@ struct ToySide: Equatable {
         var changedOn: String
     }
 
-    /// The Toy record as this device last saw it.
+    /// The Toy record as this device last saw it (section 5, "Toy base").
+    ///
+    /// Its system fields carry its change tag and its zone. It can have stamps and no system fields: the held toy of a
+    /// zone that is gone, over which the person kept their own. It can have system fields and no stamps: a toy this
+    /// version could not read.
     struct Base: Equatable, Codable {
-        /// Its change tag. Nil only for a record whose system fields were emptied by a reset of encrypted data.
+        /// The zone its system fields belong to; nil when it has none.
+        var zone: String?
         var changeTag: String?
-        /// CloudKit's system fields, which carry the tag. Nil as for the tag.
         var systemFields: Data?
         /// The stamps it carried, the oldest first, ending with its own.
         var stamps: [UUID]
 
-        init(changeTag: String?, systemFields: Data?, stamps: [UUID]) {
-            self.changeTag = changeTag
+        init(zone: String?, changeTag: String?, systemFields: Data?, stamps: [UUID]) {
+            self.zone = systemFields == nil ? nil : zone
+            self.changeTag = systemFields == nil ? nil : changeTag
             self.systemFields = systemFields
             self.stamps = stamps
         }
 
-        init(_ record: CloudRecord, _ payload: ToyPayload) {
-            self.init(changeTag: record.changeTag, systemFields: record.systemFields, stamps: payload.stamps)
+        init(_ record: CloudRecord, stamps: [UUID]) {
+            self.init(zone: record.zone, changeTag: record.changeTag, systemFields: record.systemFields, stamps: stamps)
         }
     }
 
     /// The last time the toy was handed to iCloud.
     struct LastSend: Equatable, Codable {
         var stamp: UUID
-        /// Whether the toy has changed, in more than time spent, since it was handed over.
+        /// Whether the person has changed the toy since it was handed over.
         var changedSince: Bool
+    }
+
+    /// Another device's toy, as it arrived, and what it is held for. A held toy whose zone is gone has no system fields.
+    struct Held: Equatable, Codable {
+        var record: CloudRecord
+        var kind: Kind
+
+        enum Kind: Int, Codable {
+            /// It replaces the toy here at the next calm moment (cases 5 and 6).
+            case toTakeUp
+            /// It is offered to the person (case 7).
+            case offered
+            /// Its format is higher than this version knows: neither taken up nor offered.
+            case unreadable
+        }
+
+        /// Its payload, when this version can read it.
+        var payload: ToyPayload? {
+            if case .readable(let payload) = ToyPayload.reading(format: record.format, payload: record.payload) { payload } else { nil }
+        }
     }
 
     /// The most own stamps kept: the stamps of the last twenty sends.
@@ -60,10 +85,12 @@ struct ToySide: Equatable {
 
     // MARK: The person changes the toy (step 1)
 
-    /// Keeps `snapshot` as the toy, changed at `date` on a device of kind `madeOn`. When it differs from the toy here in
-    /// more than time spent, the mark is set and the toy counts as changed since its last send; time spent alone changes
-    /// neither, nor when the toy last changed. A first toy is marked unless nobody has touched it. Returns whether
-    /// anything changed.
+    /// Keeps `snapshot` as the toy, changed at `date` on a device of kind `madeOn`.
+    ///
+    /// When it differs from the toy here in more than time spent, the person changed the toy: the mark is set, the toy
+    /// counts as changed since its last send, and a held toy that waited to be taken up is offered instead (the last
+    /// case of step 5). Time spent alone changes none of these, nor when the toy last changed. A first toy is marked
+    /// unless it is untouched. Returns whether anything changed.
     @discardableResult
     mutating func keep(_ snapshot: ToySnapshot, at date: Date, on madeOn: String) -> Bool {
         guard let kept = toy else {
@@ -78,22 +105,28 @@ struct ToySide: Equatable {
             toy = Kept(snapshot: snapshot, changedAt: date, changedOn: madeOn)
             isChanged = true
             lastSend?.changedSince = true
+            if held?.kind == .toTakeUp { held?.kind = .offered }
         }
         return true
     }
 
+    /// Whether the toy here is untouched, or there is none yet.
+    var isUntouched: Bool { toy?.snapshot.isUntouched ?? true }
+
     // MARK: Sending (steps 2 and 3)
 
-    /// Whether the toy is to go to iCloud: it is marked as changed, and no toy is held.
+    /// Condition 4 of the gate (section 11): the toy is marked as changed, and no toy is held.
     var isDue: Bool { isChanged && held == nil }
 
-    /// The record to hand to the engine as it asks (step 2), or nil when the toy is not due.
+    /// The record to hand to the engine for zone `zone`, the zone the device uses (step 2), or nil when the toy is not
+    /// due.
     ///
-    /// It is built from the toy as it now is, the base's system fields, which carry the base's tag, and the stamps: the
-    /// base's, followed by this version's own. A toy that has not changed since it was last handed over keeps that
+    /// It is built from the toy as it now is, the base's system fields, and the stamps: the base's, followed by this
+    /// version's own. A base from another zone counts as empty; a base without system fields gives a record without
+    /// them, which iCloud takes as a new record. A toy that has not changed since it was last handed over keeps that
     /// stamp; otherwise `makeStamp` gives a new one, which becomes the last send and joins the own stamps. The caller
     /// saves this side before handing the record over.
-    mutating func recordToSend(appVersion: String, makeStamp: () -> UUID) throws -> RecordToSend? {
+    mutating func recordToSend(in zone: String, appVersion: String, makeStamp: () -> UUID) throws -> RecordToSend? {
         guard isDue, let kept = toy else { return nil }
         let stamp: UUID
         if let lastSend, !lastSend.changedSince {
@@ -103,199 +136,186 @@ struct ToySide: Equatable {
             lastSend = LastSend(stamp: stamp, changedSince: false)
             ownStamps = Array((ownStamps + [stamp]).suffix(Self.ownStampsKept))
         }
-        let stamps = (base?.stamps ?? []).filter { $0 != stamp } + [stamp]
+        let usable = base.flatMap { $0.zone == nil || $0.zone == zone ? $0 : nil }
+        let stamps = (usable?.stamps ?? []).filter { $0 != stamp } + [stamp]
         let payload = ToyPayload(
             toy: kept.snapshot, changedAt: kept.changedAt, changedOn: kept.changedOn, appVersion: appVersion,
             stamps: Array(stamps.suffix(ToyPayload.stampsKept))
         )
         return RecordToSend(
-            type: CloudRecord.toyType, name: CloudRecord.toyName, systemFields: base?.systemFields,
+            type: CloudRecord.toyType, zone: zone, name: CloudRecord.toyName, systemFields: usable?.systemFields,
             format: ToyPayload.format, payload: try payload.encoded()
         )
     }
 
-    /// iCloud accepted a save of the toy and returned `record` (step 3). The record becomes the base, and when the toy has
-    /// not changed since it was handed over, the mark is cleared. A record that is an earlier version than one the device
-    /// already holds, its base or a held toy, changes nothing: its answer came late, after a later version had reached the
-    /// device.
+    /// iCloud accepted a save of the toy and returned `record`, of the zone the device uses (step 3).
+    ///
+    /// The record becomes the base, unless it is an earlier version than one the device already holds, its base or a
+    /// held toy this version can read: then its answer came late, and the base stays as it is. When its own stamp is the
+    /// stamp of the last send, and the toy has not changed since, the mark is cleared.
     mutating func accepted(_ record: CloudRecord) {
-        guard let payload = Self.read(record) else {
-            // The device's own record always reads; should it not, the record still is iCloud's latest the device saw.
-            base = Base(changeTag: record.changeTag, systemFields: record.systemFields, stamps: [])
+        guard case .readable(let payload) = ToyPayload.reading(format: record.format, payload: record.payload) else {
+            // The device's own record always reads; should it not, it still is iCloud's latest the device saw.
+            base = Base(record, stamps: [])
             return
         }
-        guard !isEarlierVersion(payload) else { return }
-        base = Base(record, payload)
+        if !isEarlierVersion(payload) {
+            base = Base(record, stamps: payload.stamps)
+        }
         if let lastSend, lastSend.stamp == payload.stamp, !lastSend.changedSince {
             isChanged = false
         }
     }
 
-    /// iCloud no longer knows the record the device meant to change, or reports the Toy record deleted: the base is
-    /// emptied, so that the toy is sent as a new record.
+    /// iCloud no longer knows the record the device meant to change, or reports the Toy record deleted (section 10): the
+    /// base is emptied, so that the toy goes out as a new record.
     mutating func forgetBase() {
         base = nil
     }
 
     // MARK: A toy arrives (step 5)
 
-    /// What became of an arriving toy, by the case of step 5 that applied.
+    /// Which case of step 5 applied to an arriving toy.
     enum Arrival: Equatable {
-        /// The record this device holds as its base, with the same change tag: nothing is new.
+        /// Case 1: the record this device holds as its base, in the same zone with the same change tag.
         case alreadyTheBase
-        /// A version before one this device holds: its own stamp is among the earlier stamps of the base or of a held
-        /// toy. Nothing happens.
-        case earlierVersion
-        /// A payload this version cannot read: held, without an offer.
+        /// Its format is higher than this version knows: held as unreadable.
         case heldUnreadable
-        /// This device's own send coming back: it became the base. `queuesAgain` when the toy here has changed since.
-        case ownSend(queuesAgain: Bool)
-        /// The same toy as the one here: it became the base, and the mark was cleared.
+        /// Its format is known and its content cannot be read: it became the base through its system fields alone.
+        case brokenBecameBase
+        /// Case 2: an earlier version than one this device holds.
+        case earlierVersion
+        /// Case 3: this device's own send coming back. It became the base; `sameToy` when the mark was cleared.
+        case ownSend(sameToy: Bool)
+        /// Case 4: the same toy as the one here. It became the base, and the mark was cleared.
         case sameToy
-        /// Held, to be taken up at the next calm moment.
+        /// Cases 5 and 6: held, to be taken up at the next calm moment.
         case toTakeUp
-        /// Held, and offered: both devices have changed the toy.
+        /// Case 7: held, and offered.
         case offered
     }
 
-    /// A toy arrives, through a fetch or with a refusal: the first case that fits applies. A toy that becomes the base
-    /// takes the place of any held toy, and so does a toy that is held. Since an earlier version than a held toy changes
-    /// nothing, a held toy is only ever replaced by a later one.
+    /// A toy arrives, through a fetch or with a refusal, from the zone the device uses: the first case that fits
+    /// applies. Whenever it is not ignored by case 1 or case 2, a toy that was held is no longer held.
+    @discardableResult
     mutating func arrived(_ record: CloudRecord) -> Arrival {
-        if let tag = record.changeTag, tag == base?.changeTag {
+        if let tag = record.changeTag, let base, base.zone != nil, base.zone == record.zone, base.changeTag == tag {
             return .alreadyTheBase
         }
-        guard let payload = Self.read(record) else {
-            held = record
+        let payload: ToyPayload
+        switch ToyPayload.reading(format: record.format, payload: record.payload) {
+        case .higherFormat:
+            held = Held(record: record, kind: .unreadable)
             return .heldUnreadable
+        case .broken:
+            held = nil
+            base = Base(record, stamps: [])
+            if !isUntouched { isChanged = true }
+            return .brokenBecameBase
+        case .readable(let read):
+            payload = read
         }
         if isEarlierVersion(payload) {
             return .earlierVersion
         }
+        held = nil
         if let stamp = payload.stamp, ownStamps.contains(stamp) {
-            base = Base(record, payload)
-            held = nil
-            if toy?.snapshot.isSameToy(as: payload.toy) ?? false {
-                isChanged = false
-                return .ownSend(queuesAgain: false)
-            }
-            return .ownSend(queuesAgain: isChanged)
+            base = Base(record, stamps: payload.stamps)
+            let same = toy?.snapshot.isSameToy(as: payload.toy) ?? false
+            if same { isChanged = false }
+            return .ownSend(sameToy: same)
         }
         if let kept = toy, kept.snapshot.isSameToy(as: payload.toy) {
-            base = Base(record, payload)
+            base = Base(record, stamps: payload.stamps)
             isChanged = false
-            held = nil
             return .sameToy
         }
-        held = record
-        return heldFate == .toTakeUp ? .toTakeUp : .offered
-    }
-
-    /// Whether `payload` is a version before one this device holds: its own stamp is among the stamps that the base, or a
-    /// held toy this version can read, carried before its own. Stamps name versions of the one record in the order
-    /// CloudKit accepted them, so the version this device holds has gone on from it.
-    private func isEarlierVersion(_ payload: ToyPayload) -> Bool {
-        guard let stamp = payload.stamp else { return false }
-        if let base, base.stamps.dropLast().contains(stamp) { return true }
-        return heldPayload?.earlierStamps.contains(stamp) ?? false
-    }
-
-    // MARK: The held toy
-
-    /// What becomes of the held toy.
-    enum HeldFate: Equatable {
-        /// This version cannot read it: neither taken up nor offered.
-        case unreadable
-        /// It replaces the toy here at the next calm moment (cases 4 and 5): the toy here is not marked, or it is marked
-        /// only for a send that has not changed since and whose stamp the held toy carries among its earlier ones, so
-        /// that whoever wrote it had that send before them.
-        case toTakeUp
-        /// It is offered (the last case): both devices have changed the toy.
-        case offered
-    }
-
-    /// What becomes of the held toy, from the notes as they are now; nil when none is held. A person who changes the toy
-    /// before a calm moment comes turns a toy that waited to be taken up into an offer, as step 5 says.
-    var heldFate: HeldFate? {
-        guard let held else { return nil }
-        guard let payload = Self.read(held) else { return .unreadable }
-        if !isChanged { return .toTakeUp }
-        if let lastSend, !lastSend.changedSince, payload.earlierStamps.contains(lastSend.stamp) {
+        if !isChanged {
+            held = Held(record: record, kind: .toTakeUp)
             return .toTakeUp
         }
+        if let lastSend, !lastSend.changedSince, payload.earlierStamps.contains(lastSend.stamp) {
+            held = Held(record: record, kind: .toTakeUp)
+            return .toTakeUp
+        }
+        held = Held(record: record, kind: .offered)
         return .offered
     }
 
-    /// The held toy's payload, when this version can read it.
-    var heldPayload: ToyPayload? { held.flatMap(Self.read) }
+    /// Whether `payload` is an earlier version than one this device holds (case 2): its own stamp is among the earlier
+    /// stamps of the base, or of a held toy this version can read. A record's earlier stamps never include its own.
+    private func isEarlierVersion(_ payload: ToyPayload) -> Bool {
+        guard let stamp = payload.stamp else { return false }
+        if let base, base.stamps.dropLast().contains(stamp) { return true }
+        return held?.payload?.earlierStamps.contains(stamp) ?? false
+    }
 
-    /// Takes the held toy up at a calm moment (cases 4 and 5): it replaces the toy here and becomes the base. Returns the
-    /// toy taken up, or nil when no held toy waits to be taken up.
+    // MARK: The held toy, and the person's answer (step 6)
+
+    /// Takes the held toy up at a calm moment (cases 5 and 6). Returns the toy taken up, or nil when no held toy waits
+    /// to be taken up.
     mutating func takeUp() -> ToySnapshot? {
-        guard heldFate == .toTakeUp else { return nil }
+        guard held?.kind == .toTakeUp else { return nil }
         return replaceWithHeld()
     }
 
-    /// Play That One (step 6): the held toy replaces the toy here and becomes the base, and nothing is sent. Returns the
-    /// toy now here, or nil when no toy this version can read is held.
+    /// Play That One: the held toy replaces the toy here and becomes the base, and nothing is sent. Returns the toy now
+    /// here, or nil when no toy is offered.
     mutating func playThatOne() -> ToySnapshot? {
-        replaceWithHeld()
+        guard held?.kind == .offered else { return nil }
+        return replaceWithHeld()
     }
 
-    /// Keep This One (step 6): the held toy becomes the base, so that the device has now seen it, and the toy here is to be
-    /// sent at once: it stays marked, or is marked now. Returns whether a toy this version can read was held.
+    /// Keep This One: the held toy becomes the base, so that the device has now seen it, and the toy here is marked as
+    /// changed. A held toy without system fields gives a base of its stamps alone, and the toy here goes out as a new
+    /// record. Returns whether a toy was offered.
     mutating func keepThisOne() -> Bool {
-        guard let held, let payload = Self.read(held) else { return false }
-        base = Base(held, payload)
+        guard let held, held.kind == .offered, let payload = held.payload else { return false }
+        base = Base(held.record, stamps: payload.stamps)
         self.held = nil
         isChanged = true
         return true
     }
 
-    /// Replaces the toy here with the held toy, which becomes the base. The toy here was never handed over, so there is
-    /// no last send. The mark is cleared, unless iCloud no longer has the held toy (its system fields were emptied by a
-    /// reset of encrypted data): then the toy is marked, so that it goes to iCloud again.
+    /// Replaces the toy here with the held toy, which becomes the base. The note of the last send is emptied, because the
+    /// toy here has then never been handed over. The mark is cleared, unless the held toy has no system fields: its zone
+    /// is gone, the zone the device uses does not have it, and the toy is marked as changed instead.
     private mutating func replaceWithHeld() -> ToySnapshot? {
-        guard let held, let payload = Self.read(held) else { return nil }
+        guard let held, let payload = held.payload else { return nil }
         toy = Kept(snapshot: payload.toy, changedAt: payload.changedAt, changedOn: payload.changedOn)
-        base = Base(held, payload)
-        isChanged = held.systemFields == nil
+        base = Base(held.record, stamps: payload.stamps)
+        isChanged = held.record.systemFields == nil
         lastSend = nil
         self.held = nil
         return payload.toy
     }
 
-    /// Looks at the held toy again, as if it had just arrived: at launch, so that a toy an earlier version could not read
-    /// is taken up or offered by a version that can.
-    mutating func lookAgainAtHeldToy() -> Arrival? {
-        guard let record = held, Self.read(record) != nil else { return nil }
-        held = nil
-        return arrived(record)
+    /// The held toy, when it is held as unreadable and this version can now read it: at each launch it is handled as an
+    /// arriving toy, by the caller. It is no longer held.
+    mutating func takeHeldUnreadableThatNowReads() -> CloudRecord? {
+        guard let held, held.kind == .unreadable, held.payload != nil else { return nil }
+        self.held = nil
+        return held.record
     }
 
-    // MARK: When iCloud's copy goes (section 9) or another account arrives (section 8)
+    // MARK: Leaving a zone (section 9), a purge, another account
 
-    /// Puts the toy back to `untouched` and empties its notes: the base, the marks, the stamps and any held toy.
-    mutating func putBack(to untouched: Kept) {
-        self = ToySide(toy: untouched)
-    }
-
-    /// After a reset of the person's encrypted data: the base and the held toy's system fields are emptied, and the toy is
-    /// marked as changed unless nobody has touched it, so that it goes to iCloud again.
-    mutating func afterEncryptedDataReset() {
-        base = nil
-        held?.changeTag = nil
-        held?.systemFields = nil
-        if let kept = toy, !kept.snapshot.isUntouched {
-            isChanged = true
+    /// Leaves every zone but `kept`: the base and the held toy's system fields are emptied when they belong to another
+    /// zone, and when the base did, the toy is marked as changed unless it is untouched.
+    mutating func leaveZones(keeping kept: String?) {
+        if let zone = base?.zone, zone != kept {
+            base = nil
+            if !isUntouched { isChanged = true }
+        }
+        if var held, let zone = held.record.zone, zone != kept {
+            held.record = held.record.withoutSystemFields
+            self.held = held
         }
     }
 
-    // MARK: Reading
-
-    /// The toy payload of `record`, or nil when this version cannot read it.
-    static func read(_ record: CloudRecord) -> ToyPayload? {
-        guard let format = record.format, let payload = record.payload else { return nil }
-        return ToyPayload(format: format, payload: payload)
+    /// Puts the toy back to `untouched` and empties its notes: the mark, the base, the note of the last send, the own
+    /// stamps and any held toy.
+    mutating func putBack(to untouched: Kept) {
+        self = ToySide(toy: untouched)
     }
 }

@@ -50,8 +50,8 @@ final class Tally {
 }
 
 /// What the checks of docs/icloud.md section 14 watch, across every device of an order of events: every version of the
-/// toy and the version it was made from, every toy the person chose to drop, and every record a device sends after a
-/// purge.
+/// toy and the version it was made from, every toy the person chose to drop, every record a device sends after a purge,
+/// and whose account each play and each toy belongs to.
 @MainActor
 final class Watcher {
     /// A toy for the checks: the toy with the time spent on its play left out, since two toys that differ only in that are
@@ -68,6 +68,10 @@ final class Watcher {
     let tally = Tally()
     /// For each device that handled a purge, the plays and the toy it held then and has not received again since.
     private var purged: [String: (plays: Set<String>, toys: Set<Version>)] = [:]
+    /// The account each play belongs to: the account of the store it was finished in, or that it came from.
+    private var owner: [String: String] = [:]
+    /// The account each version of the toy belongs to: the account of the store in which the person made it.
+    private var toyOwner: [Version: String] = [:]
 
     static func version(_ toy: ToySnapshot) -> Version {
         var copy = toy
@@ -75,9 +79,10 @@ final class Watcher {
         return (try? copy.encoded()) ?? Data()
     }
 
-    func personChanged(from old: ToySnapshot, to new: ToySnapshot) {
+    func personChanged(from old: ToySnapshot, to new: ToySnapshot, account: String?) {
         guard !old.isSameToy(as: new) else { return }
         madeFrom[Self.version(new), default: []].insert(Self.version(old))
+        if let account, toyOwner[Self.version(new)] == nil { toyOwner[Self.version(new)] = account }
     }
 
     func chose(toDrop toy: ToySnapshot) {
@@ -109,12 +114,34 @@ final class Watcher {
         return false
     }
 
-    // MARK: The third check: nothing is sent after a purge
+    // MARK: Whose account
+
+    /// A play belongs to `account` from when a store that belongs to it holds it.
+    func belongs(play name: String, to account: String) {
+        if owner[name] == nil { owner[name] = account }
+    }
+
+    /// The fourth check: nothing of one account reaches another account's iCloud. A device hands `record` over for
+    /// `account`'s iCloud while its store belongs to `noted`.
+    func handedOver(_ record: RecordToSend, by device: String, into account: String, noted: String?) {
+        if noted != account {
+            problems.append("\(device) handed a record over for \(account)'s iCloud while its data belongs to \(noted ?? "no account")")
+        }
+        if record.type == CloudRecord.finishedPlayType, let belongs = owner[record.name], belongs != account {
+            problems.append("\(device) handed \(belongs)'s play over for \(account)'s iCloud")
+        }
+        if record.type == CloudRecord.toyType, let payload = ToyPayload(format: record.format, payload: record.payload),
+           let belongs = toyOwner[Self.version(payload.toy)], belongs != account {
+            problems.append("\(device) handed \(belongs)'s toy over for \(account)'s iCloud")
+        }
+    }
+
+    // MARK: The third check: nothing a purge removed is sent again
 
     func handledPurge(on device: String, plays: Set<String>, toy: ToySnapshot) {
         var held = purged[device] ?? ([], [])
         held.plays.formUnion(plays)
-        held.toys.insert(Self.version(toy))
+        if !toy.isUntouched { held.toys.insert(Self.version(toy)) }
         purged[device] = held
     }
 
@@ -132,7 +159,7 @@ final class Watcher {
             problems.append("\(device) sent a play it held when it handled a purge")
         }
         if record.type == CloudRecord.toyType, let payload = ToyPayload(format: record.format, payload: record.payload),
-           held.toys.contains(Self.version(payload.toy)), !payload.toy.isUntouched {
+           held.toys.contains(Self.version(payload.toy)) {
             problems.append("\(device) sent the toy it held when it handled a purge")
         }
     }
@@ -143,14 +170,14 @@ final class Watcher {
 }
 
 /// One simulated device: its own store in memory, its toy as a person plays it, the rules over the store, and a stand-in
-/// engine against the stand-in iCloud. It is its engine's delegate, and does what ``ICloudSync`` asks of the app's
-/// delegate.
+/// engine against the stand-in iCloud. It is its engine's delegate, and does what ``ICloudSync``'s documentation asks of
+/// the app's delegate: it translates each event into one call, applies what the call asks of the engine, and does the
+/// fetches, the sends and the questions for the account a moment later, outside the engine's callback.
 @MainActor
 final class SimulatedDevice: StandInEngineDelegate {
     let name: String
     let kind: MadeOn
     let cloud: StandInICloud
-    let zone: String
     let watcher: Watcher
     let clock: TestClock
     private let random: SharedRandom
@@ -163,35 +190,35 @@ final class SimulatedDevice: StandInEngineDelegate {
     /// The account the device is signed in to.
     private(set) var account: String?
     var engineChoices: StandInEngine.Choices
-    /// What the rules asked of the engine that the app does outside the delegate's callback.
+    /// How often CloudKit's answer to the question for the account's id fails.
+    var accountQuestionFails = 0.0
+    /// What the rules asked that the app does outside the engine's callback, a moment later.
+    private(set) var wantsAccount = false
     private(set) var wantsFetch = false
     private(set) var wantsSend = false
+    /// Whether the app keeps background time, as it left the front while the gate waited.
+    private(set) var keepsBackgroundTime = false
     /// Whether the engine is to be offline.
     var isOnline = true {
         didSet { engine.isOnline = isOnline }
     }
 
     init(
-        name: String, kind: MadeOn, cloud: StandInICloud, zone: String = "Plays", account: String?, watcher: Watcher,
-        clock: TestClock, random: SharedRandom, engineChoices: StandInEngine.Choices = StandInEngine.Choices(),
+        name: String, kind: MadeOn, cloud: StandInICloud, account: String?, watcher: Watcher, clock: TestClock,
+        random: SharedRandom, engineChoices: StandInEngine.Choices = StandInEngine.Choices(),
         restoredFrom backup: ModelContainer? = nil
     ) throws {
         self.name = name
         self.kind = kind
         self.cloud = cloud
-        self.zone = zone
         self.account = account
         self.watcher = watcher
         self.clock = clock
         self.random = random
         self.engineChoices = engineChoices
         container = try RecordStore.deviceContainer(in: .memory)
-        if let backup {
-            try Backup.copy(from: backup, into: container)
-            launch()
-        } else {
-            launch(first: true)
-        }
+        if let backup { try Backup.copy(from: backup, into: container) }
+        launch()
     }
 
     /// The device is restored from `backup`, a copy of a store, and the app starts again.
@@ -210,30 +237,28 @@ final class SimulatedDevice: StandInEngineDelegate {
 
     // MARK: The app
 
-    /// The app starts: the rules over the store, the toy from it, and an engine from the state saved last.
-    func launch(first: Bool = false) {
+    /// The app starts: the rules over the store, the toy from it, and an engine from the state saved last; then it asks
+    /// for the account's id and a fetch.
+    func launch() {
         sync = ICloudSync(
             store: RecordStore(container: container), madeOn: kind, appVersion: "2.0",
-            makeStamp: { [random] in random.uuid() }, freshToy: { PlayState().snapshot }
+            makeID: { [random] in random.uuid() }, freshToy: { PlayState().snapshot }
         )
         if let kept = must({ try sync.toy() }) ?? nil, let restored = PlayState(kept) {
             play = restored
         } else {
             play = PlayState()
         }
-        if first { must { try sync.keep(play.snapshot, at: clock.now) } }
+        must { try sync.keep(play.snapshot, at: clock.now) }
         let saved = must { try sync.engineState() } ?? nil
-        engine = StandInEngine(cloud: cloud, zone: zone, device: name, savedState: saved, choices: engineChoices, seed: random.next())
-        engine.isOnline = isOnline
-        engine.delegate = self
+        wantsAccount = false
         wantsFetch = false
         wantsSend = false
-        apply(must { try sync.start(engineStartsFromNothing: saved == nil) })
-        let reportedSignIn = engine.start()
-        if saved == nil, !reportedSignIn, let account {
-            // The engine reported no sign-in: the app asks CloudKit for the account's id (open point 14).
-            apply(must { try sync.accountChanged(.signIn(account)) })
-        }
+        keepsBackgroundTime = false
+        engine = StandInEngine(cloud: cloud, device: name, savedState: saved, account: account, choices: engineChoices, seed: random.next())
+        engine.isOnline = isOnline
+        engine.delegate = self
+        apply(must { try sync.launched(engineStartsFromNothing: saved == nil) })
     }
 
     /// The app ends without warning and starts again: what was not saved is gone.
@@ -242,24 +267,92 @@ final class SimulatedDevice: StandInEngineDelegate {
         launch()
     }
 
-    func sendingMoment() {
-        apply(must { try sync.queueToy() })
+    /// The engine cannot go on from its saved state: the app discards it, and the next launch is a start from nothing.
+    func discardEngineState() {
+        must { try sync.discardEngineState() }
+        relaunch()
+    }
+
+    /// The toy changes: the app asks the gate, at most once a minute.
+    func toyChanged() {
+        apply(must { try sync.toyChanged() })
     }
 
     func cameToFront() {
-        apply(must { try sync.notYetReceived() })
-        wantsFetch = true
+        keepsBackgroundTime = false
+        apply(must { try sync.cameToFront() })
     }
 
     func leftFront() {
-        apply(must { try sync.queueToy() })
-        wantsSend = true
+        apply(must { try sync.leftFront() })
     }
 
-    /// The person signs in to `account`, signs out with nil, or another account signs in.
+    /// The person signs in to `account`, signs out with nil, or another account signs in, while the app runs.
     func signIn(to account: String?) {
         self.account = account
         engine.accountMayHaveChanged()
+    }
+
+    /// The account changes while the app is not running: at the next launch the engine reports it, and CloudKit names it.
+    func signInWhileNotRunning(to account: String?) {
+        engine.delegate = nil
+        self.account = account
+        launch()
+    }
+
+    // MARK: What the app does outside the engine's callback
+
+    /// The app answers what the rules asked, one thing: the question for the account, a fetch, or a send. Returns whether
+    /// it did anything.
+    @discardableResult
+    func doWhatWasAsked() -> Bool {
+        if wantsAccount {
+            answerAccountQuestion()
+            return true
+        }
+        if wantsFetch {
+            requestFetch()
+            return true
+        }
+        if wantsSend {
+            wantsSend = false
+            engineSends()
+            return true
+        }
+        return false
+    }
+
+    /// The app asks CloudKit for the account's id, and hands the answer to the rules.
+    func answerAccountQuestion() {
+        wantsAccount = false
+        let answer: AccountAnswer
+        if random.chance(accountQuestionFails) {
+            answer = .failed
+        } else if let account {
+            answer = .account(account)
+        } else {
+            answer = .noAccount
+        }
+        apply(must { try sync.accountAnswered(answer) })
+    }
+
+    /// The app asks the engine to fetch, as one request.
+    func requestFetch() {
+        wantsFetch = false
+        let request = sync.fetchWillBeRequested()
+        let outcome = engine.fetch(manual: true)
+        apply(must {
+            try sync.fetchRequestReturned(request, error: outcome.error, pendingZoneSaves: Set(engine.state.pendingZoneSaves))
+        })
+    }
+
+    /// Everything the rules asked, and every pending change sent, until nothing more is asked.
+    func syncFully(limit: Int = 60) {
+        for _ in 0..<limit {
+            if doWhatWasAsked() { continue }
+            if isOnline, account != nil, engine.hasPendingChanges, engineSends() { continue }
+            break
+        }
     }
 
     // MARK: The person
@@ -302,7 +395,8 @@ final class SimulatedDevice: StandInEngineDelegate {
     func finishPlay() {
         guard let current = play.play else { return }
         let finished = current.finished(in: play.own.state, at: clock.tick())
-        apply(must { try sync.record(finished) })
+        apply(must { try sync.finished(finished) })
+        noteOwnership()
         let before = play.snapshot
         play.reset()
         playToRest()
@@ -313,26 +407,28 @@ final class SimulatedDevice: StandInEngineDelegate {
         apply(must { try sync.clearHistory() })
     }
 
-    /// The person picks the device up: the app comes to the front and fetches, the toy is taken up at the calm moment,
-    /// and the person makes a few moves.
+    /// The person picks the device up: the app comes to the front and syncs, the toy is taken up at the calm moment, and
+    /// the person makes a few moves.
     func pickUp(moves: Int) {
         cameToFront()
-        engineFetches()
+        syncFully()
         calmMoment()
         for _ in 0..<moves { move() }
+        if moves > 0 { toyChanged() }
     }
 
     /// The person puts the device down: the app leaves the front and sends.
     func putDown() {
         leftFront()
-        engineSends()
+        syncFully()
     }
 
     /// A calm moment: a held toy that waits to be taken up replaces the toy here.
     func calmMoment() {
         guard (must { try sync.heldToy() } ?? nil)?.kind == .toTakeUp else { return }
         let before = play.snapshot
-        guard let taken = must({ try sync.takeUpHeldToy() }) ?? nil else { return }
+        guard let result = must({ try sync.takeUpHeldToy() }), let taken = result.replacedToy else { return }
+        apply(result.engine)
         watcher.tally.count("toy taken up")
         watcher.takenUp(on: name, replacing: before, with: taken)
         watcher.received(toy: taken, on: name)
@@ -344,35 +440,42 @@ final class SimulatedDevice: StandInEngineDelegate {
 
     /// The person answers the offer: Keep This One, or Play That One.
     func answerOffer(keepThisOne: Bool) {
-        guard isOffered, let held = must({ try sync.store.toySide().heldPayload }) ?? nil else { return }
+        guard isOffered, let held = toySide.held?.payload else { return }
         watcher.tally.count(keepThisOne ? "kept this one" : "played that one")
         if keepThisOne {
             watcher.chose(toDrop: held.toy)
             apply(must { try sync.keepThisOne() })
         } else {
             watcher.chose(toDrop: play.snapshot)
-            guard let taken = must({ try sync.playThatOne() }) ?? nil else { return }
+            guard let result = must({ try sync.playThatOne() }), let taken = result.replacedToy else { return }
+            apply(result.engine)
             watcher.received(toy: taken, on: name)
             show(taken)
         }
     }
 
-    // MARK: The engine
+    // MARK: The engine, by itself
 
+    /// The engine sends by itself, as automatic syncing does.
     @discardableResult
     func engineSends() -> Bool {
-        wantsSend = false
-        return engine.send()
+        engine.send()
     }
 
-    @discardableResult
-    func engineFetches() -> Bool {
-        wantsFetch = false
-        return engine.fetch()
+    /// The engine fetches by itself, as automatic syncing does: its fetch delivers changes and never counts.
+    func engineFetchesByItself() {
+        engine.fetch(manual: false)
     }
 
     func deliverLateAnswers() {
         engine.deliverLateAnswers()
+    }
+
+    /// The engine sends, the changes reach iCloud, and the process ends before any answer is handled; the app starts
+    /// again.
+    func crashDuringSend() {
+        if engine.send(crashesBeforeTheAnswer: true) { watcher.tally.count("crash during a send") }
+        relaunch()
     }
 
     // MARK: The delegate
@@ -386,11 +489,11 @@ final class SimulatedDevice: StandInEngineDelegate {
             must { try sync.engineStateUpdated(state) }
         case .accountChange(let change):
             apply(must { try sync.accountChanged(change) })
-        case .zoneDeleted(let reason):
-            let plays = Set((must { try sync.store.allEntries() } ?? []).map(\.recordName))
-            let toy = play.snapshot
-            apply(must { try sync.zoneDeleted(reason) })
-            if reason != .encryptedDataReset { watcher.handledPurge(on: name, plays: plays, toy: toy) }
+            noteOwnership()
+        case .willFetch(let manual):
+            sync.fetchBegan(manual: manual)
+        case .databaseChanged(let changes):
+            watchingPurges { apply(must { try sync.databaseChanged(changes) }) }
         case .fetched(let changes):
             for record in changes.records where record.type == CloudRecord.finishedPlayType {
                 watcher.received(play: record.name, on: name)
@@ -400,32 +503,49 @@ final class SimulatedDevice: StandInEngineDelegate {
             tallyToy(before, toySide, arrived: changes.records.contains(where: \.isToy))
             watcher.tally.count("play arrived", changes.records.count { $0.type == CloudRecord.finishedPlayType })
             watcher.tally.count("deletion arrived", changes.deletions.count)
+            noteOwnership()
+        case .zoneFetchEnded(let zone, let error):
+            if error != nil { watcher.tally.count("zone's fetch ended with an error") }
+            watchingPurges { apply(must { try sync.zoneFetchEnded(zone: zone, error: error) }) }
+        case .didFetch(let manual):
+            apply(must { try sync.fetchEnded(manual: manual) })
+        case .sentZones(let changes):
+            watcher.tally.count("zone created", changes.saved.count)
+            apply(must { try sync.zonesSent(changes) })
         case .sent(let changes):
             let before = toySide
-            apply(must { try sync.sent(changes) })
+            watchingPurges { apply(must { try sync.sent(changes) }) }
             let toyRefused = changes.failedSaves.contains { failure in
-                if case .refused(let record) = failure.reason { failure.type == CloudRecord.toyType && record != nil } else { false }
+                if case .refused(let record) = failure.reason { failure.id.isToy && record != nil } else { false }
             }
             tallyToy(before, toySide, arrived: toyRefused)
             watcher.tally.count("toy accepted", changes.saved.count(where: \.isToy))
-            watcher.tally.count("toy refused", changes.failedSaves.count { failure in
-                if case .refused = failure.reason { failure.type == CloudRecord.toyType } else { false }
-            })
             watcher.tally.count("play accepted", changes.saved.count { $0.type == CloudRecord.finishedPlayType })
-            watcher.tally.count("play refused", changes.failedSaves.count { failure in
-                if case .refused = failure.reason { failure.type == CloudRecord.finishedPlayType } else { false }
-            })
+            watcher.tally.count("save refused as existing", changes.failedSaves.count { if case .refused = $0.reason { true } else { false } })
+            watcher.tally.count("save refused as unknown", changes.failedSaves.count { $0.reason == .unknownItem })
+            watcher.tally.count("save found the zone gone", changes.failedSaves.count { if case .zoneGone = $0.reason { true } else { false } })
             watcher.tally.count("answer lost", changes.failedSaves.count { $0.reason == .answerLost })
+            watcher.tally.count("storage full", changes.failedSaves.count { $0.reason == .storageFull })
             watcher.tally.count("deletion answered", changes.deleted.count + changes.failedDeletions.count)
-        case .fetchFinished:
-            apply(must { try sync.fetchFinished() })
         }
     }
 
-    func engine(_ engine: StandInEngine, recordsToSend names: [String]) -> [String: RecordToSend] {
-        let records = must { try sync.recordsToSend(named: names) } ?? [:]
-        for record in records.values { watcher.sent(record, by: name) }
-        return records
+    func engine(_ engine: StandInEngine, batchFor pending: [PendingChange]) -> Batch {
+        let batch = must { try sync.batch(for: pending) } ?? {
+            var nothing = Batch()
+            nothing.withdrawn = pending
+            return nothing
+        }()
+        let noted = must { try sync.store.existingSyncNotes()?.account } ?? nil
+        for record in batch.records {
+            watcher.sent(record, by: name)
+            if let account = engine.state.account { watcher.handedOver(record, by: name, into: account, noted: noted) }
+            if let fields = record.systemFields, let decoded = try? JSONDecoder().decode(StandInICloud.SystemFields.self, from: fields),
+               decoded.zone != record.zone {
+                watcher.note("\(name) built a record for \(record.zone) from system fields of \(decoded.zone)")
+            }
+        }
+        return batch
     }
 
     // MARK: Looking
@@ -439,22 +559,52 @@ final class SimulatedDevice: StandInEngineDelegate {
     /// The store's notes about the toy.
     var toySide: ToySide { must { try sync.store.toySide() } ?? ToySide() }
 
+    /// The zone note.
+    var zoneNote: ZoneNote? {
+        guard let notes = must({ try sync.store.existingSyncNotes() }) ?? nil else { return nil }
+        return sync.zoneNote(notes)
+    }
+
+    /// The account the store's data belongs to.
+    var notedAccount: String? { must { try sync.store.existingSyncNotes()?.account } ?? nil }
+
     /// Whether the store marks anything as not yet received by iCloud.
     var hasMarks: Bool {
-        guard let marked = must({ try sync.store.notYetReceived(toyIsDue: toySide.isDue) }) else { return true }
-        return !marked.saves.isEmpty || !marked.deletions.isEmpty
+        guard let plays = must({ try sync.store.playsNotInICloud() }) else { return true }
+        return !plays.isEmpty || toySide.isChanged
     }
 
     // MARK: Inside
+
+    /// Runs `body`, an event that may make the device handle a purge, and tells the watcher if it did.
+    private func watchingPurges(_ body: () -> Void) {
+        let plays = Set((must { try sync.store.allPlays() } ?? []).map(\.playID.uuidString))
+        let toy = play.snapshot
+        let before = zoneNote
+        body()
+        if let after = zoneNote, after.knowledge == .deleted, after != before, (must { try sync.store.allPlays() } ?? []).isEmpty,
+           keptToy?.isUntouched ?? true {
+            watcher.tally.count(plays.isEmpty && toy.isUntouched ? "zone deleted" : "purge handled")
+            watcher.handledPurge(on: name, plays: plays, toy: toy)
+        } else if let after = zoneNote, after.knowledge == .deleted, after != before {
+            watcher.tally.count("zone left, data kept")
+        }
+    }
+
+    /// Tells the watcher whose account the plays in the store belong to.
+    private func noteOwnership() {
+        guard let account = notedAccount else { return }
+        for entry in must({ try sync.store.allPlays() }) ?? [] { watcher.belongs(play: entry.playID.uuidString, to: account) }
+    }
 
     /// Counts what a toy that arrived did to the notes.
     private func tallyToy(_ before: ToySide, _ after: ToySide, arrived: Bool) {
         guard arrived else { return }
         let tally = watcher.tally
         if after.held != nil, after.held != before.held {
-            switch after.heldFate {
+            switch after.held?.kind {
             case .offered?: tally.count("toy held and offered")
-            case .toTakeUp?: tally.count(after.isChanged ? "toy held to take up although marked (case 5)" : "toy held to take up")
+            case .toTakeUp?: tally.count(after.isChanged ? "toy held to take up although marked (case 6)" : "toy held to take up")
             default: tally.count("toy held unread")
             }
         } else if after.base != before.base, let stamp = after.base?.stamps.last, before.ownStamps.contains(stamp) {
@@ -476,7 +626,7 @@ final class SimulatedDevice: StandInEngineDelegate {
     }
 
     private func personChanged(from before: ToySnapshot) {
-        watcher.personChanged(from: before, to: play.snapshot)
+        watcher.personChanged(from: before, to: play.snapshot, account: notedAccount)
         must { try sync.keep(play.snapshot, at: clock.tick()) }
     }
 
@@ -492,11 +642,14 @@ final class SimulatedDevice: StandInEngineDelegate {
         if let toy = result.replacedToy {
             play = PlayState(toy) ?? PlayState()
         }
+        if result.keepsBackgroundTime { keepsBackgroundTime = true }
+        if result.endsBackgroundTime { keepsBackgroundTime = false }
     }
 
     private func apply(_ requests: EngineRequests?) {
         guard let requests else { return }
-        engine.apply(requests)
+        engine?.apply(requests)
+        if requests.asksForAccount { wantsAccount = true }
         if requests.fetches { wantsFetch = true }
         if requests.sendsNow { wantsSend = true }
     }
@@ -513,16 +666,26 @@ final class SimulatedDevice: StandInEngineDelegate {
     }
 }
 
-/// A device backup: every model of one store copied into another, as a backup brings the store back.
+/// A device backup: every model of the iCloud rules copied from one store into another, as a backup brings the store
+/// back.
 @MainActor
 enum Backup {
     static func copy(from source: ModelContainer, into target: ModelContainer) throws {
         let from = source.mainContext
         let into = target.mainContext
-        for play in try into.fetch(FetchDescriptor<FinishedPlay>()) { into.delete(play) }
+        for play in try into.fetch(FetchDescriptor<KeptPlay>()) { into.delete(play) }
         for toy in try into.fetch(FetchDescriptor<KeptToy>()) { into.delete(toy) }
         for notes in try into.fetch(FetchDescriptor<SyncNotes>()) { into.delete(notes) }
-        for play in try from.fetch(FetchDescriptor<FinishedPlay>()) { into.insert(FinishedPlay.copy(of: play)) }
+        for play in try from.fetch(FetchDescriptor<KeptPlay>()) {
+            let copy = KeptPlay(id: play.playID)
+            copy.finishedAt = play.finishedAt
+            copy.state = play.state
+            copy.format = play.format
+            copy.payload = play.payload
+            copy.systemFields = play.systemFields
+            copy.systemFieldsZone = play.systemFieldsZone
+            into.insert(copy)
+        }
         for toy in try from.fetch(FetchDescriptor<KeptToy>()) {
             let copy = KeptToy()
             copy.snapshot = toy.snapshot
@@ -539,7 +702,11 @@ enum Backup {
         for notes in try from.fetch(FetchDescriptor<SyncNotes>()) {
             let copy = SyncNotes()
             copy.engineState = notes.engineState
+            copy.zoneName = notes.zoneName
+            copy.zoneKnowledge = notes.zoneKnowledge
+            copy.highestNumber = notes.highestNumber
             copy.account = notes.account
+            copy.storageFull = notes.storageFull
             into.insert(copy)
         }
         try into.save()

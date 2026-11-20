@@ -148,15 +148,14 @@ import Testing
 
     // MARK: The schema
 
-    /// The models of the store that syncs through SwiftData, the earlier way of syncing, and their fields as SwiftData
-    /// mirrors them to CloudKit.
+    /// The record types and fields, as CloudKit will have them: a change here is a change to a schema that can only
+    /// grow.
     @Test func theModelsAreAsTheSchemaFixesThem() {
         let fixed: [String: [String: Any.Type]] = [
             "FinishedPlay": [
                 "playID": UUID.self, "finishedAt": Date.self, "startedAt": Date.self, "startRings": String.self,
                 "endRings": String.self, "moves": Int.self, "undos": Int.self, "movesPlayedForThePerson": Int.self,
                 "secondsSpent": Double.self, "madeOn": String.self, "appVersion": String.self, "rules": Int.self,
-                "syncState": Int.self, "format": Int.self, "payload": Data.self,
             ],
             "SavedToy": [
                 "installation": String.self, "changedAt": Date.self, "format": Int.self, "snapshot": Data.self,
@@ -180,15 +179,6 @@ import Testing
                 #expect(attribute.defaultValue != nil, "\(entity.name).\(attribute.name) has no default")
             }
         }
-    }
-
-    /// The device's own store keeps the toy and the notes of the iCloud rules besides the models of the earlier way; the
-    /// store that syncs through SwiftData never has them, so that no engine state or account id is mirrored anywhere.
-    @Test func theDevicesStoreAloneKeepsTheSyncNotes() {
-        #expect(Set(RecordStore.deviceSchema.entities.map(\.name)) == ["FinishedPlay", "SavedToy", "KeptToy", "SyncNotes"])
-        #expect(Set(RecordStore.schema.entities.map(\.name)) == ["FinishedPlay", "SavedToy"])
-        let configuration = RecordStore.deviceConfiguration(in: .memory)
-        #expect(Set(configuration.schema?.entities.map(\.name) ?? []) == Set(RecordStore.deviceSchema.entities.map(\.name)))
     }
 
     /// The device's store is named apart, and set never to sync. `CloudKitDatabase` is not Equatable, so it is told by

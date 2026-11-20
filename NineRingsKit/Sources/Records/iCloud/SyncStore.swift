@@ -7,16 +7,18 @@ import SwiftData
 // iCloud has not yet received, so that the engine's list of pending changes can always be rebuilt from the store alone.
 //
 // Three models hold it, all in the device's own store, which never syncs through SwiftData:
-// - `FinishedPlay`, one for each play, with where it stands with iCloud (`syncState`) and its record's payload;
 // - `KeptToy`, one for the store: the person's toy and its notes about iCloud;
-// - `SyncNotes`, one for the store: the engine's saved state and the account.
-// `ICloudSync` changes them and saves once for each event, so that a crash cannot leave the data and its marks
-// disagreeing.
+// - `KeptPlay`, one for each finished play: the play's record as kept, its system fields and its state;
+// - `SyncNotes`, one for the store: the engine's state, the zone note, the highest number, the account and the note of
+//   a full storage.
+// They are models of their own, apart from the earlier way's `SavedToy` and `FinishedPlay`: nothing kept the earlier way
+// is carried over (docs/icloud.md, section 2). `ICloudSync` changes them and saves once for each call, so that a crash
+// cannot leave the data and its marks disagreeing.
 
 /// The person's toy on this device, with its notes about iCloud. There is one in a store.
 @Model
 final class KeptToy {
-    /// The toy, a ``ToySnapshot`` encoded as JSON. Empty when no toy is kept yet, as when a toy arrived first.
+    /// The toy, a ``ToySnapshot`` encoded as JSON. Empty when no toy is kept yet.
     var snapshot: Data = Data()
     /// The format of `snapshot` (``ToySnapshot/format``).
     var format: Int = 1
@@ -24,96 +26,111 @@ final class KeptToy {
     var changedAt: Date = Date.distantPast
     /// The kind of device of the toy's last change, as ``MadeOn`` writes it.
     var changedOn: String = ""
-    /// The mark *Toy changed*.
+    /// The mark *Toy changed*: the toy has to be sent.
     var isChanged: Bool = false
-    /// The Toy record as this device last saw it, with its stamps (``ToySide/Base``), as JSON; nil when it saw none.
+    /// The toy's base (``ToySide/Base``), as JSON; nil when the device has seen no Toy record.
     var base: Data? = nil
     /// The last send (``ToySide/LastSend``), as JSON; nil when the toy here was never handed over.
     var lastSend: Data? = nil
     /// The stamps of the last sends, as JSON; empty when there were none.
     var ownStamps: Data = Data()
-    /// The held toy, the record as it arrived (``CloudRecord``), as JSON; nil when none is held.
+    /// The held toy (``ToySide/Held``), as JSON; nil when none is held.
     var held: Data? = nil
 
     init() {}
 }
 
-/// The engine's saved state and the account the data last synced with. There is one in a store.
+/// One finished play, as the iCloud rules keep it.
+@Model
+final class KeptPlay {
+    /// The play's id, which is its record's name.
+    var playID: UUID = UUID()
+    /// When it was finished, by the clock of the device that finished it, for the order of the history. Distant past
+    /// for a play this build cannot read.
+    var finishedAt: Date = Date.distantPast
+    /// Where it stands with iCloud, a ``PlaySyncState``.
+    var state: Int = 0
+    /// The format of `payload`.
+    var format: Int = 0
+    /// The record's payload, kept as it is: a play in a format this build cannot read goes back unchanged should the
+    /// device offer it again. Empty for an entry that came back as cleared without its record.
+    var payload: Data = Data()
+    /// CloudKit's system fields of its record, from the answer that accepted it or from its arrival; nil when it has
+    /// none.
+    var systemFields: Data? = nil
+    /// The zone those system fields belong to.
+    var systemFieldsZone: String? = nil
+
+    init(id: UUID) {
+        playID = id
+    }
+}
+
+/// The notes of section 5 that are not the toy's: the engine's state, the zone note, the highest number, the account and
+/// the note of a full storage. There is one in a store.
 @Model
 final class SyncNotes {
     /// The engine's state, as the engine handed it over; nil when there is none to start from.
     var engineState: Data? = nil
-    /// The id of the iCloud account this data last synced with; nil before the first time.
+    /// The name of the zone this device uses or last used; nil before the first join and after a sign-out.
+    var zoneName: String? = nil
+    /// What the device knows of that zone, a ``ZoneKnowledge``.
+    var zoneKnowledge: Int = 0
+    /// The highest zone number this device has heard of; 0 when none.
+    var highestNumber: Int = 0
+    /// The id of the iCloud account this data belongs to; nil before the first time.
     var account: String? = nil
+    /// Whether iCloud last refused a save because the person's iCloud storage is full.
+    var storageFull: Bool = false
 
     init() {}
 }
 
-extension FinishedPlay {
-    /// Where the play stands with iCloud. A value this build does not know reads as unsent, which offers the play again.
+/// What the device knows of the zone in its zone note (docs/icloud.md, section 9).
+enum ZoneKnowledge: Int, Sendable {
+    case notKnownToExist = 0
+    case existing = 1
+    case deleted = 2
+}
+
+/// The zone note: one zone's name, with what the device knows of it.
+struct ZoneNote: Equatable, Sendable {
+    var zone: ZoneName
+    var knowledge: ZoneKnowledge
+}
+
+extension KeptPlay {
+    /// Where the play stands with iCloud. A value this build does not know reads as sent, which offers the play again.
     var sync: PlaySyncState {
-        get { PlaySyncState(rawValue: syncState) ?? .unsent }
-        set { syncState = newValue.rawValue }
+        get { PlaySyncState(rawValue: state) ?? .sent }
+        set { state = newValue.rawValue }
     }
 
-    /// The name of the play's record: its id.
-    var recordName: String { playID.uuidString }
-
-    /// An entry for a play known only by its id, whose content comes from a record.
-    convenience init(id: UUID) {
-        let placeholder = PlayRecord(
-            playID: id, startedAt: .distantPast, finishedAt: .distantPast, startRings: .allOn, endRings: .allOff,
-            moves: 0, undos: 0, movesPlayedForThePerson: 0, secondsSpent: 0
-        )
-        self.init(placeholder, madeOn: .Mac, appVersion: "")
-        madeOn = ""
+    /// The play, when this build can read its payload.
+    var record: PlayRecord? {
+        FinishedPlayPayload(format: format, payload: payload, recordName: playID.uuidString)?.play
     }
 
-    /// Takes `record`'s content: its format and payload as they are, and the play's values when this build can read
-    /// them. A payload this build cannot read leaves the values at their defaults and marks the entry as one this build
-    /// does not understand, so that it is counted and not shown.
-    func take(_ record: CloudRecord) {
+    /// Takes the content of `record`: its format and payload, as they are.
+    func takeContent(of record: CloudRecord) {
         format = record.format ?? 0
         payload = record.payload ?? Data()
-        if let read = FinishedPlayPayload(format: format, payload: payload, recordName: record.name) {
-            let play = read.play
-            finishedAt = play.finishedAt
-            startedAt = play.startedAt
-            startRings = play.startRings.description
-            endRings = play.endRings.description
-            moves = play.moves
-            undos = play.undos
-            movesPlayedForThePerson = play.movesPlayedForThePerson
-            secondsSpent = play.secondsSpent
-            madeOn = read.madeOn
-            appVersion = read.appVersion
-            rules = PlayRecord.rules
-        } else {
-            finishedAt = .distantPast
-            startedAt = .distantPast
-            startRings = ""
-            endRings = ""
-            moves = 0
-            undos = 0
-            movesPlayedForThePerson = 0
-            secondsSpent = 0
-            madeOn = ""
-            appVersion = ""
-            rules = PlayRecord.rules + 1
-        }
+        finishedAt = FinishedPlayPayload(format: format, payload: payload, recordName: playID.uuidString)?.play.finishedAt
+            ?? .distantPast
     }
 
-    /// The record to send for this play: its payload as kept, or, for a play recorded before payloads were kept, one
-    /// written from its values. Nil for such a play this build cannot read.
-    func recordToSend() throws -> RecordToSend? {
-        if !payload.isEmpty {
-            return RecordToSend(type: CloudRecord.finishedPlayType, name: recordName, systemFields: nil, format: format, payload: payload)
-        }
-        guard let play = record else { return nil }
-        let written = try FinishedPlayPayload(play: play, madeOn: madeOn, appVersion: appVersion).encoded()
-        return RecordToSend(
-            type: CloudRecord.finishedPlayType, name: recordName, systemFields: nil, format: FinishedPlayPayload.format,
-            payload: written
+    /// Takes the system fields of `record`, with the zone they belong to.
+    func takeSystemFields(of record: CloudRecord) {
+        systemFields = record.systemFields
+        systemFieldsZone = record.systemFields == nil ? nil : record.zone
+    }
+
+    /// The record to send for this play into `zone`: its payload as kept, with its system fields when they belong to
+    /// `zone`, and as a new record otherwise.
+    func recordToSend(in zone: String) -> RecordToSend {
+        RecordToSend(
+            type: CloudRecord.finishedPlayType, zone: zone, name: playID.uuidString,
+            systemFields: systemFieldsZone == zone ? systemFields : nil, format: format, payload: payload
         )
     }
 }
@@ -142,7 +159,7 @@ extension RecordStore {
         side.base = kept.base.flatMap { try? decoder.decode(ToySide.Base.self, from: $0) }
         side.lastSend = kept.lastSend.flatMap { try? decoder.decode(ToySide.LastSend.self, from: $0) }
         side.ownStamps = (try? decoder.decode([UUID].self, from: kept.ownStamps)) ?? []
-        side.held = kept.held.flatMap { try? decoder.decode(CloudRecord.self, from: $0) }
+        side.held = kept.held.flatMap { try? decoder.decode(ToySide.Held.self, from: $0) }
         return side
     }
 
@@ -171,6 +188,8 @@ extension RecordStore {
         kept.held = try side.held.map { try encoder.encode($0) }
     }
 
+    // MARK: The notes
+
     /// The store's `SyncNotes`, made when there are none.
     func syncNotes() throws -> SyncNotes {
         if let notes = try existingSyncNotes() { return notes }
@@ -186,87 +205,72 @@ extension RecordStore {
         return try syncContext.fetch(descriptor).first
     }
 
-    /// The toy the store kept the earlier way, as a `SavedToy`: the one changed last, when this build can read it.
-    func savedToyLeftBefore() throws -> ToySnapshot? {
-        var descriptor = FetchDescriptor<SavedToy>(sortBy: [SortDescriptor(\.changedAt, order: .reverse)])
-        descriptor.fetchLimit = 1
-        return try syncContext.fetch(descriptor).first?.toy
-    }
-
     // MARK: The finished plays
 
-    /// The entries of the plays with `ids`, by id. Should the store hold two entries of one play, as the earlier way of
-    /// syncing could leave, the one with the earlier finish is given.
-    func entries(_ ids: some Collection<UUID>) throws -> [UUID: FinishedPlay] {
+    /// The entries of the plays with `ids`, by id.
+    func plays(_ ids: some Collection<UUID>) throws -> [UUID: KeptPlay] {
         guard !ids.isEmpty else { return [:] }
         let wanted = Array(Set(ids))
-        let found = try syncContext.fetch(FetchDescriptor<FinishedPlay>(
-            predicate: #Predicate { wanted.contains($0.playID) },
-            sortBy: [SortDescriptor(\.finishedAt, order: .forward)]
-        ))
-        var byID: [UUID: FinishedPlay] = [:]
+        let found = try syncContext.fetch(FetchDescriptor<KeptPlay>(predicate: #Predicate { wanted.contains($0.playID) }))
+        var byID: [UUID: KeptPlay] = [:]
         for entry in found where byID[entry.playID] == nil { byID[entry.playID] = entry }
         return byID
     }
 
     /// Every entry in `state`.
-    func entries(in state: PlaySyncState) throws -> [FinishedPlay] {
+    func plays(in state: PlaySyncState) throws -> [KeptPlay] {
         let raw = state.rawValue
-        return try syncContext.fetch(FetchDescriptor<FinishedPlay>(predicate: #Predicate { $0.syncState == raw }))
+        return try syncContext.fetch(FetchDescriptor<KeptPlay>(predicate: #Predicate { $0.state == raw }))
     }
 
-    /// Every entry, each play once.
-    func allEntries() throws -> [FinishedPlay] {
-        try syncContext.fetch(FetchDescriptor<FinishedPlay>())
+    /// Every entry that is not in iCloud: unsent, sent or cleared.
+    func playsNotInICloud() throws -> [KeptPlay] {
+        let inICloud = PlaySyncState.inICloud.rawValue
+        return try syncContext.fetch(FetchDescriptor<KeptPlay>(predicate: #Predicate { $0.state != inICloud }))
+    }
+
+    /// Every entry with system fields of a zone other than `zone`, or of any zone when `zone` is nil.
+    func plays(withSystemFieldsOutside zone: String?) throws -> [KeptPlay] {
+        if let zone {
+            return try syncContext.fetch(FetchDescriptor<KeptPlay>(predicate: #Predicate {
+                $0.systemFieldsZone != nil && $0.systemFieldsZone != zone
+            }))
+        }
+        return try syncContext.fetch(FetchDescriptor<KeptPlay>(predicate: #Predicate { $0.systemFieldsZone != nil }))
+    }
+
+    /// Every entry.
+    func allPlays() throws -> [KeptPlay] {
+        try syncContext.fetch(FetchDescriptor<KeptPlay>())
+    }
+
+    /// Every entry that is not cleared, newest first.
+    func playsShown() throws -> [KeptPlay] {
+        let cleared = PlaySyncState.cleared.rawValue
+        return try syncContext.fetch(FetchDescriptor<KeptPlay>(
+            predicate: #Predicate { $0.state != cleared },
+            sortBy: [SortDescriptor(\.finishedAt, order: .reverse), SortDescriptor(\.playID)]
+        ))
     }
 
     /// Adds an entry.
-    func insert(_ entry: FinishedPlay) {
+    func insert(_ entry: KeptPlay) {
         syncContext.insert(entry)
     }
 
-    /// Removes this one entry.
-    func delete(_ entry: FinishedPlay) {
+    /// Removes an entry.
+    func delete(_ entry: KeptPlay) {
         syncContext.delete(entry)
     }
 
-    /// Removes an entry, and any other entry of the same play.
-    func remove(_ entry: FinishedPlay) throws {
-        let id = entry.playID
-        for copy in try syncContext.fetch(FetchDescriptor<FinishedPlay>(predicate: #Predicate { $0.playID == id })) {
-            syncContext.delete(copy)
-        }
-    }
-
     /// Removes every finished play.
-    func removeAllEntries() throws {
-        for entry in try allEntries() { syncContext.delete(entry) }
-    }
-
-    // MARK: What iCloud has not yet received (principle 1)
-
-    /// What the store marks as not yet received by iCloud: the names of the records to save (plays that are unsent or
-    /// sent, and the toy when `toyIsDue`) and of the records to delete (plays that are cleared). It is read from the store
-    /// alone.
-    func notYetReceived(toyIsDue: Bool) throws -> (saves: [String], deletions: [String]) {
-        var saves: [String] = toyIsDue ? [CloudRecord.toyName] : []
-        var deletions: [String] = []
-        var seen = Set<UUID>()
-        let inICloud = PlaySyncState.inICloud.rawValue
-        let marked = try syncContext.fetch(FetchDescriptor<FinishedPlay>(predicate: #Predicate { $0.syncState != inICloud }))
-        for entry in marked where seen.insert(entry.playID).inserted {
-            switch entry.sync {
-            case .unsent, .sent: saves.append(entry.recordName)
-            case .cleared: deletions.append(entry.recordName)
-            case .inICloud: break
-            }
-        }
-        return (saves, deletions)
+    func removeAllPlays() throws {
+        for entry in try allPlays() { syncContext.delete(entry) }
     }
 
     // MARK: Saving
 
-    /// Saves what the event changed, in one save. When the save fails, the store goes back to its last saved state and
+    /// Saves what the call changed, in one save. When the save fails, the store goes back to its last saved state and
     /// the error is thrown.
     func saveSync() throws {
         guard syncContext.hasChanges else { return }
@@ -278,7 +282,7 @@ extension RecordStore {
         }
     }
 
-    /// Forgets what an event changed and has not saved.
+    /// Forgets what a call changed and has not saved.
     func rollBackSync() {
         syncContext.rollback()
     }

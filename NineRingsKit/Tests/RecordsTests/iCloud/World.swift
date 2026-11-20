@@ -19,7 +19,6 @@ final class World {
     static let person = "person"
     /// Another person's account.
     static let other = "other"
-    static let zone = "Plays"
 
     init(seed: UInt64 = 1, cloud choices: StandInICloud.Choices = .init(), engine: StandInEngine.Choices = .init()) {
         cloud = StandInICloud(choices: choices, seed: seed)
@@ -35,8 +34,8 @@ final class World {
         clock: TestClock? = nil
     ) throws -> SimulatedDevice {
         let device = try SimulatedDevice(
-            name: name, kind: kind, cloud: cloud, zone: Self.zone, account: account, watcher: watcher,
-            clock: clock ?? self.clock, random: random, engineChoices: engineChoices, restoredFrom: backup
+            name: name, kind: kind, cloud: cloud, account: account, watcher: watcher, clock: clock ?? self.clock,
+            random: random, engineChoices: engineChoices, restoredFrom: backup
         )
         devices.append(device)
         return device
@@ -47,24 +46,21 @@ final class World {
         devices.removeAll { $0 === device }
     }
 
-    /// Lets every device come to the front, send, fetch, hear its answers and take toys up at calm moments, round after
-    /// round, until a round changes nothing. Coming to the front queues again what the store marks, as after a save whose
-    /// answer was lost (section 10). With `answeringOffers`, every offer is answered that way: Play That One when false.
+    /// Lets every device come to the front, sync, hear its late answers, take toys up at calm moments and have its
+    /// sending moments, round after round, until a round changes nothing. With `answeringOffers`, every offer is
+    /// answered that way: Play That One when false.
     @discardableResult
-    func settle(answeringOffers keepThisOne: Bool? = nil, rounds: Int = 60) -> Bool {
+    func settle(answeringOffers keepThisOne: Bool? = nil, rounds: Int = 40) -> Bool {
         for _ in 0..<rounds {
             let before = look()
             for device in devices {
                 device.cameToFront()
+                device.syncFully()
                 device.deliverLateAnswers()
-                var sends = 0
-                while device.engine.hasPendingChanges, sends < 50 {
-                    device.engineSends()
-                    sends += 1
-                }
-                device.engineFetches()
                 device.calmMoment()
                 if let keepThisOne, device.isOffered { device.answerOffer(keepThisOne: keepThisOne) }
+                device.toyChanged()
+                device.syncFully()
             }
             if look() == before { return true }
         }
@@ -73,22 +69,36 @@ final class World {
 
     /// Everything a round of settling can change, to tell when it changes no more.
     private func look() -> [String] {
-        var seen = cloud.records(zone: Self.zone, account: Self.person).map { "\($0.name) \($0.changeTag ?? "")" }
+        var seen: [String] = []
+        for account in cloud.accounts {
+            for zone in cloud.zoneNames(account: account) {
+                seen.append(zone)
+                seen += cloud.records(zone: zone, account: account).map { "\($0.name) \($0.changeTag ?? "")" }
+            }
+        }
         for device in devices {
             let side = device.toySide
-            seen.append("\(device.name) \(side.isChanged) \(side.base?.changeTag ?? "-") \(side.held?.changeTag ?? "-") \(side.lastSend.map { "\($0)" } ?? "-")")
-            seen.append("\(device.name) \(device.history.plays.map(\.playID)) \(device.history.unreadable)")
-            seen.append("\(device.name) \(device.engine.state.pending) \(device.engine.state.savesZone) \(device.engine.lateAnswers.count) \(device.engine.changesSent)")
+            seen.append("\(device.name) \(side.isChanged) \(side.base?.changeTag ?? "-") \(side.held?.record.changeTag ?? "-") \(side.lastSend.map { "\($0)" } ?? "-")")
+            seen.append("\(device.name) \(device.history.plays.map(\.playID)) \(device.history.unreadable) \(device.zoneNote.map { "\($0)" } ?? "-")")
+            seen.append("\(device.name) \(device.engine.state.pending) \(device.engine.state.pendingZoneSaves) \(device.engine.lateAnswers.count) \(device.engine.changesSent)")
         }
         return seen
     }
 
     // MARK: What iCloud holds
 
-    /// The finished plays iCloud holds, as a history.
-    func historyInICloud(account: String = World.person) -> PlayHistory {
+    /// The zone the person's devices use, when they all agree on one.
+    var personsZone: String? {
+        let zones = Set(devices.filter { $0.account == World.person }.map { $0.zoneNote?.zone.name })
+        guard zones.count == 1, let zone = zones.first else { return nil }
+        return zone
+    }
+
+    /// The finished plays iCloud holds in `zone`, the person's devices' zone by default, as a history.
+    func historyInICloud(account: String = World.person, zone: String? = nil) -> PlayHistory {
         var history = PlayHistory()
-        for record in cloud.records(zone: Self.zone, account: account) where record.type == CloudRecord.finishedPlayType {
+        guard let zone = zone ?? personsZone else { return history }
+        for record in cloud.records(zone: zone, account: account) where record.type == CloudRecord.finishedPlayType {
             if let format = record.format, let payload = record.payload,
                let read = FinishedPlayPayload(format: format, payload: payload, recordName: record.name) {
                 history.plays.append(read.play)
@@ -100,21 +110,31 @@ final class World {
         return history
     }
 
-    /// The toy iCloud holds.
-    func toyInICloud(account: String = World.person) -> ToyPayload? {
-        cloud.record(CloudRecord.toyName, zone: Self.zone, account: account).flatMap(ToySide.read)
+    /// The toy iCloud holds in `zone`, the person's devices' zone by default.
+    func toyInICloud(account: String = World.person, zone: String? = nil) -> ToyPayload? {
+        guard let zone = zone ?? personsZone else { return nil }
+        return cloud.record(.toy(in: zone), account: account).flatMap { record in
+            if case .readable(let payload) = ToyPayload.reading(format: record.format, payload: record.payload) { payload } else { nil }
+        }
     }
 
     // MARK: The checks
 
-    /// What breaks the agreement of the person's devices once they have all synced: every device signed in to the
-    /// person's account shows the history iCloud holds, keeps iCloud's toy, holds no toy, and marks nothing as not yet
-    /// received.
+    /// What breaks the agreement of the person's devices once they have all synced and had their sending moments: every
+    /// device signed in to the person's account uses the same zone, which exists, shows the history iCloud holds there,
+    /// keeps iCloud's toy, holds no toy, and marks nothing as not yet received.
     func disagreements() -> [String] {
         var problems: [String] = []
-        let history = historyInICloud()
-        let toy = toyInICloud()
-        for device in devices where device.account == Self.person {
+        let persons = devices.filter { $0.account == World.person }
+        guard !persons.isEmpty else { return [] }
+        guard let zone = personsZone else {
+            return ["the person's devices use different zones: \(persons.map { "\($0.name) \($0.zoneNote.map { "\($0)" } ?? "none")" })"]
+        }
+        if !cloud.hasZone(zone, account: World.person) { problems.append("the zone the devices use does not exist") }
+        let history = historyInICloud(zone: zone)
+        let toy = toyInICloud(zone: zone)
+        for device in persons {
+            if device.zoneNote?.knowledge != .existing { problems.append("\(device.name) does not know its zone to exist") }
             let shown = device.history
             let sortedShown = shown.plays.sorted { ($0.finishedAt, $0.playID.uuidString) > ($1.finishedAt, $1.playID.uuidString) }
             if sortedShown != history.plays || shown.unreadable != history.unreadable {

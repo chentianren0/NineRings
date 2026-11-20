@@ -1,43 +1,55 @@
 import Foundation
 @testable import Records
 
-/// A stand-in for CloudKit's private databases, one for each account, with the behaviour the design's sources and the
-/// probe of CloudKit's development environment describe. The rules' tests run against it in memory, since Apple gives
-/// no stand-in of its own (docs/icloud.md, source 21).
+/// A stand-in for CloudKit's private databases, one for each account, with the behaviour that docs/icloud.md's sources
+/// and the probe of CloudKit's development environment (docs/icloud-probe.md) describe. The rules' tests run against it
+/// in memory, since Apple gives no stand-in of its own (source 21).
 ///
-/// What it does, as CloudKit does:
-/// - Every record carries a change tag that changes with each save. Change tags are counters of the zone, and they start
-///   again when a zone is made again under the same name (the probe).
-/// - A save built on a tag that is not the record's is refused, with the record attached [9]. A first save under a name
-///   that exists is refused in the same way [49] (open point 1: or, as an older report has it, without the record).
-/// - A save built on a record that is no longer there fails as unknown [52]. A save without a tag makes a new record.
-/// - A save or deletion in a zone that is missing fails as such, marked as a reset of encrypted data when the zone was
-///   lost that way [34].
-/// - A fetch brings every record changed since the token, as it now is, and every record deleted since then that is not
-///   there now. A fetch from nothing brings every record, and the deletions of records the fetching device made [50].
-/// - The deletion of a zone is reported, with its reason [6], to every fetch of the database's changes that comes after
-///   it, also to an engine with no state, as long as the zone does not exist at the fetch. A zone that exists again is
-///   not reported as deleted, and a fetch with a token from before shows its new records (the probe).
+/// What it does, as CloudKit did in the probe or as Apple documents:
+/// - Zones are kept by name. Saving a zone that exists changes nothing (probe D). A zone's save under the name of a zone
+///   that was deleted makes it again, and from then on its deletion is reported to no one (probes C.6 and E).
+/// - Every record carries a change tag. Change tags are counters of the zone, and they start again when a zone is made
+///   again under its name (probe 3).
+/// - A save built on a tag that is not the record's is refused, with the record attached (probe 2). A first save under a
+///   name that exists is refused in the same way (probe 1; open point 1: or without the record, by ``Choices``).
+/// - A save on the system fields of a record that is not there is refused as unknown; a save without them makes the
+///   record (probe 5). Deleting a record that is not there succeeds (probe 6).
+/// - A save or a deletion into a zone that does not exist is refused: plainly missing, marked as an encryption reset,
+///   or as deleted by the person, by how the zone went (probe C; source 34).
+/// - A save is refused while the person's storage is full (source 13).
+/// - A report of the database's zones names the zones changed since the token, or every zone for an engine with no
+///   token, and the zones deleted since then whose names are not in use again, with the reason of their deletion
+///   (probes A and B). A deletion's report can expire (open point 13).
+/// - A fetch of a zone from a token brings every record changed since then, as it now is, and every record deleted since
+///   then. A token from another making of the zone, or none, brings every record (probe E); with none, also the
+///   deletions of records deleted in the zone, all of them or only those of records the fetching device made, by
+///   ``Choices`` (open point 5).
 ///
-/// Where Apple documents nothing, it can do either, by ``Choices``.
+/// Where Apple documents nothing and the probe did not see, it can do either, by ``Choices``.
 @MainActor
 final class StandInICloud {
     /// What the stand-in does where Apple's documentation is silent.
     struct Choices: Sendable, CustomStringConvertible {
         /// Whether a fetch from nothing brings the deletions of every record deleted earlier in the zone, as one developer
-        /// saw [17]; otherwise only of the records the fetching device made, as Apple's engineers describe it [50].
-        var fetchFromNothingBringsOldDeletions = false
-        /// Whether a first save under a name that exists is refused with iCloud's record attached (open point 1).
+        /// and the probe saw; otherwise only of the records the fetching device made, as Apple's engineers describe it
+        /// (source 50, open point 5).
+        var fetchFromNothingBringsOldDeletions = true
+        /// Whether a refusal because a record of that name exists carries iCloud's record (open point 1).
         var refusalCarriesRecord = true
-        /// How often a device's own saves come back to it in its fetches, from 0 to 1 [17]. A save whose answer the device
-        /// never handled always comes back: an engine can leave out only what it knows it sent.
+        /// How often a device's own saves come back to it in its fetches, from 0 to 1 (source 17). A save whose answer the
+        /// device never handled always comes back: an engine can leave out only what it knows it sent.
         var ownChangesComeBack = 1.0
-        /// Whether deleting a record that is not there is confirmed, rather than answered as already gone.
-        var deletingAMissingRecordIsConfirmed = false
+        /// Whether a report names a zone whose only changes since the token are the fetching device's own (open
+        /// point 17). A report from nothing names every zone.
+        var reportsOwnZoneChanges = true
+        /// Whether a purge or a reset of encrypted data is reported as a zone's deletion with its reason; otherwise the
+        /// zone is named as changed, and its fetch ends with the error (open point 15). Saves meet the error either way.
+        var lossesReportedAsDeletions = true
 
         var description: String {
             "old deletions from nothing: \(fetchFromNothingBringsOldDeletions), refusal carries record: \(refusalCarriesRecord), "
-                + "own changes come back: \(ownChangesComeBack), missing deletion confirmed: \(deletingAMissingRecordIsConfirmed)"
+                + "own changes come back: \(ownChangesComeBack), own zone changes reported: \(reportsOwnZoneChanges), "
+                + "losses reported as deletions: \(lossesReportedAsDeletions)"
         }
     }
 
@@ -52,14 +64,30 @@ final class StandInICloud {
 
     /// One account's private database.
     final class Database {
+        /// The zones that exist, by name.
         var zones: [String: Zone] = [:]
-        /// Every zone made and deleted, in order: the database's changes.
-        var changes: [(seq: Int, zone: String, deletion: ZoneDeletionReason?)] = []
+        /// How each zone that does not exist went, by name: the reason of its deletion, or nil for a zone that went
+        /// without a reason anyone is told.
+        var gone: [String: ZoneDeletionReason?] = [:]
+        /// The database's changes, in order: a zone made, changed or deleted.
+        var log: [Change] = []
         var seq = 0
         /// Whether the person's iCloud storage is full.
         var isFull = false
         /// How many zones were made, to tell one making of a zone from another.
-        var zonesMade = 0
+        var makings = 0
+
+        struct Change {
+            var seq: Int
+            var zone: String
+            /// The device that made the change; nil for a change the test made.
+            var by: String?
+            /// The reason of a deletion; nil for a zone made or changed.
+            var deletion: ZoneDeletionReason?
+            /// Whether a deletion is reported to engines: false once its report expired, or for a zone that went
+            /// without a report.
+            var reported = true
+        }
     }
 
     /// One making of a zone.
@@ -70,7 +98,7 @@ final class StandInICloud {
         var counter = 0
         var records: [String: Stored] = [:]
         /// Every save and deletion, in order, with the device that made it and whether that device handled the answer.
-        var changes: [(seq: Int, name: String, by: String, answered: Bool)] = []
+        var changes: [(seq: Int, name: String, by: String?, answered: Bool)] = []
         var seq = 0
         /// The names of records deleted in this zone.
         var deleted: Set<String> = []
@@ -114,40 +142,119 @@ final class StandInICloud {
         return database
     }
 
+    /// Every account that has a database, for the tests' looking.
+    var accounts: [String] { databases.keys.sorted() }
+
     // MARK: Zones
 
-    /// Makes the zone if it is missing; saving a zone that exists changes nothing.
-    func saveZone(_ name: String, account: String) {
-        let database = database(account)
-        guard database.zones[name] == nil else { return }
-        database.zonesMade += 1
-        database.zones[name] = Zone(name: name, making: database.zonesMade)
-        database.seq += 1
-        database.changes.append((database.seq, name, nil))
+    /// What a zone's save came to.
+    enum ZoneSaveOutcome: Equatable {
+        case saved
+        case storageFull
     }
 
-    /// Deletes the zone, with every record in it, for `reason`: as the person deleting the app's data from iCloud in
-    /// Settings, or resetting their encrypted data, would.
+    /// Saves the zone named `name`: makes it if it is missing, and changes nothing if it exists.
+    @discardableResult
+    func saveZone(_ name: String, account: String, device: String?) -> ZoneSaveOutcome {
+        let database = database(account)
+        guard database.zones[name] == nil else { return .saved }
+        guard !database.isFull else { return .storageFull }
+        database.makings += 1
+        database.zones[name] = Zone(name: name, making: database.makings)
+        database.gone[name] = nil
+        logChange(zone: name, by: device, in: database)
+        return .saved
+    }
+
+    /// Deletes the zone named `name`, with every record in it, for `reason`: as the person deleting the app's data from
+    /// iCloud in Settings, or resetting their encrypted data, would; or another copy of the app.
     func deleteZone(_ name: String, account: String, reason: ZoneDeletionReason) {
         let database = database(account)
         guard database.zones.removeValue(forKey: name) != nil else { return }
+        database.gone[name] = reason
         database.seq += 1
-        database.changes.append((database.seq, name, reason))
+        let reported = reason == .deleted || choices.lossesReportedAsDeletions
+        database.log.append(Database.Change(seq: database.seq, zone: name, by: nil, deletion: reason, reported: reported))
+        if !reported {
+            // The loss is not reported as a deletion: the zone is named as changed, and its fetch meets the error.
+            database.seq += 1
+            database.log.append(Database.Change(seq: database.seq, zone: name, by: nil, deletion: nil))
+        }
     }
 
-    /// The zones deleted since `token`, or ever when it is nil, that do not exist now, each with the reason of its last
-    /// deletion; and the token to fetch from next.
-    func zoneDeletions(account: String, since token: Int?) -> (deletions: [(zone: String, reason: ZoneDeletionReason)], token: Int) {
+    /// Deletes every zone of the account: what the person deleting the app's data from iCloud does.
+    func deleteEveryZone(account: String, reason: ZoneDeletionReason) {
+        for name in database(account).zones.keys.sorted() { deleteZone(name, account: account, reason: reason) }
+    }
+
+    /// The zone named `name` goes without anyone being told why: a zone found missing (section 9).
+    func loseZoneSilently(_ name: String, account: String) {
         let database = database(account)
-        var last: [String: ZoneDeletionReason] = [:]
-        var order: [String] = []
-        for change in database.changes where change.seq > (token ?? 0) {
-            guard let reason = change.deletion else { continue }
-            if last[change.zone] == nil { order.append(change.zone) }
-            last[change.zone] = reason
+        guard database.zones.removeValue(forKey: name) != nil else { return }
+        database.gone[name] = .some(nil)
+    }
+
+    /// Every report of a zone's deletion expires (open point 13).
+    func expireDeletionReports(account: String) {
+        let database = database(account)
+        for index in database.log.indices where database.log[index].deletion != nil {
+            database.log[index].reported = false
         }
-        let deletions = order.filter { database.zones[$0] == nil }.map { ($0, last[$0]!) }
-        return (deletions, database.seq)
+    }
+
+    /// The report of the database's zones for a token, `since`, or for an engine with none, for the device `device`; and
+    /// the token to fetch from next. A zone named as changed exists, or went with a loss that is reported only as an error.
+    func databaseChanges(account: String, since token: Int?, device: String) -> (existing: [String], deleted: [ZoneDeletion], token: Int) {
+        let database = database(account)
+        var changed: [String] = []
+        var deletions: [String: ZoneDeletionReason] = [:]
+        if token == nil {
+            changed = database.zones.keys.sorted()
+            for change in database.log where change.reported {
+                if let reason = change.deletion, database.zones[change.zone] == nil { deletions[change.zone] = reason }
+            }
+            // A zone that went with a loss reported only as an error is named, so that its fetch meets the error.
+            changed += database.gone.keys.sorted().filter { isLossReportedOnlyAsError($0, in: database) }
+        } else if let token {
+            var seen = Set<String>()
+            for change in database.log where change.seq > token {
+                if let reason = change.deletion {
+                    if change.reported, database.zones[change.zone] == nil { deletions[change.zone] = reason }
+                } else if change.by != device || choices.reportsOwnZoneChanges, seen.insert(change.zone).inserted {
+                    if database.zones[change.zone] != nil || isLossReportedOnlyAsError(change.zone, in: database) {
+                        changed.append(change.zone)
+                    }
+                }
+            }
+        }
+        let existing = changed.filter { deletions[$0] == nil }
+        let deleted = deletions.keys.sorted().map { ZoneDeletion(zone: $0, reason: deletions[$0]!) }
+        return (existing, deleted, database.seq)
+    }
+
+    /// Whether the zone named `name` went by a purge or a reset that is not reported as a deletion.
+    private func isLossReportedOnlyAsError(_ name: String, in database: Database) -> Bool {
+        guard database.zones[name] == nil, let reason = database.gone[name] ?? nil else { return false }
+        return reason != .deleted && !choices.lossesReportedAsDeletions
+    }
+
+    /// Whether the zone exists.
+    func hasZone(_ name: String, account: String) -> Bool {
+        database(account).zones[name] != nil
+    }
+
+    /// The zones that exist, by name, for the tests' looking.
+    func zoneNames(account: String) -> [String] {
+        database(account).zones.keys.sorted()
+    }
+
+    /// The error that a save into, or a fetch of, the missing zone `name` meets.
+    func zoneError(_ name: String, in database: Database) -> ZoneGone {
+        switch database.gone[name] ?? nil {
+        case .encryptedDataReset?: .encryptedDataReset
+        case .purged?: .userDeletedZone
+        case .deleted?, nil: .missing
+        }
     }
 
     // MARK: Records
@@ -157,17 +264,15 @@ final class StandInICloud {
         case saved(CloudRecord)
         case refused(CloudRecord?)
         case unknownItem
-        case zoneMissing(encryptedDataReset: Bool)
+        case zoneGone(ZoneGone)
         case storageFull
     }
 
-    /// Saves `record` in zone `zoneName`, for the device `device`. The save counts as answered once the device has
-    /// handled its answer (``markAnswered(_:zone:account:device:)``).
-    func save(_ record: RecordToSend, zone zoneName: String, account: String, device: String) -> SaveOutcome {
+    /// Saves `record` for the device `device`. The save counts as answered once the device has handled its answer
+    /// (``markAnswered(_:account:device:)``).
+    func save(_ record: RecordToSend, account: String, device: String?) -> SaveOutcome {
         let database = database(account)
-        guard let zone = database.zones[zoneName] else {
-            return .zoneMissing(encryptedDataReset: lastDeletion(of: zoneName, in: database) == .encryptedDataReset)
-        }
+        guard let zone = database.zones[record.zone] else { return .zoneGone(zoneError(record.zone, in: database)) }
         guard !database.isFull else { return .storageFull }
         let base = record.systemFields.flatMap { try? JSONDecoder().decode(SystemFields.self, from: $0) }
         if let stored = zone.records[record.name] {
@@ -178,49 +283,45 @@ final class StandInICloud {
         } else if base != nil {
             return .unknownItem
         }
-        if zone.records[record.name] == nil { zone.madeBy[record.name] = device }
+        if zone.records[record.name] == nil, let device { zone.madeBy[record.name] = device }
         zone.counter += 1
-        let stored = Stored(type: record.type, name: record.name, format: record.format, payload: record.payload, tag: String(zone.counter))
+        let stored = Stored(type: record.type, name: record.name, format: record.format, payload: record.payload, tag: String(zone.counter, radix: 36))
         zone.records[record.name] = stored
         zone.seq += 1
         zone.changes.append((zone.seq, record.name, device, false))
+        logChange(zone: zone.name, by: device, in: database)
         return .saved(cloudRecord(stored, zone: zone))
     }
 
-    /// The device handled the answer to its save of the record named `name`: its engine now knows the save was its own.
-    func markAnswered(_ name: String, zone zoneName: String, account: String, device: String) {
-        guard let zone = database(account).zones[zoneName],
-              let index = zone.changes.lastIndex(where: { $0.name == name }), zone.changes[index].by == device else { return }
+    /// The device handled the answer to its save of the record `id`: its engine now knows the save was its own.
+    func markAnswered(_ id: RecordID, account: String, device: String) {
+        guard let zone = database(account).zones[id.zone],
+              let index = zone.changes.lastIndex(where: { $0.name == id.name }), zone.changes[index].by == device else { return }
         zone.changes[index].answered = true
     }
 
     /// What a deletion came to.
     enum DeletionOutcome: Equatable {
         case deleted
-        case alreadyGone
-        case zoneMissing(encryptedDataReset: Bool)
+        case zoneGone(ZoneGone)
     }
 
-    /// Deletes the record named `name` in zone `zoneName`, for the device `device`.
-    func delete(_ name: String, zone zoneName: String, account: String, device: String) -> DeletionOutcome {
+    /// Deletes the record `id`, for the device `device`. Deleting a record that is not there succeeds (probe 6).
+    func delete(_ id: RecordID, account: String, device: String?) -> DeletionOutcome {
         let database = database(account)
-        guard let zone = database.zones[zoneName] else {
-            return .zoneMissing(encryptedDataReset: lastDeletion(of: zoneName, in: database) == .encryptedDataReset)
-        }
-        guard zone.records.removeValue(forKey: name) != nil else {
-            return choices.deletingAMissingRecordIsConfirmed ? .deleted : .alreadyGone
-        }
-        zone.deleted.insert(name)
+        guard let zone = database.zones[id.zone] else { return .zoneGone(zoneError(id.zone, in: database)) }
+        guard zone.records.removeValue(forKey: id.name) != nil else { return .deleted }
+        zone.deleted.insert(id.name)
         zone.seq += 1
-        zone.changes.append((zone.seq, name, device, true))
+        zone.changes.append((zone.seq, id.name, device, true))
+        logChange(zone: zone.name, by: device, in: database)
         return .deleted
     }
 
-    /// The zone's changes since `token`, for the device `device`: nil when the zone is missing. A token from another
-    /// making of the zone, or none, brings every record as it now is.
-    func changes(zone zoneName: String, account: String, since token: ZoneToken?, device: String) -> (records: [CloudRecord], deletions: [DeletedRecord], token: ZoneToken)? {
+    /// The zone's changes since `token`, for the device `device`; an error when the zone does not exist.
+    func changes(zone name: String, account: String, since token: ZoneToken?, device: String) -> Result<(records: [CloudRecord], deletions: [DeletedRecord], token: ZoneToken), ZoneGoneError> {
         let database = database(account)
-        guard let zone = database.zones[zoneName] else { return nil }
+        guard let zone = database.zones[name] else { return .failure(ZoneGoneError(gone: zoneError(name, in: database))) }
         let next = ZoneToken(making: zone.making, seq: zone.seq)
         guard let token, token.making == zone.making else {
             let records = zone.records.values
@@ -230,9 +331,9 @@ final class StandInICloud {
             if token == nil {
                 deletions = zone.deleted.sorted()
                     .filter { zone.records[$0] == nil && (choices.fetchFromNothingBringsOldDeletions || zone.madeBy[$0] == device) }
-                    .map { DeletedRecord(type: type(of: $0), name: $0) }
+                    .map { DeletedRecord(type: type(of: $0), id: RecordID(zone: name, name: $0)) }
             }
-            return (records, deletions, next)
+            return .success((records, deletions, next))
         }
         var records: [CloudRecord] = []
         var deletions: [DeletedRecord] = []
@@ -242,45 +343,45 @@ final class StandInICloud {
                 if change.by == device, change.answered, random.chance(1 - choices.ownChangesComeBack) { continue }
                 records.append(cloudRecord(stored, zone: zone))
             } else {
-                deletions.append(DeletedRecord(type: type(of: change.name), name: change.name))
+                deletions.append(DeletedRecord(type: type(of: change.name), id: RecordID(zone: name, name: change.name)))
             }
         }
-        return (records.reversed(), deletions.reversed(), next)
+        return .success((records.reversed(), deletions.reversed(), next))
     }
 
-    /// The record of `name` in zone `zoneName` as iCloud now has it, for the tests' looking.
-    func record(_ name: String, zone zoneName: String, account: String) -> CloudRecord? {
-        guard let zone = database(account).zones[zoneName], let stored = zone.records[name] else { return nil }
+    struct ZoneGoneError: Error {
+        var gone: ZoneGone
+    }
+
+    /// The record `id` as iCloud now has it, for the tests' looking.
+    func record(_ id: RecordID, account: String) -> CloudRecord? {
+        guard let zone = database(account).zones[id.zone], let stored = zone.records[id.name] else { return nil }
         return cloudRecord(stored, zone: zone)
     }
 
-    /// Every record in zone `zoneName`, for the tests' looking.
-    func records(zone zoneName: String, account: String) -> [CloudRecord] {
-        guard let zone = database(account).zones[zoneName] else { return [] }
+    /// Every record in the zone named `name`, for the tests' looking.
+    func records(zone name: String, account: String) -> [CloudRecord] {
+        guard let zone = database(account).zones[name] else { return [] }
         return zone.records.values.sorted { $0.name < $1.name }.map { cloudRecord($0, zone: zone) }
-    }
-
-    /// Whether the zone exists.
-    func hasZone(_ name: String, account: String) -> Bool {
-        database(account).zones[name] != nil
     }
 
     // MARK: Inside
 
+    private func logChange(zone: String, by device: String?, in database: Database) {
+        database.seq += 1
+        database.log.append(Database.Change(seq: database.seq, zone: zone, by: device, deletion: nil))
+    }
+
     private func cloudRecord(_ stored: Stored, zone: Zone) -> CloudRecord {
         let fields = SystemFields(zone: zone.name, name: stored.name, tag: stored.tag)
         return CloudRecord(
-            type: stored.type, name: stored.name, changeTag: stored.tag, systemFields: try? JSONEncoder().encode(fields),
-            format: stored.format, payload: stored.payload
+            type: stored.type, zone: zone.name, name: stored.name, changeTag: stored.tag,
+            systemFields: try? JSONEncoder().encode(fields), format: stored.format, payload: stored.payload
         )
     }
 
     private func lastChange(of name: String, in zone: Zone) -> Int {
         zone.changes.last { $0.name == name }?.seq ?? 0
-    }
-
-    private func lastDeletion(of zoneName: String, in database: Database) -> ZoneDeletionReason? {
-        database.changes.last { $0.zone == zoneName && $0.deletion != nil }?.deletion
     }
 
     /// The type of a record by its name: the toy's, or a finished play's.
