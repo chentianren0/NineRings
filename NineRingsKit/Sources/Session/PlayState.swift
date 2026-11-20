@@ -41,8 +41,10 @@ import Puzzle
 ///   would give it back, with the play in progress and the journeys toward achievements under way (``snapshot``).
 ///   Brought back, it goes on as it would have without the relaunch.
 /// - A kept toy can also arrive while the toy is in play, as when another device kept it (``take(_:)``). It becomes
-///   the person's toy at once, a jump, with its play and journeys, and the lesson and the rings being set close. The
-///   toy in play arriving, whatever time each says was spent on the play, changes nothing.
+///   the person's own toy at once, with its play and journeys, wherever their toy is: shown, a jump, silent, that says
+///   where it rests; or waiting while the lesson or the rings being set show something else, which stay as they are
+///   and give the new toy back. The toy in play arriving, whatever time each says was spent on the play, changes
+///   nothing.
 public struct PlayState: Sendable, Equatable {
     /// The person's own toy. While the lesson is open it waits, and the lesson's toy is shown instead.
     public private(set) var own: PuzzleSession
@@ -203,23 +205,23 @@ public struct PlayState: Sendable, Equatable {
         settle(jump: true, rebase: true, beginsPlay: true)
     }
 
-    /// The person's toy becomes the one `snapshot` keeps, at once, with its play in progress and its journeys under
-    /// way: a kept toy arriving while the toy is in play. The lesson and the rings being set close, and it says where
-    /// the toy rests, or where it stopped part way. Returns whether it did: nothing changes when `snapshot` keeps the
-    /// toy in play, whatever time each says was spent on the play (``ToySnapshot/isSameToy(as:)``), or when its moves
-    /// break the rule.
+    /// The person's own toy becomes the one `snapshot` keeps, at once, with its play in progress and its journeys under
+    /// way: a kept toy arriving while the toy is in play. Where it is shown, it jumps there and says where it rests, or
+    /// where it stopped part way. While the lesson shows its own toy, or the rings are being set, those stay as they
+    /// are, and give the new toy back. Returns whether it did: nothing changes when `snapshot` keeps the toy in play,
+    /// whatever time each says was spent on the play (``ToySnapshot/isSameToy(as:)``), or when its moves break the
+    /// rule.
     @discardableResult
     public mutating func take(_ snapshot: ToySnapshot) -> Bool {
         guard !snapshot.isSameToy(as: self.snapshot), let toy = snapshot.toy else { return false }
-        lesson = nil
-        settingRings = nil
         own = toy
+        lesson?.replaceOwnToy(with: toy)
         judged = toy
         play = snapshot.play
         congratulation = Congratulation(isArmed: snapshot.play != nil)
         achievementRule = AchievementRule(underWay: snapshot.journeys)
-        settle(jump: true, rebase: true, sayingWhereItRests: !own.isPartWay)
-        if own.isPartWay { narration = Narration([.paused(own.status)]) }
+        settle(jump: true, rebase: true, sayingWhereItRests: !self.toy.isPartWay, quiet: isSettingRings)
+        if lesson == nil, !isSettingRings, own.isPartWay { narration = Narration([.paused(own.status)]) }
         return true
     }
 

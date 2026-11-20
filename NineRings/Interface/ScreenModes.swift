@@ -133,12 +133,10 @@ final class ScreenModes {
         change { player.reset() }
     }
 
-    /// The toy `snapshot` keeps, read from where it is kept, becomes the person's: at once, as Reset changes it, with
-    /// the lesson and the rings being set closed. When it is the toy in play, nothing changes, and the lesson stays.
+    /// The toy `snapshot` keeps, read from where it is kept, becomes the person's own (see `PlayState.take`): shown, it
+    /// changes at once, as Reset changes it; under the lesson or the rings being set, they stay, and give it back.
     func take(_ snapshot: ToySnapshot) {
-        change {
-            if player.take(snapshot) { showsLesson = false }
-        }
+        change { player.take(snapshot) }
     }
 
     /// Makes `body`'s changes one animated change of the screen.

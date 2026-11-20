@@ -272,20 +272,50 @@ import Testing
         #expect(state.snapshot.play?.secondsSpent != later.snapshot.play?.secondsSpent, "the play keeps its own time")
     }
 
-    /// The lesson and the rings being set close: the toy arriving is the person's own.
-    @Test func aToyArrivingClosesTheLessonAndTheRingsBeingSet() {
+    /// Under the lesson the toy arriving waits: nothing on screen changes, the lesson stays at its step, and closing
+    /// gives the new toy back.
+    @Test func aToyArrivingWaitsUnderTheLesson() {
         var state = PlayState()
         state.openLesson(at: 3)
-        let tookOverLesson = state.take(keptElsewhere)
-        #expect(tookOverLesson)
-        #expect(state.lesson == nil && state.toy == state.own)
-
-        state = PlayState()
-        state.startSettingRings()
+        let shown = state.toy
+        let jumps = state.jumps
         let snapshot = keptElsewhere
-        let tookOverRings = state.take(snapshot)
-        #expect(tookOverRings)
-        #expect(!state.isSettingRings)
+        let took = state.take(snapshot)
+        #expect(took)
+        #expect(state.lesson?.index == 3 && state.toy == shown && state.jumps == jumps)
+        #expect(state.narration == Narration(), "the lesson's text says what the toy shows")
+        #expect(state.snapshot == snapshot)
+        state.closeLesson()
+        #expect(state.snapshot == snapshot)
+        #expect(state.own == snapshot.toy)
+    }
+
+    /// On the step that gives the toy back, the toy shown is the person's: it jumps to the new one, and the lesson
+    /// stays.
+    @Test func aToyArrivingOnTheStepThatGivesTheToyBackIsShown() throws {
+        var state = PlayState()
+        state.openLesson(at: 10)
+        state.goToLessonStep(11)
+        #expect(state.lesson?.givesToyBack == true)
+        let snapshot = keptElsewhere
+        let took = state.take(snapshot)
+        #expect(took)
+        #expect(state.lesson?.index == 11)
+        #expect(state.toy.state == (try #require(snapshot.toy)).state)
+        #expect(state.snapshot == snapshot)
+    }
+
+    /// While the rings are being set the toy arriving waits; Cancel gives it back.
+    @Test func aToyArrivingWaitsWhileTheRingsAreSet() throws {
+        var state = PlayState()
+        state.startSettingRings()
+        state.setRings(to: try #require(PuzzleState("100000000")))
+        let snapshot = keptElsewhere
+        let took = state.take(snapshot)
+        #expect(took)
+        #expect(state.isSettingRings && state.toy.state == PuzzleState("100000000"))
+        #expect(state.narration == Narration())
+        state.cancelSettingRings()
         #expect(state.snapshot == snapshot)
     }
 

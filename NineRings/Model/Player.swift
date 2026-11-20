@@ -165,8 +165,8 @@ final class Player {
         change { $0.begin(at: move) }
     }
 
-    /// Makes `snapshot`'s toy the person's, as a toy read from where it is kept arrives: at once, closing the lesson
-    /// and the rings being set (see `PlayState.take`). Returns whether it did: not when it is the toy in play.
+    /// Makes `snapshot`'s toy the person's own, as a toy read from where it is kept arrives (see `PlayState.take`).
+    /// Returns whether it did: not when it is the toy in play.
     @discardableResult
     func take(_ snapshot: ToySnapshot) -> Bool {
         var took = false
