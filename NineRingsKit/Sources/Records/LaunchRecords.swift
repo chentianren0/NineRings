@@ -9,21 +9,28 @@ import Session
 ///   it.
 /// - While a folder is open, each change is written to it as well (``RecordFolder``): a toy kept, a play recorded, the
 ///   history cleared.
-/// - From ``closeFolder()`` until the next ``open(_:)``, as while the folder is opened again, nothing is written to any
-///   folder. The toy kept meanwhile stays in memory, and the plays recorded and a clearing wait for the next folder.
-/// - Opening a folder reads it, and the folder wins: the history is the folder's, after the clearing and the plays
-///   that waited are written there. The toy read is for the player to take when this launch has not read or kept it
-///   there already, whatever the time spent on it: at the first opening, and after another device kept a toy since.
-///   Otherwise the toy in play stays, since it is the newer one, as when the folder keeps no toy; the next keep writes
-///   it there.
+/// - From ``closeFolder()`` until the next ``open(_:syncs:)``, as while the folder is opened again, nothing is written
+///   to any folder. The toy kept meanwhile stays in memory, and the plays recorded and a clearing wait for the next
+///   folder.
+/// - Opening a folder reads it, and the folder wins: the history is the folder's, after the clearing and the plays that
+///   waited are written there. The toy read is for the player to take when this launch has not read or kept it there
+///   already, whatever the time spent on it: at the first opening, and after another device kept a toy since. Otherwise
+///   the toy in play stays, since it is the newer one, as when the folder keeps no toy; the next keep writes it there.
 /// - A write that fails leaves the folder as it was. A toy is written again at the next keep; a play or a clearing
-///   waits for the next opening, as when no folder is open. When the history file is there but cannot be read as a
-///   history, the history is the plays that wait.
+///   waits for the next opening, as when no folder is open. While a clearing waits, the plays recorded after it wait
+///   behind it, so that it never deletes them. The history shown always has the plays that wait, and is those plays
+///   alone while a clearing waits or when the history file is there but cannot be read as a history.
+/// - A clearing goes where the next folder is, so ``clearingReachesOtherDevices`` says whether that folder syncs: true
+///   in a launch that opens folders until an opening finds a folder kept on the device only, and false in memory. An
+///   opening that fails changes nothing, since a clearing made then waits for the next folder.
 public struct LaunchRecords: Sendable {
     /// The finished plays: the folder's while one is open, newest first, one for each play.
     public private(set) var history = PlayHistory.empty
     /// The toy as it was last kept, or as it was read for the player to take; nil before either.
     public private(set) var keptToy: ToySnapshot?
+    /// Whether clearing the history also deletes the plays on the person's other devices: whether the folder a clearing
+    /// reaches, now or at the next opening, syncs.
+    public private(set) var clearingReachesOtherDevices: Bool
 
     /// The folder written to, while one is open.
     private var folder: RecordFolder?
@@ -35,7 +42,11 @@ public struct LaunchRecords: Sendable {
     /// Whether the history was cleared and the folder not yet.
     private var clearingWaits = false
 
-    public init() {}
+    /// Starts with no toy kept and no plays. A launch that `opensFolders` is to keep them in folders that sync, until
+    /// an opening says otherwise; one that does not keeps them in memory.
+    public init(opensFolders: Bool) {
+        clearingReachesOtherDevices = opensFolders
+    }
 
     /// What opening a folder found.
     public struct Opening {
@@ -60,12 +71,13 @@ public struct LaunchRecords: Sendable {
     }
 
     /// Records `play` in the history (``PlayHistory/record(_:)``), and in the folder when one is open. Returns whether
-    /// the folder's file was written. A play already recorded is not recorded again. Throws when it could not be
-    /// written there, as when the history file cannot be read as a history; the play waits for the next opening.
+    /// the folder's file was written. A play already recorded is not recorded again. It waits for the next opening when
+    /// a clearing waits, and when it could not be written, as when the history file cannot be read as a history; then
+    /// it throws.
     @discardableResult
     public mutating func record(_ play: PlayRecord) throws -> Bool {
         guard history.record(play) else { return false }
-        guard let folder else {
+        guard let folder, !clearingWaits else {
             waitingPlays.append(play)
             return false
         }
@@ -97,14 +109,16 @@ public struct LaunchRecords: Sendable {
         }
     }
 
-    /// No folder is open from now on: nothing is written to one until the next ``open(_:)``.
+    /// No folder is open from now on: nothing is written to one until the next ``open(_:syncs:)``.
     public mutating func closeFolder() {
         folder = nil
     }
 
-    /// Opens `folder`: writes the clearing and the plays that waited, then reads the history and the toy there.
-    public mutating func open(_ folder: RecordFolder) -> Opening {
+    /// Opens `folder`, which `syncs` or is kept on the device only: writes the clearing that waited, then the plays
+    /// that waited, and reads the history and the toy there.
+    public mutating func open(_ folder: RecordFolder, syncs: Bool) -> Opening {
         self.folder = folder
+        clearingReachesOtherDevices = syncs
         var opening = Opening()
         if clearingWaits {
             do {
@@ -115,23 +129,29 @@ public struct LaunchRecords: Sendable {
                 opening.errors.append(error)
             }
         }
-        var stillWaiting: [PlayRecord] = []
-        for play in waitingPlays {
+        if !clearingWaits {
+            var stillWaiting: [PlayRecord] = []
+            for play in waitingPlays {
+                do {
+                    if try folder.record(play) { opening.wrote = true }
+                } catch {
+                    opening.errors.append(error)
+                    stillWaiting.append(play)
+                }
+            }
+            waitingPlays = stillWaiting
+        }
+        if clearingWaits {
+            history = .empty
+        } else {
             do {
-                if try folder.record(play) { opening.wrote = true }
+                history = try folder.history()
             } catch {
                 opening.errors.append(error)
-                stillWaiting.append(play)
+                history = .empty
             }
         }
-        waitingPlays = stillWaiting
-        do {
-            history = try folder.history()
-        } catch {
-            opening.errors.append(error)
-            history = .empty
-            for play in waitingPlays { history.record(play) }
-        }
+        for play in waitingPlays { history.record(play) }
         let read = folder.keptToy()
         if let read, !(toyInFolder.map { read.isSameToy(as: $0) } ?? false) {
             opening.toy = read

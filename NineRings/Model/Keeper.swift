@@ -44,17 +44,17 @@ final class Keeper {
     /// cleared, and is the folder's once the folder is read, so a screen shows it as it is, and keeps no copy.
     private(set) var history = PlayHistory.empty
 
-    /// Whether clearing the history also deletes the plays on the person's other devices: true while the folder last
-    /// opened syncs through iCloud Drive, false when it is kept on the device or the records are in memory. The
+    /// Whether clearing the history also deletes the plays on the person's other devices: whether the folder a clearing
+    /// reaches, now or at the next opening, syncs through iCloud Drive (see `LaunchRecords`). False in memory. The
     /// history's confirmation chooses its words by it as it shows.
-    private(set) var clearingReachesOtherDevices = false
+    private(set) var clearingReachesOtherDevices: Bool
 
     /// GameSave's folder while it loads, for Apple's alert, which shows while this is set; nil otherwise, and always in
     /// a launch in memory.
     var loading: GameSaveSyncedDirectory?
 
     /// The toy and the plays, in memory and in the folder while one is open, by `LaunchRecords`'s rules.
-    @ObservationIgnored private var records = LaunchRecords()
+    @ObservationIgnored private var records: LaunchRecords
     /// Whether this launch keeps its records in GameSave's folder.
     @ObservationIgnored private let opensGameSave: Bool
     /// GameSave's folder as last opened: loading, open, or unusable; nil before the first opening.
@@ -70,6 +70,8 @@ final class Keeper {
     /// sample plays recorded.
     init(inMemory: Bool, samplePlays: Int = 0) {
         opensGameSave = !inMemory
+        records = LaunchRecords(opensFolders: !inMemory)
+        clearingReachesOtherDevices = records.clearingReachesOtherDevices
         guard inMemory else { return }
         for sample in PlayRecord.samples(samplePlays, latest: .now) {
             record(sample)
@@ -173,15 +175,14 @@ final class Keeper {
     /// Loading ended without a folder: the records stay in memory, and the next return to the front tries again.
     private func stayInMemory(_ state: GameSaveSyncedDirectory.State) -> ToySnapshot? {
         loading = nil
-        clearingReachesOtherDevices = false
         Self.log.error("The folder cannot be used; the records stay in memory: \(state.description, privacy: .public)")
         return nil
     }
 
     private func open(_ url: URL, syncs: Bool) -> ToySnapshot? {
         loading = nil
-        clearingReachesOtherDevices = syncs
-        let opening = records.open(RecordFolder(url: url))
+        let opening = records.open(RecordFolder(url: url), syncs: syncs)
+        clearingReachesOtherDevices = records.clearingReachesOtherDevices
         for error in opening.errors {
             Self.log.error("The folder could not be read or written in full: \(error, privacy: .public)")
         }
