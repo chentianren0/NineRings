@@ -14,6 +14,8 @@ struct NineRingsApp: App {
         #if DEBUG
         // Before any store opens: CloudKit's development schema, only when the launch asks.
         CloudSchema.createIfAsked()
+        // The CloudKit probe, only when the launch asks; its records stay in memory (`LaunchOptions.recordPlace`).
+        CloudProbe.startIfAsked()
         StoreCapture.prepare()
         if let request = Capture.request {
             Task { await Capture.run(request) }
