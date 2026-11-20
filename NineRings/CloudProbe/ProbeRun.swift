@@ -123,7 +123,8 @@ nonisolated struct ProbeRun: Sendable {
     }
 
     /// Deletes a zone of the probe directly, not through an engine, so that no engine of the probe hears of it as its
-    /// own act. It refuses any zone whose name does not begin with ``zonePrefix``.
+    /// own act. It refuses any zone whose name does not begin with ``zonePrefix``. CloudKit also answers a deletion of a
+    /// zone that does not exist without an error, so the line it writes says "deleted" then too.
     func removeZone(_ id: CKRecordZone.ID) async {
         guard ProbeText.isProbeZone(id) else {
             return await report.say("--", "REFUSED to delete zone \(id.zoneName): not a zone of this probe")
@@ -149,7 +150,8 @@ nonisolated struct ProbeRun: Sendable {
     }
 
     /// Deletes every zone of this probe still in the database: those of earlier runs that stopped part way, and this
-    /// run's. The zone question 15 left for question 16 stays until question 16 deletes it.
+    /// run's. The zone question 15 left for question 16 stays until question 16 deletes it. Because of this, the probe
+    /// runs one launch at a time; only the launches of question D.3, which leave other zones alone, run side by side.
     func removeProbeZones() async {
         do {
             let kept = Self.lostAnswerZone

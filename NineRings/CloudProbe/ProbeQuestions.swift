@@ -330,7 +330,7 @@ nonisolated extension ProbeRun {
                 await fresh.stop()
             }
         }
-        await removeZone(zone.zoneID)
+        // No engine here saves the zone, so there is none to delete.
     }
 
     // MARK: 10. Automatic syncing

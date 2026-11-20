@@ -94,6 +94,7 @@ nonisolated extension ProbeRun {
         let a = await device("A", scope: .all)
         let b = await device("B", scope: .all)
         let q = await device("Q", scope: .all)
+        let s = await device("S", scope: .all)
 
         await a.queueZoneSave(n1)
         await a.queueSave(toy1, type: "Toy", base: nil, payload: "A: the toy in N-1")
@@ -101,6 +102,7 @@ nonisolated extension ProbeRun {
         await a.send("A makes N-1")
         await b.fetch("B learns N-1")
         await q.fetch("Q learns N-1")
+        await s.fetch("S learns N-1")
         let stateBefore = await b.serialization
         await a.queueZoneDelete(n1.zoneID)
         await a.send("A deletes N-1")
@@ -173,7 +175,26 @@ nonisolated extension ProbeRun {
             await report.result("C.5", "it was told: \(told(events))")
             await report.result("C.5", "afterwards N-1 \(await zoneExists(n1.zoneID))")
         }
-        await finish([n2], devices)
+
+        // C.6: S, which knew N-1 and has not fetched since, queues N-1's save together with a new play, as a device
+        // that sends its zone with its records would. Asked last, because it may make N-1 again.
+        let sPlay = playID(n1)
+        await s.queueZoneSave(n1)
+        await s.queueSave(sPlay, type: "FinishedPlay", base: nil, payload: "S: a new play, sent with N-1's save")
+        mark = await s.mark
+        await s.send("S sends N-1's save and a play, before any fetch")
+        events = await s.events(since: mark)
+        await report.result("C.6", "S's save of N-1: \(zoneSaveOutcome(of: n1.zoneID, in: events)); its play: \(outcome(of: sPlay, in: events)); afterwards N-1 \(await zoneExists(n1.zoneID))")
+        let m = await device("New2", scope: .all)
+        mark = await m.mark
+        await m.fetch("a new engine, after S's send")
+        events = await m.events(since: mark)
+        await report.result("C.6", "a new engine afterwards: told N-1 was deleted \(deletionText(n1, in: events)); told N-1 exists \(zoneModifications(events).contains(n1.zoneID)); received \(fetchedRecords(events).filter { $0.recordID.zoneID == n1.zoneID }.map { ProbeText.record($0) })")
+        mark = await a.mark
+        await a.fetch("A, which deleted N-1, after S's send")
+        await report.result("C.6", "A's fetch afterwards was told: \(told(await a.events(since: mark)))")
+        devices += [s, m]
+        await finish([n1, n2], devices)
     }
 
     // MARK: D. Saving a zone that exists; two engines saving the same new zone
@@ -194,6 +215,7 @@ nonisolated extension ProbeRun {
         await a.fetch("A brings its own state up to date")
         await b.fetch("B learns Z")
         await report.result("D.1", "before: the toy is \(await onServer(toy)); the play is \(await onServer(play))")
+        let aBase = await a.known[toy]
 
         var mark = await b.mark
         await b.queueZoneSave(z)
@@ -217,6 +239,13 @@ nonisolated extension ProbeRun {
         mark = await a.mark
         await a.fetch("A, after C saved Z")
         await report.result("D.1", "A's fetch afterwards was told: \(told(await a.events(since: mark)))")
+        mark = await a.mark
+        await a.queueSave(toy, type: "Toy", base: aBase, payload: "A: the toy, on a base taken before Z was saved again")
+        await a.send("A saves the toy on its base of before the two saves of Z")
+        await report.result("D.1", "A's save of the toy on the system fields of tag \(aBase?.recordChangeTag ?? "none"), taken before B's save of Z: \(outcome(of: toy, in: await a.events(since: mark)))")
+        let reader = await device("Reader", z)
+        await reader.fetch("a new engine reads the toy")
+        await report.result("D.1", "a new engine reads the toy: \(await reader.known[toy].map { "[\(ProbeText.record($0))] \(ProbeText.recordDetails($0))" } ?? "no toy")")
 
         // D.2: two new engines in this process save the same new zone at once.
         let y = zone("D\(tag)_Y")
@@ -242,7 +271,7 @@ nonisolated extension ProbeRun {
         events = await n.events(since: mark)
         let names = (try? await database.allRecordZones().map(\.zoneID.zoneName).filter { $0 == y.zoneID.zoneName }) ?? []
         await report.result("D.2", "zones of that name on the server: \(names.count); the new engine received the plays: E1's \(fetchedRecords(events).contains { $0.recordID == p1 }), E2's \(fetchedRecords(events).contains { $0.recordID == p2 })")
-        await finish([z, y], [a, b, c, e1, e2, n])
+        await finish([z, y], [a, b, c, reader, e1, e2, n])
     }
 
     /// When the engine reported a zone's save, by the clock of the day, to the millisecond.
@@ -307,8 +336,11 @@ nonisolated extension ProbeRun {
         }
         await a.send("A makes Z with \(count) records")
         await b.fetch("B fetches them all")
+        // B2 fetches the first Z too, then stays away until Z made again has passed every tag B2 saw.
+        let b2 = await device("B2", scope: .all)
+        await b2.fetch("B2 fetches them all, then stays away")
         let held = await b.known(in: z.zoneID)
-        await report.result(question, "B holds \(held.count) records of the first Z, tags \(held.compactMap(\.recordChangeTag).sorted())")
+        await report.result(question, "B and B2 hold \(held.count) and \(await b2.known(in: z.zoneID).count) records of the first Z, tags \(held.compactMap(\.recordChangeTag).sorted())")
 
         await a.queueZoneDelete(z.zoneID)
         await a.send("A deletes Z")
@@ -326,7 +358,8 @@ nonisolated extension ProbeRun {
         let after = await b.known(in: z.zoneID)
         await report.result(question, "B holds afterwards \(after.count) records of Z: \(after.filter { old.contains($0.recordID) }.count) of the first Z, the record of Z made again \(after.contains { $0.recordID == first })")
 
-        // Further saves in Z made again, one per send, past the position B's token holds.
+        // Further saves in Z made again, one per send, until its tags pass every tag of the first Z. B fetched Z made
+        // again before them, so its next fetch starts from a token of the new zone; B2's comes from the first Z.
         var later: [CKRecord.ID] = []
         for index in 1...(count + 3) {
             let id = playID(z)
@@ -343,12 +376,20 @@ nonisolated extension ProbeRun {
         let final = await b.known(in: z.zoneID)
         await report.result(question, "B holds at the end \(final.count) records of Z: \(final.filter { old.contains($0.recordID) }.count) of the first Z; of Z made again, which has \(later.count + 1): \(final.filter { !old.contains($0.recordID) }.count)")
 
+        mark = await b2.mark
+        await b2.fetch("B2, back with its token from the first Z, after Z made again passed its tags")
+        events = await b2.events(since: mark)
+        let returned = fetchedRecords(events).map(\.recordID)
+        await report.result(question, "B2's fetch delivered the first record of Z made again: \(returned.contains(first)); the later records number \(later.enumerated().filter { returned.contains($0.element) }.map { $0.offset + 1 }); told of Z's deletion: \(zoneDeletions(events).contains { $0.zoneID == z.zoneID }); record deletions: \(fetchedDeletions(events).filter { $0.recordID.zoneID == z.zoneID }.count); zone fetch errors: \(zoneFetchErrors(events))")
+        let away = await b2.known(in: z.zoneID)
+        await report.result(question, "B2 holds afterwards \(away.count) records of Z: \(away.filter { old.contains($0.recordID) }.count) of the first Z; of Z made again, which has \(later.count + 1): \(away.filter { !old.contains($0.recordID) }.count)")
+
         let n = await device("New", scope: .all)
         mark = await n.mark
         await n.fetch("a new engine")
         events = await n.events(since: mark)
         await report.result(question, "a new engine received \(fetchedRecords(events).filter { $0.recordID.zoneID == z.zoneID }.count) records of Z; told of Z's deletion: \(zoneDeletions(events).contains { $0.zoneID == z.zoneID })")
-        await finish([z], [a, b, n])
+        await finish([z], [a, b, b2, n])
     }
 
     // MARK: F. How long deletion reports live

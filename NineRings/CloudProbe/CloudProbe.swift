@@ -21,10 +21,10 @@ import Security
 /// where standard output goes. The app quits when the probe is done. While the probe runs, the app keeps its own records
 /// in memory (`LaunchOptions.recordPlace`), so that nothing else in it talks to CloudKit.
 ///
-/// The probe uses the iCloud account the device is signed in to, in its private database, and only zones whose names
-/// begin with ``ProbeRun/zonePrefix``: it deletes each question's zone at the question's end, and every such zone at
-/// the start and the end of a run. It stops before reaching CloudKit when the build lacks the iCloud entitlement or
-/// would talk to production.
+/// The probe uses the iCloud account the Mac is signed in to, in its private database, and only zones whose names begin
+/// with ``ProbeRun/zonePrefix``: it deletes each question's zone at the question's end, and every such zone at the start
+/// and the end of a run, so one launch runs at a time. It stops before reaching CloudKit on iPhone and iPad, where it
+/// cannot read its entitlements, and when the build lacks the iCloud entitlement or would talk to production.
 enum CloudProbe {
     /// The app's iCloud container, named here so that the probe does not depend on the cloud code it is there to inform.
     nonisolated static let container = "iCloud.com.chentianren.PlayNineRings"
@@ -62,6 +62,10 @@ enum CloudProbe {
         await report.say("--", "questions: \(questions)")
         defer { Task { @MainActor in quit() } }
 
+        #if !os(macOS)
+        // Only the Mac can read its own entitlements, and so tell development from production.
+        return await report.say("--", "STOPPED: the probe runs in the Mac app only")
+        #else
         guard entitlement("com.apple.developer.icloud-container-identifiers").contains(container) else {
             return await report.say("--", "STOPPED: this build does not have the iCloud entitlement for \(container)")
         }
@@ -104,18 +108,16 @@ enum CloudProbe {
         await report.heading("End")
         await run.removeProbeZones()
         await report.say("--", "done")
-    }
-
-    /// The values of entitlement `key`, as strings: none when the build does not carry it.
-    nonisolated private static func entitlement(_ key: String) -> [String] {
-        #if os(macOS)
-        guard let task = SecTaskCreateFromSelf(nil), let value = SecTaskCopyValueForEntitlement(task, key as CFString, nil) else { return [] }
-        return (value as? [String]) ?? (value as? String).map { [$0] } ?? []
-        #else
-        // On iPhone and iPad a debug build is installed by Xcode, signed with its entitlements, and talks to development.
-        return key == "com.apple.developer.icloud-container-identifiers" ? [container] : []
         #endif
     }
+
+    #if os(macOS)
+    /// The values of entitlement `key`, as strings: none when the build does not carry it.
+    nonisolated private static func entitlement(_ key: String) -> [String] {
+        guard let task = SecTaskCreateFromSelf(nil), let value = SecTaskCopyValueForEntitlement(task, key as CFString, nil) else { return [] }
+        return (value as? [String]) ?? (value as? String).map { [$0] } ?? []
+    }
+    #endif
 
     nonisolated private static func describe(_ status: CKAccountStatus) -> String {
         switch status {
