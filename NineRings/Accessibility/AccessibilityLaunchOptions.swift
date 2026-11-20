@@ -45,6 +45,8 @@ enum AccessibilityLaunchOptions {
     private static let logsAnnouncements = isOn("-log-announcements")
     private static let treeTimes = numbers(after: "-print-accessibility-tree")
     private static let tappedRings = numbers(after: "-tap-rings").map(Int.init)
+    /// Whether `-tap-rings` plays the toy, so that the launch keeps its records in memory (`LaunchOptions`).
+    static var tapsRings: Bool { !tappedRings.isEmpty }
 
     private static let dynamicTypeSize: DynamicTypeSize? = {
         guard let name = value(after: "-dynamic-type") else { return nil }

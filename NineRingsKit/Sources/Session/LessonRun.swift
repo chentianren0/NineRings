@@ -28,6 +28,9 @@ import Toy
 ///   the toy again, remembering it as it is then, the lesson's moves included, so that they are made once.
 /// - Closing gives back the toy as it was before the lesson; on a step that has given it back already, closing
 ///   changes nothing.
+/// - The person's own toy can be replaced while the lesson is open, as when it arrives from another device
+///   (``replaceOwnToy(with:)``): the lesson stays at its step and gives back the new toy on closing. On a step that
+///   gives the toy back, the toy shown is the new one, with no moves played for the person.
 public struct LessonRun: Sendable, Equatable {
     /// What the lesson's panel shows, apart from the toy: it changes only when the step or what can be done does.
     public struct Page: Sendable, Equatable {
@@ -110,6 +113,18 @@ public struct LessonRun: Sendable, Equatable {
     /// The toy once the lesson is closed: the person's own, as it was before, or as it is where it has been given back.
     public var closingToy: PuzzleSession {
         givesToyBack ? toy : before
+    }
+
+    /// Makes `toy`, paused, the person's own toy: the toy given back on closing, and on a step that gives the toy back,
+    /// the toy shown, with no moves played for the person. The lesson stays at its step.
+    public mutating func replaceOwnToy(with toy: PuzzleSession) {
+        var own = toy
+        own.pause()
+        before = own
+        if givesToyBack {
+            self.toy = own
+            movesPlayedForThePerson = []
+        }
     }
 
     /// Whether going to step `index` would move the toy to another pose at once, rather than go on from where it is.

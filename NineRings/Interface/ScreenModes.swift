@@ -1,4 +1,5 @@
 import Observation
+import Session
 import SwiftUI
 
 /// What the screen is doing: the person playing, the lesson, or the person setting the rings.
@@ -130,6 +131,12 @@ final class ScreenModes {
     /// Every ring back on, at once; the parts that change place fade across.
     func reset() {
         change { player.reset() }
+    }
+
+    /// The toy `snapshot` keeps, read from where it is kept, becomes the person's own (see `PlayState.take`): shown, it
+    /// changes at once, as Reset changes it; under the lesson or the rings being set, they stay, and give it back.
+    func take(_ snapshot: ToySnapshot) {
+        change { player.take(snapshot) }
     }
 
     /// Makes `body`'s changes one animated change of the screen.
