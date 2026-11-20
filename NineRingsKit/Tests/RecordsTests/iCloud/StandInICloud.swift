@@ -54,6 +54,8 @@ final class StandInICloud {
     }
 
     var choices: Choices
+    /// Where a trace of every save and deletion goes, for a test that looks into one order of events.
+    var trace: ((String) -> Void)?
     /// Draws for the choices given as a share.
     var random: SeededRandom
 
@@ -290,6 +292,7 @@ final class StandInICloud {
         zone.seq += 1
         zone.changes.append((zone.seq, record.name, device, false))
         logChange(zone: zone.name, by: device, in: database)
+        trace?("CLOUD \(device ?? "-") saved \(record.zone.prefix(14))/\(record.name.prefix(6)) seq \(zone.seq)")
         return .saved(cloudRecord(stored, zone: zone))
     }
 
@@ -315,6 +318,7 @@ final class StandInICloud {
         zone.seq += 1
         zone.changes.append((zone.seq, id.name, device, true))
         logChange(zone: zone.name, by: device, in: database)
+        trace?("CLOUD \(device ?? "-") deleted \(id.zone.prefix(14))/\(id.name.prefix(6)) seq \(zone.seq)")
         return .deleted
     }
 

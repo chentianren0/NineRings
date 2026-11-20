@@ -223,10 +223,13 @@ extension RecordStore {
         return try syncContext.fetch(FetchDescriptor<KeptPlay>(predicate: #Predicate { $0.state == raw }))
     }
 
-    /// Every entry that is not in iCloud: unsent, sent or cleared.
+    /// Every entry that is not in iCloud: unsent, sent or cleared, the oldest first.
     func playsNotInICloud() throws -> [KeptPlay] {
         let inICloud = PlaySyncState.inICloud.rawValue
-        return try syncContext.fetch(FetchDescriptor<KeptPlay>(predicate: #Predicate { $0.state != inICloud }))
+        return try syncContext.fetch(FetchDescriptor<KeptPlay>(
+            predicate: #Predicate { $0.state != inICloud },
+            sortBy: [SortDescriptor(\.finishedAt), SortDescriptor(\.playID)]
+        ))
     }
 
     /// Every entry with system fields of a zone other than `zone`, or of any zone when `zone` is nil.
@@ -239,9 +242,9 @@ extension RecordStore {
         return try syncContext.fetch(FetchDescriptor<KeptPlay>(predicate: #Predicate { $0.systemFieldsZone != nil }))
     }
 
-    /// Every entry.
+    /// Every entry, the oldest first.
     func allPlays() throws -> [KeptPlay] {
-        try syncContext.fetch(FetchDescriptor<KeptPlay>())
+        try syncContext.fetch(FetchDescriptor<KeptPlay>(sortBy: [SortDescriptor(\.finishedAt), SortDescriptor(\.playID)]))
     }
 
     /// Every entry that is not cleared, newest first.

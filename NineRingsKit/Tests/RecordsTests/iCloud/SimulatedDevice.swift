@@ -72,6 +72,8 @@ final class Watcher {
     private var owner: [String: String] = [:]
     /// The account each version of the toy belongs to: the account of the store in which the person made it.
     private var toyOwner: [Version: String] = [:]
+    /// The ids of the plays the devices began, each made by the seeded generator, so that an order of events replays.
+    var playIDs: Set<UUID> = []
 
     static func version(_ toy: ToySnapshot) -> Version {
         var copy = toy
@@ -198,6 +200,11 @@ final class SimulatedDevice: StandInEngineDelegate {
     private(set) var wantsSend = false
     /// Whether the app keeps background time, as it left the front while the gate waited.
     private(set) var keepsBackgroundTime = false
+    /// Whether the last answer about the toy was a refusal without iCloud's record: the case the design accepts when no
+    /// fetch brings the toy (section 16).
+    private(set) var toyRefusedWithoutRecord = false
+    /// Where a trace of every call goes, for a test that looks into one order of events.
+    var trace: ((String) -> Void)?
     /// Whether the engine is to be offline.
     var isOnline = true {
         didSet { engine.isOnline = isOnline }
@@ -249,12 +256,14 @@ final class SimulatedDevice: StandInEngineDelegate {
         } else {
             play = PlayState()
         }
+        seedPlayID()
         must { try sync.keep(play.snapshot, at: clock.now) }
         let saved = must { try sync.engineState() } ?? nil
         wantsAccount = false
         wantsFetch = false
         wantsSend = false
         keepsBackgroundTime = false
+        if saved == nil, account != nil { watcher.tally.count("start from nothing at launch") }
         engine = StandInEngine(cloud: cloud, device: name, savedState: saved, account: account, choices: engineChoices, seed: random.next())
         engine.isOnline = isOnline
         engine.delegate = self
@@ -484,10 +493,25 @@ final class SimulatedDevice: StandInEngineDelegate {
 
     func engine(_ engine: StandInEngine, handle event: StandInEngine.Event) {
         guard engine === self.engine else { return }
+        if let trace {
+            switch event {
+            case .stateUpdate: break
+            case .fetched(let changes):
+                trace("\(name) fetched \(changes.records.map { "\($0.zone?.prefix(14) ?? "-")/\($0.name.prefix(6))" }) deletions \(changes.deletions.map { "\($0.id.zone.prefix(14))/\($0.id.name.prefix(6))" })")
+            case .sent(let changes):
+                trace("\(name) sent: saved \(changes.saved.map { "\($0.zone?.prefix(14) ?? "-")/\($0.name.prefix(6))" }) failed \(changes.failedSaves.map { "\($0.id.zone.prefix(14))/\($0.id.name.prefix(6)) \($0.reason)".prefix(80) }) deleted \(changes.deleted.count)")
+            default: trace("\(name) event \(event)".prefix(400).description)
+            }
+        }
         switch event {
         case .stateUpdate(let state):
             must { try sync.engineStateUpdated(state) }
         case .accountChange(let change):
+            switch change {
+            case .signIn: watcher.tally.count("engine reported a sign-in")
+            case .signOut: watcher.tally.count("engine reported a sign-out")
+            case .switchAccounts: watcher.tally.count("engine reported a switch")
+            }
             apply(must { try sync.accountChanged(change) })
             noteOwnership()
         case .willFetch(let manual):
@@ -499,6 +523,7 @@ final class SimulatedDevice: StandInEngineDelegate {
                 watcher.received(play: record.name, on: name)
             }
             let before = toySide
+            if changes.records.contains(where: \.isToy) { toyRefusedWithoutRecord = false }
             apply(must { try sync.fetched(changes) })
             tallyToy(before, toySide, arrived: changes.records.contains(where: \.isToy))
             watcher.tally.count("play arrived", changes.records.count { $0.type == CloudRecord.finishedPlayType })
@@ -517,6 +542,14 @@ final class SimulatedDevice: StandInEngineDelegate {
             watchingPurges { apply(must { try sync.sent(changes) }) }
             let toyRefused = changes.failedSaves.contains { failure in
                 if case .refused(let record) = failure.reason { failure.id.isToy && record != nil } else { false }
+            }
+            let toyRefusedBare = changes.failedSaves.contains { failure in
+                if case .refused(let record) = failure.reason { failure.id.isToy && record == nil } else { false }
+            }
+            if toyRefusedBare {
+                toyRefusedWithoutRecord = true
+            } else if toyRefused || changes.saved.contains(where: \.isToy) {
+                toyRefusedWithoutRecord = false
             }
             tallyToy(before, toySide, arrived: toyRefused)
             watcher.tally.count("toy accepted", changes.saved.count(where: \.isToy))
@@ -568,10 +601,19 @@ final class SimulatedDevice: StandInEngineDelegate {
     /// The account the store's data belongs to.
     var notedAccount: String? { must { try sync.store.existingSyncNotes()?.account } ?? nil }
 
+    /// Whether the engine has fetched everything iCloud holds for its account, or cannot: it is offline or signed out.
+    var isUpToDate: Bool {
+        guard isOnline, let account, engine.state.account == account else { return true }
+        return engine.state.databaseToken == cloud.database(account).seq && engine.state.zonesToFetch.isEmpty
+    }
+
     /// Whether the store marks anything as not yet received by iCloud.
-    var hasMarks: Bool {
+    var hasMarks: Bool { marksPlays || toySide.isChanged }
+
+    /// Whether the store marks a play as not yet received by iCloud.
+    var marksPlays: Bool {
         guard let plays = must({ try sync.store.playsNotInICloud() }) else { return true }
-        return !plays.isEmpty || toySide.isChanged
+        return !plays.isEmpty
     }
 
     // MARK: Inside
@@ -616,6 +658,17 @@ final class SimulatedDevice: StandInEngineDelegate {
         }
     }
 
+    /// Gives a play that the toy began by itself, under an id from the system's generator, an id from the seeded one, so
+    /// that an order of events replays from its seed.
+    private func seedPlayID() {
+        guard let current = play.play, !watcher.playIDs.contains(current.id) else { return }
+        var snapshot = play.snapshot
+        let id = random.uuid()
+        snapshot.play?.id = id
+        watcher.playIDs.insert(id)
+        if let seeded = PlayState(snapshot) { play = seeded }
+    }
+
     private func playToRest() {
         var steps = 0
         while play.toy.isPlaying, steps < 1_000 {
@@ -626,6 +679,7 @@ final class SimulatedDevice: StandInEngineDelegate {
     }
 
     private func personChanged(from before: ToySnapshot) {
+        seedPlayID()
         watcher.personChanged(from: before, to: play.snapshot, account: notedAccount)
         must { try sync.keep(play.snapshot, at: clock.tick()) }
     }
@@ -633,14 +687,20 @@ final class SimulatedDevice: StandInEngineDelegate {
     /// Shows `toy`, as the app does after a take-up, a choice, or a toy put back.
     private func show(_ toy: ToySnapshot) {
         if !play.takeUp(toy) { play = PlayState(toy) ?? PlayState() }
+        seedPlayID()
         must { try sync.keep(play.snapshot, at: clock.now) }
     }
 
     private func apply(_ result: SyncResult?) {
         guard let result else { return }
+        if let trace, result != SyncResult() {
+            trace("  -> \(name) note=\(zoneNote.map { "\($0.zone.number)-\($0.zone.id.prefix(4)) \($0.knowledge)" } ?? "none") plays=\(history.plays.count) \(result.engine.withdrawsEverything ? "withdrawAll " : "")\(result.engine.withdrawsEverythingOutside.map { "withdrawOutside \($0.prefix(14)) " } ?? "")\(result.engine.savesZone.map { "saveZone \($0.prefix(14)) " } ?? "")saves \(result.engine.saves.count) dels \(result.engine.deletions.count)\(result.engine.fetches ? " fetch" : "")\(result.engine.asksForAccount ? " account?" : "")\(result.replacedToy != nil ? " replacedToy" : "")")
+        }
         apply(result.engine)
         if let toy = result.replacedToy {
             play = PlayState(toy) ?? PlayState()
+            seedPlayID()
+            must { try sync.keep(play.snapshot, at: clock.now) }
         }
         if result.keepsBackgroundTime { keepsBackgroundTime = true }
         if result.endsBackgroundTime { keepsBackgroundTime = false }

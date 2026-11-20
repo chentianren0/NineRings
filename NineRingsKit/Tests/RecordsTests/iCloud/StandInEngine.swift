@@ -31,6 +31,8 @@ final class StandInEngine {
         var account: String?
         var databaseToken: Int?
         var zoneTokens: [String: StandInICloud.ZoneToken] = [:]
+        /// Zones a report named whose fetch has not yet succeeded.
+        var zonesToFetch: [String] = []
         var pendingZoneSaves: [String] = []
         var pending: [Pending] = []
     }
@@ -327,15 +329,20 @@ final class StandInEngine {
         if !report.existing.isEmpty || !report.deleted.isEmpty {
             delegate?.engine(self, handle: .databaseChanged(DatabaseChanges(existing: report.existing, deleted: report.deleted)))
         }
-        for deletion in report.deleted { state.zoneTokens[deletion.zone] = nil }
+        for deletion in report.deleted {
+            state.zoneTokens[deletion.zone] = nil
+            state.zonesToFetch.removeAll { $0 == deletion.zone }
+        }
+        state.zonesToFetch.appendNew(report.existing)
         if !choices.accountReportComesFirst { reportAccountChange() }
-        for zone in report.existing {
+        for zone in state.zonesToFetch {
             guard state.account == account else { break }
             if random.chance(choices.zoneFetchFails) {
                 failedZones[zone] = .other
                 delegate?.engine(self, handle: .zoneFetchEnded(zone, .other))
                 continue
             }
+            state.zonesToFetch.removeAll { $0 == zone }
             switch cloud.changes(zone: zone, account: account, since: state.zoneTokens[zone], device: device) {
             case .failure(let error):
                 state.zoneTokens[zone] = nil

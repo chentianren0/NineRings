@@ -62,7 +62,7 @@ final class World {
                 device.toyChanged()
                 device.syncFully()
             }
-            if look() == before { return true }
+            if look() == before, devices.allSatisfy(\.isUpToDate) { return true }
         }
         return false
     }
@@ -80,7 +80,7 @@ final class World {
             let side = device.toySide
             seen.append("\(device.name) \(side.isChanged) \(side.base?.changeTag ?? "-") \(side.held?.record.changeTag ?? "-") \(side.lastSend.map { "\($0)" } ?? "-")")
             seen.append("\(device.name) \(device.history.plays.map(\.playID)) \(device.history.unreadable) \(device.zoneNote.map { "\($0)" } ?? "-")")
-            seen.append("\(device.name) \(device.engine.state.pending) \(device.engine.state.pendingZoneSaves) \(device.engine.lateAnswers.count) \(device.engine.changesSent)")
+            seen.append("\(device.name) \(device.engine.state.pending) \(device.engine.state.pendingZoneSaves) \(device.engine.lateAnswers.count)")
         }
         return seen
     }
@@ -127,6 +127,13 @@ final class World {
         var problems: [String] = []
         let persons = devices.filter { $0.account == World.person }
         guard !persons.isEmpty else { return [] }
+        if persons.allSatisfy({ $0.zoneNote == nil || $0.zoneNote?.knowledge == .deleted }) {
+            // No device uses a zone: then none has anything to send, and none shows a play.
+            for device in persons where device.hasMarks || !device.history.plays.isEmpty || device.history.unreadable > 0 {
+                problems.append("\(device.name) uses no zone and still has plays or marks")
+            }
+            return problems
+        }
         guard let zone = personsZone else {
             return ["the person's devices use different zones: \(persons.map { "\($0.name) \($0.zoneNote.map { "\($0)" } ?? "none")" })"]
         }
@@ -144,7 +151,16 @@ final class World {
                 problems.append("\(device.name) keeps another toy than iCloud's")
             }
             if device.toySide.held != nil { problems.append("\(device.name) still holds a toy") }
-            if device.hasMarks { problems.append("\(device.name) still marks changes iCloud has not received") }
+            if device.marksPlays { problems.append("\(device.name) still marks plays iCloud has not received") }
+            if device.toySide.isChanged {
+                if device.toyRefusedWithoutRecord, let toy, let kept = device.keptToy, kept.isSameToy(as: toy.toy) {
+                    // Accepted (section 16): CloudKit refused the toy's save without its record, and no fetch brings the
+                    // toy, so the device tries again at most once a minute; the toy in iCloud is already its own.
+                    watcher.tally.count("accepted: a toy refused without its record that no fetch brings")
+                } else {
+                    problems.append("\(device.name) still marks the toy as changed")
+                }
+            }
         }
         return problems
     }
