@@ -74,9 +74,7 @@ public final class RecordStore {
     }
 
     /// Keeps `snapshot` as `installation`'s toy, at `date`. Returns whether anything was written: nothing is when the
-    /// snapshot kept is the same. `changedAt` becomes `date` only when the toy changed, not when only the time spent did;
-    /// then the toy's lineage counts a change of `installation` too (``Lineage``). A first toy kept is a change unless
-    /// nobody has touched it.
+    /// snapshot kept is the same. `changedAt` becomes `date` only when the toy changed, not when only the time spent did.
     @discardableResult
     public func keep(_ snapshot: ToySnapshot, installation: String, appVersion: String, at date: Date = .now) throws -> Bool {
         let data = try snapshot.encoded()
@@ -84,14 +82,10 @@ public final class RecordStore {
         if let existing = try savedToy(installation: installation) {
             guard existing.snapshot != data || existing.format != ToySnapshot.format else { return false }
             saved = existing
-            if !(existing.toy?.isSameToy(as: snapshot) ?? false) {
-                saved.changedAt = date
-                try saved.setLineage(saved.toyLineage.changed(by: installation))
-            }
+            if !(existing.toy?.isSameToy(as: snapshot) ?? false) { saved.changedAt = date }
         } else {
             saved = SavedToy(installation: installation)
             saved.changedAt = date
-            if !snapshot.isUntouched { try saved.setLineage(Lineage().changed(by: installation)) }
             context.insert(saved)
         }
         saved.format = ToySnapshot.format

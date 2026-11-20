@@ -38,8 +38,8 @@ test with the sizes it found.
 
 ## What the script does for a simulator device
 
-`scripts/store-assets.sh --out DIR --devices iphone-6.3` (or `iphone-6.9`, `ipad-13`, `duo-outer`, `duo-inner`, several
-with commas), one simulator at a time:
+`scripts/store-assets.sh --devices iphone-6.3` (or `iphone-6.9`, `ipad-13`, `duo-outer`, `duo-inner`, several with
+commas), one simulator at a time:
 
 1. Builds the app (`NineRings`, Debug) and the tests (`StoreShots`, build for testing) for that simulator.
 2. Boots it if it is not running, sets a clean status bar (9:41, full battery, full signal, no carrier), installs the

@@ -43,7 +43,6 @@ struct SettingsSwitches: View {
         }
         MovesLeftSetting()
         FollowMoveSetting()
-        ICloudSetting()
     }
 }
 

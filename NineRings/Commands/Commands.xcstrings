@@ -46,30 +46,6 @@
             "state" : "translated",
             "value" : "Game Center"
           }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Game Center"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Game Center"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Game Center"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Game Center"
-          }
         }
       }
     },
@@ -153,30 +129,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "History"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Historique"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "履歴"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "历史记录"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "歷史記錄"
           }
         }
       }

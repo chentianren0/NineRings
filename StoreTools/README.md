@@ -1,15 +1,14 @@
 # Store tools: the App Store pictures, made with one command
 
 ```bash
-scripts/store-assets.sh --out ~/Desktop/store
+scripts/store-assets.sh
 ```
 
 builds the Mac app (debug, unsigned), launches it once per moment of the series in the store-capture mode, captures its
-window, composes each store picture at Apple's exact size, checks it, and renders the product page header. Everything
-goes to the folder named with `--out`, which has no default: `<language>/<device>/01.png` to `06.png`,
-`header/header-light.png` and `header-dark.png`, the raw captures under `captures/`, and the builds under `build/`.
-It runs in about two minutes. After any change to the interface, run it again. `--help` lists the options: languages,
-captions on or off, a bezel, light or dark for all, compose again without capturing.
+window, composes each store picture at Apple's exact size, checks it, and renders the product page header. Pictures go to
+`scratch/store/out/` in the main checkout: `<language>/<device>/01.png` to `06.png`, and `header/header-light.png` and
+`header-dark.png`. It runs in about two minutes. After any change to the interface, run it again. `--help` lists the
+options: languages, captions on or off, a bezel, light or dark for all, another folder, compose again without capturing.
 
 The Mac's pictures come from the app's own window. The iPhone, iPad and iPhone Duo pictures come from the `StoreShots`
 UI tests on each simulator (`--devices iphone-6.3,ipad-13,…`); see `StoreShots.md`. The preview videos come from

@@ -73,8 +73,7 @@ public final class FinishedPlay {
 /// The toy as one installation of the app left it. There is one for each installation, changed in place.
 @Model
 public final class SavedToy {
-    /// A random id for one installation of the app on one device (see ``InstallationID``). It is not a device's name or
-    /// serial number.
+    /// A random id made at the app's first launch and kept in its settings. It is not a device's name or serial number.
     public var installation: String = ""
     /// When the toy last changed.
     public var changedAt: Date = Date.distantPast
@@ -84,9 +83,6 @@ public final class SavedToy {
     public var snapshot: Data = Data()
     /// The version of the app that wrote it.
     public var appVersion: String = ""
-    /// Which toys of the installations it was made knowing, a ``Lineage`` encoded as JSON: what tells two installations'
-    /// toys apart without a clock. Empty for a toy nobody has changed.
-    public var lineage: Data = Data()
 
     public init(installation: String) {
         self.installation = installation

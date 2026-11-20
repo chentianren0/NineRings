@@ -34,8 +34,9 @@ public struct PixelSize: Hashable, Sendable, Codable, CustomStringConvertible {
 
 /// The kinds of picture the App Store takes, each with the sizes App Store Connect accepts for it.
 ///
-/// From Apple's screenshot specifications and creative assets specifications, read on 17 November 2026. One set per
-/// class is enough: the store scales it for the smaller devices of the class.
+/// From Apple's screenshot specifications and creative assets specifications, read on 17 November 2026; the plan in
+/// `scratch/store/app-store-plan.md` (not kept in the repository) lists the links. One set per class is enough: the
+/// store scales it for the smaller devices of the class.
 public enum DeviceClass: String, Sendable, Codable, CaseIterable {
     /// Mac, 16:10, landscape only.
     case mac

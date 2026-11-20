@@ -7,7 +7,7 @@
 
 An app for iPhone, iPad and Mac that shows how the Chinese nine linked rings puzzle (the Baguenaudier) works.
 
-The puzzle is old. Nine rings hang on rods from a bar, and a long loop of wire, the sword, runs through them. One rule says which ring can move: ring 1 always can, and any other ring only when the ring just before it is on and every ring before that is off. The shortest way to take all nine off is 341 moves. The app draws the toy in 3D, and lets you make the moves yourself, or watch them, slowly, from any side. You can also set the rings by hand to any of the 512 arrangements: the 512 lie on one line of moves, so each is a real position of the puzzle, and play, undo and solve go on from it. The app counts the moves left, keeps a history of the plays you finish, brings the toy and the history to your other devices through your own iCloud, and reports achievements to Game Center.
+The puzzle is old. Nine rings hang on rods from a bar, and a long loop of wire, the sword, runs through them. One rule says which ring can move: ring 1 always can, and any other ring only when the ring just before it is on and every ring before that is off. The shortest way to take all nine off is 341 moves. The app draws the toy in 3D, and lets you make the moves yourself, or watch them, slowly, from any side. You can also set the rings by hand to any of the 512 arrangements: the 512 lie on one line of moves, so each is a real position of the puzzle, and play, undo and solve go on from it.
 
 ## Written, not simulated
 
@@ -42,7 +42,7 @@ Every pull request that touches the code runs these tests on GitHub and builds t
 
 ## Where it stands
 
-The motion is done: every move of the puzzle is written and checked. The app around it is being made ready for the App Store, and is not there yet.
+The motion is done: every move of the puzzle is written and checked. The app around it is being made ready for the App Store, and is not there yet. What is left is in the issues, listed in the pinned one, [What is left before the App Store](https://github.com/chentianren0/NineRings/issues/34).
 
 ## Privacy
 
